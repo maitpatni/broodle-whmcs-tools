@@ -162,82 +162,126 @@ function broodle_tools_render_admin($vars, $settings)
 
     $html = '
     <style>
-        .broodle-admin-wrap { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .broodle-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 25px 30px; border-radius: 10px; margin-bottom: 25px; }
-        .broodle-header h2 { margin: 0 0 5px; font-size: 22px; font-weight: 600; }
-        .broodle-header p { margin: 0; opacity: 0.9; font-size: 14px; }
-        .broodle-card { background: #fff; border: 1px solid #e3e6f0; border-radius: 8px; padding: 25px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .broodle-card h3 { margin: 0 0 20px; font-size: 17px; font-weight: 600; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
-        .broodle-tweak-row { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f0f0f0; }
-        .broodle-tweak-row:last-child { border-bottom: none; }
-        .broodle-tweak-info h4 { margin: 0 0 4px; font-size: 15px; color: #333; }
-        .broodle-tweak-info p { margin: 0; font-size: 13px; color: #777; }
-        .broodle-toggle { position: relative; width: 50px; height: 26px; }
-        .broodle-toggle input { opacity: 0; width: 0; height: 0; }
-        .broodle-toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 26px; transition: 0.3s; }
-        .broodle-toggle .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s; }
-        .broodle-toggle input:checked + .slider { background: #667eea; }
-        .broodle-toggle input:checked + .slider:before { transform: translateX(24px); }
-        .broodle-btn { display: inline-block; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; text-decoration: none; color: #fff; transition: 0.2s; }
-        .broodle-btn-primary { background: #667eea; }
-        .broodle-btn-primary:hover { background: #5a6fd6; color: #fff; text-decoration: none; }
-        .broodle-btn-secondary { background: #6c757d; }
-        .broodle-btn-secondary:hover { background: #5a6268; color: #fff; text-decoration: none; }
-        .broodle-btn-success { background: #28a745; }
-        .broodle-btn-success:hover { background: #218838; color: #fff; text-decoration: none; }
-        .broodle-version-info { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
-        .broodle-footer { text-align: center; padding: 15px; color: #999; font-size: 12px; }
-        .broodle-footer a { color: #667eea; text-decoration: none; }
+        .bt-wrap { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 720px; }
+        .bt-wrap *, .bt-wrap *::before, .bt-wrap *::after { box-sizing: border-box; }
+
+        /* Header */
+        .bt-head { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
+        .bt-logo { width: 44px; height: 44px; background: #0a5ed3; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .bt-logo svg { color: #fff; }
+        .bt-head-text h2 { margin: 0; font-size: 20px; font-weight: 700; color: #111827; letter-spacing: -0.3px; }
+        .bt-head-text span { font-size: 13px; color: #6b7280; }
+        .bt-head-text span a { color: #0a5ed3; text-decoration: none; }
+
+        /* Section */
+        .bt-section { margin-bottom: 28px; }
+        .bt-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #9ca3af; margin-bottom: 12px; }
+
+        /* Card */
+        .bt-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+
+        /* Row */
+        .bt-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; }
+        .bt-row + .bt-row { border-top: 1px solid #f3f4f6; }
+        .bt-row-info { flex: 1; min-width: 0; }
+        .bt-row-info h4 { margin: 0; font-size: 14px; font-weight: 600; color: #111827; }
+        .bt-row-info p { margin: 3px 0 0; font-size: 13px; color: #6b7280; line-height: 1.4; }
+
+        /* Toggle */
+        .bt-toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; margin-left: 20px; }
+        .bt-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .bt-toggle .bt-slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+        .bt-toggle .bt-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .bt-toggle input:checked + .bt-slider { background: #0a5ed3; }
+        .bt-toggle input:checked + .bt-slider::before { transform: translateX(20px); }
+
+        /* Buttons */
+        .bt-actions { display: flex; align-items: center; gap: 10px; margin-top: 24px; }
+        .bt-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all 0.15s; line-height: 1; }
+        .bt-btn-primary { background: #0a5ed3; color: #fff; }
+        .bt-btn-primary:hover { background: #0950b3; color: #fff; text-decoration: none; }
+        .bt-btn-outline { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+        .bt-btn-outline:hover { background: #f9fafb; border-color: #9ca3af; color: #111827; text-decoration: none; }
+
+        /* Update bar */
+        .bt-update-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid #f3f4f6; background: #f9fafb; }
+        .bt-update-bar span { font-size: 13px; color: #6b7280; }
+        .bt-update-bar span strong { color: #111827; font-weight: 600; }
+
+        /* Footer */
+        .bt-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; }
+        .bt-footer span { font-size: 12px; color: #9ca3af; }
+        .bt-footer a { font-size: 12px; color: #0a5ed3; text-decoration: none; }
+        .bt-footer a:hover { text-decoration: underline; }
+
+        /* Toast notification */
+        .bt-toast { display: none; position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: btSlideIn 0.3s ease; }
+        .bt-toast.success { background: #059669; }
+        .bt-toast.error { background: #dc2626; }
+        .bt-toast.info { background: #0a5ed3; }
+        .bt-toast.show { display: block; }
+        @keyframes btSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
-    <div class="broodle-admin-wrap">
-        <div class="broodle-header">
-            <h2>🛠 Broodle WHMCS Tools</h2>
-            <p>Version ' . BROODLE_TOOLS_VERSION . ' &mdash; Manage your WHMCS tweaks and enhancements</p>
+    <div class="bt-wrap">
+        <div class="bt-head">
+            <div class="bt-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+            </div>
+            <div class="bt-head-text">
+                <h2>Broodle WHMCS Tools</h2>
+                <span>v' . BROODLE_TOOLS_VERSION . ' · <a href="https://broodle.host" target="_blank">broodle.host</a></span>
+            </div>
         </div>
 
         <form method="post" action="' . $moduleLink . '&action=save_settings">
-            <div class="broodle-card">
-                <h3>⚡ Tweaks</h3>
 
-                <div class="broodle-tweak-row">
-                    <div class="broodle-tweak-info">
-                        <h4>Nameservers Tab</h4>
-                        <p>Adds a "Nameservers" tab on the cPanel product details page showing the service\'s nameservers in a clean UI.</p>
+            <div class="bt-section">
+                <div class="bt-section-label">Tweaks</div>
+                <div class="bt-card">
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Nameservers Tab</h4>
+                            <p>Show a Nameservers tab on cPanel product details with the assigned nameservers.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_nameservers_tab" value="1" ' . ($nameserversEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
                     </div>
-                    <label class="broodle-toggle">
-                        <input type="checkbox" name="tweak_nameservers_tab" value="1" ' . ($nameserversEnabled ? 'checked' : '') . '>
-                        <span class="slider"></span>
-                    </label>
                 </div>
             </div>
 
-            <div class="broodle-card">
-                <h3>🔄 Updates</h3>
-
-                <div class="broodle-tweak-row">
-                    <div class="broodle-tweak-info">
-                        <h4>Auto Update</h4>
-                        <p>Automatically check for and notify about new versions from the GitHub repository.</p>
+            <div class="bt-section">
+                <div class="bt-section-label">Updates</div>
+                <div class="bt-card">
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Auto Update</h4>
+                            <p>Check for new versions from the GitHub repository automatically.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="auto_update_enabled" value="1" ' . ($autoUpdateEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
                     </div>
-                    <label class="broodle-toggle">
-                        <input type="checkbox" name="auto_update_enabled" value="1" ' . ($autoUpdateEnabled ? 'checked' : '') . '>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="broodle-version-info">
-                    <a href="' . $moduleLink . '&action=check_update" class="broodle-btn broodle-btn-secondary">Check for Update</a>
-                    <span style="color:#888; font-size:13px;">Current: v' . BROODLE_TOOLS_VERSION . '</span>
+                    <div class="bt-update-bar">
+                        <span>Installed: <strong>v' . BROODLE_TOOLS_VERSION . '</strong></span>
+                        <a href="' . $moduleLink . '&action=check_update" class="bt-btn bt-btn-outline" style="padding:6px 14px;">Check for Update</a>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="broodle-btn broodle-btn-primary">Save Settings</button>
+            <div class="bt-actions">
+                <button type="submit" class="bt-btn bt-btn-primary">Save Settings</button>
+            </div>
         </form>
 
-        <div class="broodle-footer">
-            <p>Broodle WHMCS Tools &copy; ' . date('Y') . ' <a href="https://broodle.host" target="_blank">Broodle</a> &mdash;
-            <a href="https://github.com/' . BROODLE_TOOLS_GITHUB_REPO . '" target="_blank">GitHub</a></p>
+        <div class="bt-footer">
+            <span>&copy; ' . date('Y') . ' Broodle</span>
+            <a href="https://github.com/' . BROODLE_TOOLS_GITHUB_REPO . '" target="_blank">GitHub</a>
         </div>
     </div>';
 
