@@ -100,58 +100,56 @@ function broodle_tools_get_emails($serviceId)
     if (empty($username)) return [];
 
     $hostname = $server->hostname;
-    $port = 2087; // WHM port
+    $port = !empty($server->port) ? (int) $server->port : 2087;
     $serverUser = $server->username;
+    $secure = !empty($server->secure) && ($server->secure === 'on' || $server->secure === '1' || $server->secure === 1);
+    $protocol = $secure ? 'https' : 'http';
 
-    // Decrypt credentials using WHMCS decrypt() function
+    // Resolve credentials — access hash may be a plaintext API token or encrypted
     $accessHash = '';
     $password = '';
 
     if (!empty($server->accesshash)) {
-        $accessHash = trim(decrypt($server->accesshash));
+        $raw = trim($server->accesshash);
+        // API tokens are short alphanumeric strings (< 64 chars, no special chars)
+        // Encrypted values contain special chars like /, +, = and are typically longer
+        if (preg_match('/^[A-Za-z0-9]{10,64}$/', $raw)) {
+            // Looks like a plaintext API token — use directly
+            $accessHash = $raw;
+        } else {
+            // Likely encrypted — try to decrypt
+            $accessHash = trim(decrypt($raw));
+            // If decrypt returned empty or garbage, clear it
+            if (empty($accessHash) || !preg_match('/^[A-Za-z0-9]{10,64}$/', $accessHash)) {
+                $accessHash = '';
+            }
+        }
     }
+
     if (empty($accessHash) && !empty($server->password)) {
         $password = trim(decrypt($server->password));
     }
 
-    if (empty($accessHash) && empty($password)) {
-        // Try localAPI as fallback
-        try {
-            if (!empty($server->accesshash)) {
-                $result = localAPI('DecryptPassword', ['password2' => $server->accesshash]);
-                if (!empty($result['password'])) {
-                    $accessHash = trim($result['password']);
-                }
-            }
-            if (empty($accessHash) && !empty($server->password)) {
-                $result = localAPI('DecryptPassword', ['password2' => $server->password]);
-                if (!empty($result['password'])) {
-                    $password = trim($result['password']);
-                }
-            }
-        } catch (\Exception $e) {
-            // ignore
-        }
-    }
-
     if (empty($accessHash) && empty($password)) return [];
 
-    // Use WHM API 1 list_pops_for — the correct endpoint
-    $url = "https://{$hostname}:{$port}/json-api/list_pops_for"
-         . "?api.version=1"
-         . "&user=" . urlencode($username);
+    // Use cPanel UAPI via WHM to list email accounts for the user
+    // WHM API: cpanel call using UAPI Email::list_pops
+    $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+         . "?cpanel_jsonapi_user=" . urlencode($username)
+         . "&cpanel_jsonapi_apiversion=3"
+         . "&cpanel_jsonapi_module=Email"
+         . "&cpanel_jsonapi_func=list_pops";
 
     $headers = [];
     if (!empty($accessHash)) {
-        $cleanHash = preg_replace('/\s+/', '', $accessHash);
-        $headers[] = "Authorization: whm {$serverUser}:{$cleanHash}";
+        $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
     }
 
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_TIMEOUT        => 20,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
     ]);
@@ -164,37 +162,147 @@ function broodle_tools_get_emails($serviceId)
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
     curl_close($ch);
-
-    if ($httpCode !== 200 || !$response) return [];
-
-    $json = json_decode($response, true);
-    if (empty($json)) return [];
 
     $emails = [];
 
-    // WHM API 1 list_pops_for returns: data.pops[]
-    $pops = [];
-    if (isset($json['data']['pops'])) {
-        $pops = $json['data']['pops'];
-    } elseif (isset($json['pops'])) {
-        $pops = $json['pops'];
-    }
+    // Try parsing UAPI response
+    if ($httpCode === 200 && $response) {
+        $json = json_decode($response, true);
+        if (!empty($json)) {
+            // UAPI via WHM wrapper: result.data[]
+            $pops = [];
+            if (isset($json['result']['data'])) {
+                $pops = $json['result']['data'];
+            } elseif (isset($json['cpanelresult']['data'])) {
+                $pops = $json['cpanelresult']['data'];
+            } elseif (isset($json['data'])) {
+                $pops = $json['data'];
+            }
 
-    foreach ($pops as $entry) {
-        $email = '';
-        if (is_string($entry)) {
-            $email = $entry;
-        } elseif (is_array($entry)) {
-            $email = $entry['email'] ?? ($entry['user'] ?? ($entry['login'] ?? ''));
+            foreach ($pops as $entry) {
+                $email = '';
+                if (is_string($entry)) {
+                    $email = $entry;
+                } elseif (is_array($entry)) {
+                    $email = $entry['email'] ?? ($entry['login'] ?? ($entry['user'] ?? ''));
+                }
+                if (empty($email)) continue;
+                if ($email === $username) continue;
+                if (strpos($email, '@') === false) continue;
+                $emails[] = $email;
+            }
         }
-        if (empty($email)) continue;
-        // Skip main account and entries without @
-        if ($email === $username) continue;
-        if (strpos($email, '@') === false) continue;
-        $emails[] = $email;
     }
 
+    // Fallback: try WHM API 1 list_pops_for if UAPI returned nothing
+    if (empty($emails)) {
+        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/list_pops_for"
+              . "?api.version=1"
+              . "&user=" . urlencode($username);
+
+        $ch2 = curl_init();
+        curl_setopt_array($ch2, [
+            CURLOPT_URL            => $url2,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        if (!empty($headers)) {
+            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+        } elseif (!empty($password)) {
+            curl_setopt($ch2, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        }
+
+        $response2 = curl_exec($ch2);
+        $httpCode2 = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+        curl_close($ch2);
+
+        if ($httpCode2 === 200 && $response2) {
+            $json2 = json_decode($response2, true);
+            if (!empty($json2)) {
+                $pops2 = [];
+                if (isset($json2['data']['pops'])) {
+                    $pops2 = $json2['data']['pops'];
+                } elseif (isset($json2['pops'])) {
+                    $pops2 = $json2['pops'];
+                }
+
+                foreach ($pops2 as $entry) {
+                    $email = '';
+                    if (is_string($entry)) {
+                        $email = $entry;
+                    } elseif (is_array($entry)) {
+                        $email = $entry['email'] ?? ($entry['user'] ?? ($entry['login'] ?? ''));
+                    }
+                    if (empty($email)) continue;
+                    if ($email === $username) continue;
+                    if (strpos($email, '@') === false) continue;
+                    $emails[] = $email;
+                }
+            }
+        }
+    }
+
+    // Final fallback: try UAPI Email::list_pops_with_disk directly
+    if (empty($emails)) {
+        $url3 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+              . "?cpanel_jsonapi_user=" . urlencode($username)
+              . "&cpanel_jsonapi_apiversion=3"
+              . "&cpanel_jsonapi_module=Email"
+              . "&cpanel_jsonapi_func=list_pops_with_disk";
+
+        $ch3 = curl_init();
+        curl_setopt_array($ch3, [
+            CURLOPT_URL            => $url3,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        if (!empty($headers)) {
+            curl_setopt($ch3, CURLOPT_HTTPHEADER, $headers);
+        } elseif (!empty($password)) {
+            curl_setopt($ch3, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        }
+
+        $response3 = curl_exec($ch3);
+        $httpCode3 = curl_getinfo($ch3, CURLINFO_HTTP_CODE);
+        curl_close($ch3);
+
+        if ($httpCode3 === 200 && $response3) {
+            $json3 = json_decode($response3, true);
+            if (!empty($json3)) {
+                $pops3 = [];
+                if (isset($json3['result']['data'])) {
+                    $pops3 = $json3['result']['data'];
+                } elseif (isset($json3['cpanelresult']['data'])) {
+                    $pops3 = $json3['cpanelresult']['data'];
+                } elseif (isset($json3['data'])) {
+                    $pops3 = $json3['data'];
+                }
+
+                foreach ($pops3 as $entry) {
+                    $email = '';
+                    if (is_string($entry)) {
+                        $email = $entry;
+                    } elseif (is_array($entry)) {
+                        $email = $entry['email'] ?? ($entry['login'] ?? ($entry['user'] ?? ''));
+                    }
+                    if (empty($email)) continue;
+                    if ($email === $username) continue;
+                    if (strpos($email, '@') === false) continue;
+                    $emails[] = $email;
+                }
+            }
+        }
+    }
+
+    $emails = array_unique($emails);
     sort($emails);
     return $emails;
 }
