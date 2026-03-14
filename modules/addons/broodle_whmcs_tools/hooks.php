@@ -14,113 +14,206 @@ if (!defined('WHMCS')) {
 use WHMCS\Database\Capsule;
 use WHMCS\View\Menu\Item as MenuItem;
 
-/**
- * Helper: check if nameservers tweak is enabled.
- */
-function broodle_tools_ns_enabled()
+/* ─── Helpers ─────────────────────────────────────────────── */
+
+function broodle_tools_setting_enabled($key)
 {
     try {
         return Capsule::table('mod_broodle_tools_settings')
-            ->where('setting_key', 'tweak_nameservers_tab')
+            ->where('setting_key', $key)
             ->value('setting_value') === '1';
     } catch (\Exception $e) {
         return false;
     }
 }
 
-/**
- * Helper: get nameservers for a service.
- */
-function broodle_tools_get_ns_for_service($serviceId)
+function broodle_tools_ns_enabled()
 {
-    if (!$serviceId) return ['ns' => [], 'ip' => ''];
+    return broodle_tools_setting_enabled('tweak_nameservers_tab');
+}
 
+function broodle_tools_email_enabled()
+{
+    return broodle_tools_setting_enabled('tweak_email_list');
+}
+
+/** Get service ID from hook vars / request. */
+function broodle_tools_get_service_id($vars)
+{
+    if (!empty($vars['serviceid'])) return (int) $vars['serviceid'];
+    if (!empty($vars['id'])) return (int) $vars['id'];
+    if (isset($vars['service']) && is_object($vars['service'])) return (int) $vars['service']->id;
+    if (!empty($_GET['id'])) return (int) $_GET['id'];
+    return 0;
+}
+
+/** Get service + server + product rows for a cPanel service. */
+function broodle_tools_get_cpanel_service($serviceId)
+{
+    if (!$serviceId) return null;
     try {
         $service = Capsule::table('tblhosting')->where('id', $serviceId)->first();
-        if (!$service) return ['ns' => [], 'ip' => ''];
-
+        if (!$service) return null;
         $product = Capsule::table('tblproducts')->where('id', $service->packageid)->first();
-        if (!$product || strtolower($product->servertype) !== 'cpanel') return ['ns' => [], 'ip' => ''];
-
-        if (!$service->server) return ['ns' => [], 'ip' => ''];
-
+        if (!$product || strtolower($product->servertype) !== 'cpanel') return null;
+        if (!$service->server) return null;
         $server = Capsule::table('tblservers')->where('id', $service->server)->first();
-        if (!$server) return ['ns' => [], 'ip' => ''];
-
-        $ns = [];
-        for ($i = 1; $i <= 5; $i++) {
-            $f = 'nameserver' . $i;
-            if (!empty($server->$f)) $ns[] = $server->$f;
-        }
-
-        // Get the dedicated IP for this service, fallback to server IP
-        $ip = '';
-        if (!empty($service->dedicatedip)) {
-            $ip = $service->dedicatedip;
-        } elseif (!empty($server->ipaddress)) {
-            $ip = $server->ipaddress;
-        }
-
-        return ['ns' => $ns, 'ip' => $ip];
+        if (!$server) return null;
+        return ['service' => $service, 'server' => $server, 'product' => $product];
     } catch (\Exception $e) {
-        return ['ns' => [], 'ip' => ''];
+        return null;
     }
 }
 
-/**
- * Inject nameservers tab into the product details page.
- *
- * Lagom uses this structure for the billing/domain tabs:
- *   <div class="section-body">
- *     <div class="panel panel-default">
- *       <ul class="panel-tabs nav nav-tabs">
- *         <li><a href="#billingInfo" data-toggle="tab">Billing Overview</a></li>
- *         <li><a href="#domainInfo" data-toggle="tab">Domain</a></li>
- *       </ul>
- *       <div class="tab-content">
- *         <div class="panel-body tab-pane active" id="billingInfo">...</div>
- *         <div class="panel-body tab-pane" id="domainInfo">...</div>
- *       </div>
- *     </div>
- *   </div>
- *
- * We inject JS that adds a "Nameservers" tab + pane into that exact structure.
- * For Six/Twenty-One, falls back to #tabOverview sibling approach.
- */
-add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    if (!broodle_tools_ns_enabled()) return '';
+function broodle_tools_get_ns_for_service($serviceId)
+{
+    $data = broodle_tools_get_cpanel_service($serviceId);
+    if (!$data) return ['ns' => [], 'ip' => ''];
+    $server = $data['server'];
+    $service = $data['service'];
 
-    $serviceId = 0;
-    if (!empty($vars['serviceid'])) {
-        $serviceId = (int) $vars['serviceid'];
-    } elseif (!empty($vars['id'])) {
-        $serviceId = (int) $vars['id'];
-    } elseif (isset($vars['service']) && is_object($vars['service'])) {
-        $serviceId = (int) $vars['service']->id;
-    } elseif (!empty($_GET['id'])) {
-        $serviceId = (int) $_GET['id'];
+    $ns = [];
+    for ($i = 1; $i <= 5; $i++) {
+        $f = 'nameserver' . $i;
+        if (!empty($server->$f)) $ns[] = $server->$f;
     }
+
+    $ip = '';
+    if (!empty($service->dedicatedip)) {
+        $ip = $service->dedicatedip;
+    } elseif (!empty($server->ipaddress)) {
+        $ip = $server->ipaddress;
+    }
+
+    return ['ns' => $ns, 'ip' => $ip];
+}
+
+/** Fetch email accounts from cPanel via WHM API. */
+function broodle_tools_get_emails($serviceId)
+{
+    $data = broodle_tools_get_cpanel_service($serviceId);
+    if (!$data) return [];
+
+    $server = $data['server'];
+    $service = $data['service'];
+    $username = $service->username;
+    if (empty($username)) return [];
+
+    $hostname = $server->hostname;
+    $port = !empty($server->port) ? $server->port : 2087;
+    $serverUser = $server->username;
+
+    // Decrypt server password/access hash
+    $accessHash = '';
+    $password = '';
+    try {
+        if (!empty($server->accesshash)) {
+            $accessHash = trim(localAPI('DecryptPassword', ['password2' => $server->accesshash])['password'] ?? '');
+        }
+        if (empty($accessHash) && !empty($server->password)) {
+            $password = trim(localAPI('DecryptPassword', ['password2' => $server->password])['password'] ?? '');
+        }
+    } catch (\Exception $e) {
+        return [];
+    }
+
+    // Build WHM API URL — cpanel UAPI via WHM
+    $url = "https://{$hostname}:{$port}/json-api/cpanel"
+         . "?cpanel_jsonapi_user=" . urlencode($username)
+         . "&cpanel_jsonapi_apiversion=3"
+         . "&cpanel_jsonapi_module=Email"
+         . "&cpanel_jsonapi_func=list_pops";
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+    ]);
+
+    // Auth: prefer access hash, fallback to password
+    if (!empty($accessHash)) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: whm {$serverUser}:" . preg_replace('/\s+/', '', $accessHash),
+        ]);
+    } elseif (!empty($password)) {
+        curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+    } else {
+        curl_close($ch);
+        return [];
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || !$response) return [];
+
+    $json = json_decode($response, true);
+    $emails = [];
+
+    // UAPI via WHM wraps in result->data
+    $list = $json['result']['data'] ?? ($json['cpanelresult']['result']['data'] ?? []);
+    if (empty($list) && isset($json['data'])) {
+        $list = $json['data'];
+    }
+
+    foreach ($list as $item) {
+        $email = $item['email'] ?? ($item['login'] ?? '');
+        if (empty($email) || $email === $username) continue;
+        // Skip the main cPanel account default address
+        if (strpos($email, '@') === false) continue;
+        $emails[] = $email;
+    }
+
+    sort($emails);
+    return $emails;
+}
+
+/* ─── Main Output Hook ────────────────────────────────────── */
+
+add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+    $serviceId = broodle_tools_get_service_id($vars);
     if (!$serviceId) return '';
 
-    $data = broodle_tools_get_ns_for_service($serviceId);
-    $nameservers = $data['ns'];
-    $serverIp = $data['ip'];
-    if (empty($nameservers)) return '';
+    $output = '';
 
-    // Build IP row
-    $ipRow = '';
-    if (!empty($serverIp)) {
-        $eIp = htmlspecialchars($serverIp);
-        $ipRow = '<div class="bns-row">'
-            . '<div class="bns-badge" style="background:rgba(5,150,105,.08);color:#059669">IP</div>'
-            . '<div class="bns-host">' . $eIp . '</div>'
-            . '<button type="button" class="bns-copy" data-ns="' . $eIp . '" title="Copy">'
-            . '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
-            . '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>'
-            . '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
-            . '</svg></button></div>';
+    // ── Nameservers Tab ──
+    if (broodle_tools_ns_enabled()) {
+        $d = broodle_tools_get_ns_for_service($serviceId);
+        if (!empty($d['ns'])) {
+            $output .= broodle_tools_build_ns_output($d['ns'], $d['ip']);
+        }
     }
 
+    // ── Email List Tab ──
+    if (broodle_tools_email_enabled()) {
+        $cpData = broodle_tools_get_cpanel_service($serviceId);
+        if ($cpData) {
+            $emails = broodle_tools_get_emails($serviceId);
+            $output .= broodle_tools_build_email_output($emails, $serviceId);
+        }
+    }
+
+    // ── Domain tab center fix ──
+    if (!empty($output)) {
+        $output .= '<style>.cpanel-actions-btn{text-align:center}</style>';
+    }
+
+    // ── Shared JS ──
+    if (!empty($output)) {
+        $output .= broodle_tools_shared_script();
+    }
+
+    return $output;
+});
+
+/* ─── Nameservers Output Builder ──────────────────────────── */
+
+function broodle_tools_build_ns_output($nameservers, $serverIp)
+{
     $rows = '';
     foreach ($nameservers as $i => $ns) {
         $n = $i + 1;
@@ -135,44 +228,18 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
             . '</svg></button></div>';
     }
 
-    $allNsJs = htmlspecialchars(json_encode(implode("\n", $nameservers)), ENT_QUOTES);
+    if (!empty($serverIp)) {
+        $eIp = htmlspecialchars($serverIp);
+        $rows .= '<div class="bns-row">'
+            . '<div class="bns-badge" style="background:rgba(5,150,105,.08);color:#059669">IP</div>'
+            . '<div class="bns-host">' . $eIp . '</div>'
+            . '<button type="button" class="bns-copy" data-ns="' . $eIp . '" title="Copy">'
+            . '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+            . '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>'
+            . '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+            . '</svg></button></div>';
+    }
 
-    return broodle_tools_ns_css()
-         . broodle_tools_ns_card($rows, $ipRow, $allNsJs)
-         . broodle_tools_ns_script();
-});
-
-/** CSS for the nameservers card. */
-function broodle_tools_ns_css()
-{
-    return '
-<style>
-.bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
-.bns-card-head-left{display:flex;align-items:center;gap:12px}
-.bns-icon-circle{width:38px;height:38px;background:#0a5ed3;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
-.bns-card-head h5{margin:0;font-size:15px;font-weight:600;color:var(--heading-color,#111827)}
-.bns-card-head p{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
-.bns-copy-all{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;font-size:12px;font-weight:600;color:#0a5ed3;background:rgba(10,94,211,.08);border:1px solid rgba(10,94,211,.18);border-radius:7px;cursor:pointer;transition:all .15s}
-.bns-copy-all:hover{background:#0a5ed3;color:#fff;border-color:#0a5ed3}
-.bns-list{padding:8px 10px}
-.bns-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:9px;transition:background .15s}
-.bns-row:hover{background:var(--input-bg,#f9fafb)}
-.bns-row+.bns-row{border-top:1px solid var(--border-color,#f3f4f6)}
-.bns-badge{width:38px;height:28px;background:rgba(10,94,211,.08);color:#0a5ed3;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
-.bns-host{flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
-.bns-copy{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color,#e5e7eb);border-radius:7px;background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);cursor:pointer;transition:all .15s;flex-shrink:0}
-.bns-copy:hover{color:#0a5ed3;border-color:#0a5ed3}
-.bns-copy.copied{color:#fff;background:#059669;border-color:#059669}
-[data-theme="dark"] .bns-card,.dark-mode .bns-card{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
-[data-theme="dark"] .bns-row:hover,.dark-mode .bns-row:hover{background:var(--input-bg,#111827)}
-[data-theme="dark"] .bns-copy,.dark-mode .bns-copy{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
-</style>';
-}
-
-/** Hidden card HTML. */
-function broodle_tools_ns_card($rows, $ipRow, $allNsJs)
-{
     return '
 <div id="broodle-ns-source" style="display:none">
   <div class="bns-card" style="margin-top:20px">
@@ -186,103 +253,155 @@ function broodle_tools_ns_card($rows, $ipRow, $allNsJs)
           <p>Point your domain to these nameservers</p>
         </div>
       </div>
-      <button type="button" class="bns-copy-all" data-all-ns="' . $allNsJs . '">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Copy All
-      </button>
     </div>
-    <div class="bns-list">' . $rows . $ipRow . '</div>
+    <div class="bns-list">' . $rows . '</div>
   </div>
 </div>';
 }
 
-/** JavaScript to inject tab into Lagom panel-tabs nav. */
-function broodle_tools_ns_script()
+/* ─── Email List Output Builder ───────────────────────────── */
+
+function broodle_tools_build_email_output($emails, $serviceId)
+{
+    $count = count($emails);
+    $countLabel = $count === 1 ? '1 account' : $count . ' accounts';
+
+    $emailRows = '';
+    if ($count === 0) {
+        $emailRows = '<div style="padding:30px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px">'
+            . '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;display:block;opacity:.4"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>'
+            . 'No email accounts found</div>';
+    } else {
+        foreach ($emails as $email) {
+            $e = htmlspecialchars($email);
+            $initial = strtoupper(substr($email, 0, 1));
+            $emailRows .= '<div class="bem-row">'
+                . '<div class="bem-avatar">' . $initial . '</div>'
+                . '<div class="bem-email">' . $e . '</div>'
+                . '<button type="button" class="bns-copy" data-ns="' . $e . '" title="Copy">'
+                . '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                . '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>'
+                . '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+                . '</svg></button></div>';
+        }
+    }
+
+    return '
+<div id="broodle-email-source" style="display:none">
+  <div class="bns-card" style="margin-top:20px">
+    <div class="bns-card-head">
+      <div class="bns-card-head-left">
+        <div class="bns-icon-circle" style="background:#7c3aed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        </div>
+        <div>
+          <h5>Email Accounts</h5>
+          <p>' . $countLabel . '</p>
+        </div>
+      </div>
+    </div>
+    <div class="bns-list">' . $emailRows . '</div>
+  </div>
+</div>';
+}
+
+/* ─── Shared CSS + JS ─────────────────────────────────────── */
+
+function broodle_tools_shared_script()
 {
     return '
+<style>
+.bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
+.bns-card-head-left{display:flex;align-items:center;gap:12px}
+.bns-icon-circle{width:38px;height:38px;background:#0a5ed3;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.bns-card-head h5{margin:0;font-size:15px;font-weight:600;color:var(--heading-color,#111827)}
+.bns-card-head p{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
+.bns-list{padding:8px 10px}
+.bns-row,.bem-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:9px;transition:background .15s}
+.bns-row:hover,.bem-row:hover{background:var(--input-bg,#f9fafb)}
+.bns-row+.bns-row,.bem-row+.bem-row{border-top:1px solid var(--border-color,#f3f4f6)}
+.bns-badge{width:38px;height:28px;background:rgba(10,94,211,.08);color:#0a5ed3;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
+.bns-host{flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+.bns-copy{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color,#e5e7eb);border-radius:7px;background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);cursor:pointer;transition:all .15s;flex-shrink:0}
+.bns-copy:hover{color:#0a5ed3;border-color:#0a5ed3}
+.bns-copy.copied{color:#fff;background:#059669;border-color:#059669}
+.bem-avatar{width:34px;height:34px;border-radius:50%;background:rgba(124,58,237,.08);color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.bem-email{flex:1;font-size:14px;font-weight:500;color:var(--heading-color,#111827)}
+[data-theme="dark"] .bns-card,.dark-mode .bns-card{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bns-row:hover,[data-theme="dark"] .bem-row:hover,.dark-mode .bns-row:hover,.dark-mode .bem-row:hover{background:var(--input-bg,#111827)}
+[data-theme="dark"] .bns-copy,.dark-mode .bns-copy{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+</style>
+
 <script>
 (function(){
     "use strict";
     function broodleInit(){
-        var src=document.getElementById("broodle-ns-source");
-        if(!src)return;
-        var html=src.innerHTML;
-        src.parentNode.removeChild(src);
-        if(document.getElementById("broodleNsInfo"))return;
-
-        // === LAGOM: find ul.panel-tabs that contains #billingInfo or #domainInfo ===
+        // Find Lagom tab nav
         var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
-        if(!tabNav){
-            // fallback: any ul.nav-tabs inside .section-body
-            tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
-        }
-        if(tabNav){
-            // Find the sibling .tab-content
-            var panel=tabNav.closest(".panel")||tabNav.parentNode;
-            var tabContent=panel.querySelector(".tab-content");
-            if(tabContent){
-                // Add the nav tab
-                var li=document.createElement("li");
-                li.innerHTML="<a href=\"#broodleNsInfo\" data-toggle=\"tab\"><i class=\"fas fa-globe\"></i> Nameservers</a>";
-                tabNav.appendChild(li);
+        if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
+        var tabContent=panel?panel.querySelector(".tab-content"):null;
 
-                // Add the tab pane
-                var pane=document.createElement("div");
-                pane.className="panel-body tab-pane";
-                pane.id="broodleNsInfo";
-                pane.innerHTML=html;
-                tabContent.appendChild(pane);
-
-                broodleBindCopy(pane);
-                return;
-            }
-        }
-
-        // === SIX / TWENTY-ONE fallback: #tabOverview sibling ===
-        var tabOverview=document.getElementById("tabOverview");
-        if(tabOverview&&tabOverview.parentNode){
-            var pane2=document.createElement("div");
-            pane2.id="broodleNsInfo";
-            pane2.className="tab-pane fade";
-            pane2.innerHTML=html;
-            tabOverview.parentNode.appendChild(pane2);
-            broodleBindCopy(pane2);
-
-            // Try to add nav item to sidebar
-            var ovLink=document.querySelector("a[href=\"#tabOverview\"]");
-            if(ovLink){
-                var navC=ovLink.parentNode.parentNode;
-                var newLi=ovLink.parentNode.cloneNode(true);
-                var newA=newLi.querySelector("a");
-                if(newA){
-                    newA.setAttribute("href","#broodleNsInfo");
-                    newA.setAttribute("data-toggle","tab");
-                    newA.innerHTML="<i class=\"fas fa-globe fa-fw\"></i> Nameservers";
-                    newLi.classList.remove("active");
+        // Nameservers tab
+        var nsSrc=document.getElementById("broodle-ns-source");
+        if(nsSrc){
+            var nsHtml=nsSrc.innerHTML;
+            nsSrc.parentNode.removeChild(nsSrc);
+            if(!document.getElementById("broodleNsInfo")){
+                if(tabNav&&tabContent){
+                    var li=document.createElement("li");
+                    li.innerHTML="<a href=\"#broodleNsInfo\" data-toggle=\"tab\"><i class=\"fas fa-globe\"></i> Nameservers</a>";
+                    tabNav.appendChild(li);
+                    var p=document.createElement("div");
+                    p.className="panel-body tab-pane";p.id="broodleNsInfo";p.innerHTML=nsHtml;
+                    tabContent.appendChild(p);
+                    bindCopy(p);
+                } else {
+                    var to=document.getElementById("tabOverview");
+                    if(to&&to.parentNode){
+                        var p2=document.createElement("div");
+                        p2.id="broodleNsInfo";p2.className="tab-pane fade";p2.innerHTML=nsHtml;
+                        to.parentNode.appendChild(p2);bindCopy(p2);
+                    }
                 }
-                navC.appendChild(newLi);
             }
-            return;
+        }
+
+        // Email list tab
+        var emSrc=document.getElementById("broodle-email-source");
+        if(emSrc){
+            var emHtml=emSrc.innerHTML;
+            emSrc.parentNode.removeChild(emSrc);
+            if(!document.getElementById("broodleEmailInfo")){
+                if(tabNav&&tabContent){
+                    var li2=document.createElement("li");
+                    li2.innerHTML="<a href=\"#broodleEmailInfo\" data-toggle=\"tab\"><i class=\"fas fa-envelope\"></i> Emails</a>";
+                    tabNav.appendChild(li2);
+                    var ep=document.createElement("div");
+                    ep.className="panel-body tab-pane";ep.id="broodleEmailInfo";ep.innerHTML=emHtml;
+                    tabContent.appendChild(ep);
+                    bindCopy(ep);
+                } else {
+                    var to2=document.getElementById("tabOverview");
+                    if(to2&&to2.parentNode){
+                        var ep2=document.createElement("div");
+                        ep2.id="broodleEmailInfo";ep2.className="tab-pane fade";ep2.innerHTML=emHtml;
+                        to2.parentNode.appendChild(ep2);bindCopy(ep2);
+                    }
+                }
+            }
         }
     }
 
-    function broodleBindCopy(c){
+    function bindCopy(c){
         var btns=c.querySelectorAll(".bns-copy");
         for(var i=0;i<btns.length;i++){
             btns[i].addEventListener("click",function(){
                 doCopy(this.getAttribute("data-ns"),this);
             });
         }
-        var ca=c.querySelector(".bns-copy-all");
-        if(ca){
-            ca.addEventListener("click",function(){
-                var r=this.getAttribute("data-all-ns");
-                try{r=JSON.parse(r);}catch(e){}
-                doCopy(r,this);
-            });
-        }
     }
-
     function doCopy(t,btn){
         if(navigator.clipboard&&navigator.clipboard.writeText){
             navigator.clipboard.writeText(t).then(function(){done(btn);});
@@ -290,21 +409,12 @@ function broodle_tools_ns_script()
             var ta=document.createElement("textarea");
             ta.value=t;ta.style.cssText="position:fixed;opacity:0";
             document.body.appendChild(ta);ta.select();
-            document.execCommand("copy");document.body.removeChild(ta);
-            done(btn);
+            document.execCommand("copy");document.body.removeChild(ta);done(btn);
         }
     }
-
     function done(btn){
         btn.classList.add("copied");
-        var o=btn.innerHTML;
-        if(btn.classList.contains("bns-copy-all")){
-            btn.innerHTML="<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg> Copied!";
-        }
-        setTimeout(function(){
-            btn.classList.remove("copied");
-            if(btn.classList.contains("bns-copy-all"))btn.innerHTML=o;
-        },1500);
+        setTimeout(function(){btn.classList.remove("copied");},1500);
     }
 
     if(document.readyState==="loading"){
