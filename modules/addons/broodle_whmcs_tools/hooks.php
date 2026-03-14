@@ -34,7 +34,16 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     }
 
     // Only apply to cPanel module services
-    $serviceId = isset($vars['serviceid']) ? (int) $vars['serviceid'] : 0;
+    // WHMCS passes the service ID in different keys depending on version/context
+    $serviceId = 0;
+    if (!empty($vars['serviceid'])) {
+        $serviceId = (int) $vars['serviceid'];
+    } elseif (!empty($vars['id'])) {
+        $serviceId = (int) $vars['id'];
+    } elseif (!empty($_GET['id'])) {
+        $serviceId = (int) $_GET['id'];
+    }
+
     if (!$serviceId) {
         return '';
     }
@@ -292,15 +301,36 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Find the tabs container in Lagom theme
-    var tabsNav = document.querySelector(".nav-tabs, .tabs-nav, .service-tabs .nav");
-    var tabsContent = document.querySelector(".tab-content, .tabs-content, .service-tabs .tab-content");
+    // Try multiple selectors for different WHMCS templates (Lagom, Six, Twenty-One, etc.)
+    var tabSelectors = [
+        ".nav-tabs",
+        ".tabs-nav",
+        ".service-tabs .nav",
+        "[role=tablist]",
+        "ul.nav.nav-tabs",
+        "#tabsNav"
+    ];
+    var contentSelectors = [
+        ".tab-content",
+        ".tabs-content",
+        ".service-tabs .tab-content",
+        "#tabsContent"
+    ];
 
-    if (!tabsNav || !tabsContent) {
-        // Fallback: try common Lagom selectors
-        tabsNav = document.querySelector("[role=tablist]");
-        tabsContent = document.querySelector(".tab-content");
+    var tabsNav = null;
+    var tabsContent = null;
+
+    for (var i = 0; i < tabSelectors.length; i++) {
+        tabsNav = document.querySelector(tabSelectors[i]);
+        if (tabsNav) break;
     }
+    for (var j = 0; j < contentSelectors.length; j++) {
+        tabsContent = document.querySelector(contentSelectors[j]);
+        if (tabsContent) break;
+    }
+
+    var source = document.getElementById("broodle-ns-content-source");
+    if (!source) return;
 
     if (tabsNav && tabsContent) {
         // Create the tab link
@@ -325,15 +355,16 @@ document.addEventListener("DOMContentLoaded", function() {
         tabPane.className = "tab-pane fade";
         tabPane.id = "broodleNameserversTab";
         tabPane.setAttribute("role", "tabpanel");
-        tabPane.innerHTML = document.getElementById("broodle-ns-content-source").innerHTML;
+        tabPane.innerHTML = source.innerHTML;
 
         tabsContent.appendChild(tabPane);
+
+        // Remove the hidden source
+        source.parentNode.removeChild(source);
     } else {
         // No tabs found — render as a standalone panel below product details
-        var source = document.getElementById("broodle-ns-content-source");
-        if (source) {
-            source.style.display = "block";
-        }
+        source.style.display = "block";
+        source.style.marginTop = "20px";
     }
 });
 
