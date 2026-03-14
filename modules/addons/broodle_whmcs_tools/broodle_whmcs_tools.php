@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '1.5.0');
+define('BROODLE_TOOLS_VERSION', '1.6.0');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -55,6 +55,7 @@ function broodle_whmcs_tools_activate()
         $defaults = [
             'tweak_nameservers_tab' => '1',
             'tweak_email_list'      => '1',
+            'tweak_wordpress_toolkit' => '0',
             'auto_update_enabled'   => '0',
         ];
 
@@ -104,6 +105,7 @@ function broodle_whmcs_tools_output($vars)
         $tweaks = [
             'tweak_nameservers_tab',
             'tweak_email_list',
+            'tweak_wordpress_toolkit',
             'auto_update_enabled',
         ];
 
@@ -161,6 +163,7 @@ function broodle_tools_render_admin($vars, $settings)
     $moduleLink = $vars['modulelink'];
     $nameserversEnabled = !empty($settings['tweak_nameservers_tab']) && $settings['tweak_nameservers_tab'] === '1';
     $emailListEnabled = !empty($settings['tweak_email_list']) && $settings['tweak_email_list'] === '1';
+    $wpToolkitEnabled = !empty($settings['tweak_wordpress_toolkit']) && $settings['tweak_wordpress_toolkit'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -261,6 +264,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_email_list" value="1" ' . ($emailListEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>WordPress Toolkit</h4>
+                            <p>Show a WordPress tab on cPanel product details with full WP management (plugins, themes, security, auto-login).</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_wordpress_toolkit" value="1" ' . ($wpToolkitEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>
