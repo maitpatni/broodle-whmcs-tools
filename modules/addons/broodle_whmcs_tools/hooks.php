@@ -33,28 +33,37 @@ function broodle_tools_ns_enabled()
  */
 function broodle_tools_get_ns_for_service($serviceId)
 {
-    if (!$serviceId) return [];
+    if (!$serviceId) return ['ns' => [], 'ip' => ''];
 
     try {
         $service = Capsule::table('tblhosting')->where('id', $serviceId)->first();
-        if (!$service) return [];
+        if (!$service) return ['ns' => [], 'ip' => ''];
 
         $product = Capsule::table('tblproducts')->where('id', $service->packageid)->first();
-        if (!$product || strtolower($product->servertype) !== 'cpanel') return [];
+        if (!$product || strtolower($product->servertype) !== 'cpanel') return ['ns' => [], 'ip' => ''];
 
-        if (!$service->server) return [];
+        if (!$service->server) return ['ns' => [], 'ip' => ''];
 
         $server = Capsule::table('tblservers')->where('id', $service->server)->first();
-        if (!$server) return [];
+        if (!$server) return ['ns' => [], 'ip' => ''];
 
         $ns = [];
         for ($i = 1; $i <= 5; $i++) {
             $f = 'nameserver' . $i;
             if (!empty($server->$f)) $ns[] = $server->$f;
         }
-        return $ns;
+
+        // Get the dedicated IP for this service, fallback to server IP
+        $ip = '';
+        if (!empty($service->dedicatedip)) {
+            $ip = $service->dedicatedip;
+        } elseif (!empty($server->ipaddress)) {
+            $ip = $server->ipaddress;
+        }
+
+        return ['ns' => $ns, 'ip' => $ip];
     } catch (\Exception $e) {
-        return [];
+        return ['ns' => [], 'ip' => ''];
     }
 }
 
@@ -93,8 +102,24 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     }
     if (!$serviceId) return '';
 
-    $nameservers = broodle_tools_get_ns_for_service($serviceId);
+    $data = broodle_tools_get_ns_for_service($serviceId);
+    $nameservers = $data['ns'];
+    $serverIp = $data['ip'];
     if (empty($nameservers)) return '';
+
+    // Build IP row
+    $ipRow = '';
+    if (!empty($serverIp)) {
+        $eIp = htmlspecialchars($serverIp);
+        $ipRow = '<div class="bns-row">'
+            . '<div class="bns-badge" style="background:rgba(5,150,105,.08);color:#059669">IP</div>'
+            . '<div class="bns-host">' . $eIp . '</div>'
+            . '<button type="button" class="bns-copy" data-ns="' . $eIp . '" title="Copy">'
+            . '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+            . '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>'
+            . '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+            . '</svg></button></div>';
+    }
 
     $rows = '';
     foreach ($nameservers as $i => $ns) {
@@ -113,7 +138,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $allNsJs = htmlspecialchars(json_encode(implode("\n", $nameservers)), ENT_QUOTES);
 
     return broodle_tools_ns_css()
-         . broodle_tools_ns_card($rows, $allNsJs)
+         . broodle_tools_ns_card($rows, $ipRow, $allNsJs)
          . broodle_tools_ns_script();
 });
 
@@ -139,7 +164,6 @@ function broodle_tools_ns_css()
 .bns-copy{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color,#e5e7eb);border-radius:7px;background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);cursor:pointer;transition:all .15s;flex-shrink:0}
 .bns-copy:hover{color:#0a5ed3;border-color:#0a5ed3}
 .bns-copy.copied{color:#fff;background:#059669;border-color:#059669}
-.bns-note{padding:12px 22px 16px;font-size:12px;color:var(--text-muted,#9ca3af);display:flex;align-items:center;gap:6px;border-top:1px solid var(--border-color,#f3f4f6)}
 [data-theme="dark"] .bns-card,.dark-mode .bns-card{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bns-row:hover,.dark-mode .bns-row:hover{background:var(--input-bg,#111827)}
 [data-theme="dark"] .bns-copy,.dark-mode .bns-copy{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
@@ -147,7 +171,7 @@ function broodle_tools_ns_css()
 }
 
 /** Hidden card HTML. */
-function broodle_tools_ns_card($rows, $allNsJs)
+function broodle_tools_ns_card($rows, $ipRow, $allNsJs)
 {
     return '
 <div id="broodle-ns-source" style="display:none">
@@ -167,11 +191,7 @@ function broodle_tools_ns_card($rows, $allNsJs)
         Copy All
       </button>
     </div>
-    <div class="bns-list">' . $rows . '</div>
-    <div class="bns-note">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      DNS changes may take up to 48 hours to propagate worldwide.
-    </div>
+    <div class="bns-list">' . $rows . $ipRow . '</div>
   </div>
 </div>';
 }
