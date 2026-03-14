@@ -59,73 +59,24 @@ function broodle_tools_get_ns_for_service($serviceId)
 }
 
 /**
- * HOOK 1: Add "Nameservers" to the sidebar navigation.
+ * Inject nameservers tab into the product details page.
  *
- * In WHMCS Six template, the product details page has sidebar items that
- * toggle outer tab panes (#tabOverview, #tabAddons, #tabChangepw, etc.).
- * The sidebar panel is "Service Details Overview".
+ * Lagom uses this structure for the billing/domain tabs:
+ *   <div class="section-body">
+ *     <div class="panel panel-default">
+ *       <ul class="panel-tabs nav nav-tabs">
+ *         <li><a href="#billingInfo" data-toggle="tab">Billing Overview</a></li>
+ *         <li><a href="#domainInfo" data-toggle="tab">Domain</a></li>
+ *       </ul>
+ *       <div class="tab-content">
+ *         <div class="panel-body tab-pane active" id="billingInfo">...</div>
+ *         <div class="panel-body tab-pane" id="domainInfo">...</div>
+ *       </div>
+ *     </div>
+ *   </div>
  *
- * Lagom transforms these sidebar items into its own navigation component,
- * so adding here makes it appear natively in both themes.
- */
-add_hook('ClientAreaPrimarySidebar', 1, function (MenuItem $sidebar) {
-    if (!broodle_tools_ns_enabled()) return;
-
-    $serviceId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-    if (!$serviceId) return;
-
-    $ns = broodle_tools_get_ns_for_service($serviceId);
-    if (empty($ns)) return;
-
-    // Try known sidebar panel names on the product details page
-    $panel = $sidebar->getChild('Service Details Overview');
-
-    if (!$panel) {
-        $panel = $sidebar->getChild('Service Details Actions');
-    }
-
-    // Fallback: iterate all children looking for panels with tab-toggle items
-    if (!$panel) {
-        foreach ($sidebar->getChildren() as $child) {
-            foreach ($child->getChildren() as $grandchild) {
-                $uri = $grandchild->getUri();
-                if ($uri && strpos($uri, '#tab') === 0) {
-                    $panel = $child;
-                    break 2;
-                }
-            }
-        }
-    }
-
-    if (!$panel) return;
-
-    $nsItem = $panel->addChild('Nameservers', [
-        'label' => 'Nameservers',
-        'uri' => '#tabNameservers',
-        'order' => 50,
-        'icon' => 'fas fa-globe',
-    ]);
-
-    // Set dataToggleTab attribute — this is how WHMCS core sidebar tabs work
-    if (method_exists($nsItem, 'setAttribute')) {
-        $nsItem->setAttribute('dataToggleTab', true);
-    }
-});
-
-/**
- * HOOK 2: Inject the #tabNameservers pane + navigation item via JS.
- *
- * ClientAreaProductDetailsOutput renders inside #tabOverview.
- * We inject:
- *   1. CSS styles for the nameservers card
- *   2. The nameservers card HTML (hidden)
- *   3. JavaScript that:
- *      a) Creates #tabNameservers as a sibling of #tabOverview
- *      b) Adds a navigation link for Lagom (if sidebar hook didn't work)
- *      c) Wires up copy buttons
- *
- * This dual approach (sidebar hook + JS fallback) ensures it works
- * on Six, Twenty-One, Lagom, and any WHMCS theme.
+ * We inject JS that adds a "Nameservers" tab + pane into that exact structure.
+ * For Six/Twenty-One, falls back to #tabOverview sibling approach.
  */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     if (!broodle_tools_ns_enabled()) return '';
@@ -145,7 +96,6 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $nameservers = broodle_tools_get_ns_for_service($serviceId);
     if (empty($nameservers)) return '';
 
-    // Build NS rows
     $rows = '';
     foreach ($nameservers as $i => $ns) {
         $n = $i + 1;
@@ -160,18 +110,17 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
             . '</svg></button></div>';
     }
 
-    $allNsText = implode("\n", $nameservers);
-    $allNsJs = htmlspecialchars(json_encode($allNsText), ENT_QUOTES);
+    $allNsJs = htmlspecialchars(json_encode(implode("\n", $nameservers)), ENT_QUOTES);
 
-    return broodle_tools_get_ns_output($rows, $allNsJs);
+    return broodle_tools_ns_css()
+         . broodle_tools_ns_card($rows, $allNsJs)
+         . broodle_tools_ns_script();
 });
 
-/**
- * Build the full CSS + HTML + JS output for the nameservers tab.
- */
-function broodle_tools_get_ns_output($rows, $allNsJs)
+/** CSS for the nameservers card. */
+function broodle_tools_ns_css()
 {
-    $css = '
+    return '
 <style>
 .bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
@@ -187,10 +136,6 @@ function broodle_tools_get_ns_output($rows, $allNsJs)
 .bns-row+.bns-row{border-top:1px solid var(--border-color,#f3f4f6)}
 .bns-badge{width:38px;height:28px;background:rgba(10,94,211,.08);color:#0a5ed3;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
 .bns-host{flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
-</style>';
-
-    $css2 = '
-<style>
 .bns-copy{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color,#e5e7eb);border-radius:7px;background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);cursor:pointer;transition:all .15s;flex-shrink:0}
 .bns-copy:hover{color:#0a5ed3;border-color:#0a5ed3}
 .bns-copy.copied{color:#fff;background:#059669;border-color:#059669}
@@ -199,8 +144,12 @@ function broodle_tools_get_ns_output($rows, $allNsJs)
 [data-theme="dark"] .bns-row:hover,.dark-mode .bns-row:hover{background:var(--input-bg,#111827)}
 [data-theme="dark"] .bns-copy,.dark-mode .bns-copy{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 </style>';
+}
 
-    $cardHtml = '
+/** Hidden card HTML. */
+function broodle_tools_ns_card($rows, $allNsJs)
+{
+    return '
 <div id="broodle-ns-source" style="display:none">
   <div class="bns-card" style="margin-top:20px">
     <div class="bns-card-head">
@@ -225,166 +174,123 @@ function broodle_tools_get_ns_output($rows, $allNsJs)
     </div>
   </div>
 </div>';
-
-    return $css . $css2 . $cardHtml . broodle_tools_get_ns_js();
 }
 
-/**
- * Return the JavaScript that moves the NS content into a proper tab pane.
- */
-function broodle_tools_get_ns_js()
+/** JavaScript to inject tab into Lagom panel-tabs nav. */
+function broodle_tools_ns_script()
 {
     return '
 <script>
 (function(){
     "use strict";
-    function broodleInit() {
-        var src = document.getElementById("broodle-ns-source");
-        if (!src) return;
-        var html = src.innerHTML;
+    function broodleInit(){
+        var src=document.getElementById("broodle-ns-source");
+        if(!src)return;
+        var html=src.innerHTML;
         src.parentNode.removeChild(src);
+        if(document.getElementById("broodleNsInfo"))return;
 
-        // Find #tabOverview — this exists in Six, Twenty-One, and Lagom
-        var tabOverview = document.getElementById("tabOverview");
-        if (!tabOverview) return; // not on product details page
+        // === LAGOM: find ul.panel-tabs that contains #billingInfo or #domainInfo ===
+        var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
+        if(!tabNav){
+            // fallback: any ul.nav-tabs inside .section-body
+            tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+        }
+        if(tabNav){
+            // Find the sibling .tab-content
+            var panel=tabNav.closest(".panel")||tabNav.parentNode;
+            var tabContent=panel.querySelector(".tab-content");
+            if(tabContent){
+                // Add the nav tab
+                var li=document.createElement("li");
+                li.innerHTML="<a href=\"#broodleNsInfo\" data-toggle=\"tab\"><i class=\"fas fa-globe\"></i> Nameservers</a>";
+                tabNav.appendChild(li);
 
-        var parent = tabOverview.parentNode;
+                // Add the tab pane
+                var pane=document.createElement("div");
+                pane.className="panel-body tab-pane";
+                pane.id="broodleNsInfo";
+                pane.innerHTML=html;
+                tabContent.appendChild(pane);
 
-        // Check if #tabNameservers already exists (avoid duplicates)
-        if (document.getElementById("tabNameservers")) return;
+                broodleBindCopy(pane);
+                return;
+            }
+        }
 
-        // Create the tab pane as a sibling of #tabOverview
-        var pane = document.createElement("div");
-        pane.id = "tabNameservers";
-        pane.className = "tab-pane fade";
-        pane.innerHTML = html;
-        parent.appendChild(pane);
+        // === SIX / TWENTY-ONE fallback: #tabOverview sibling ===
+        var tabOverview=document.getElementById("tabOverview");
+        if(tabOverview&&tabOverview.parentNode){
+            var pane2=document.createElement("div");
+            pane2.id="broodleNsInfo";
+            pane2.className="tab-pane fade";
+            pane2.innerHTML=html;
+            tabOverview.parentNode.appendChild(pane2);
+            broodleBindCopy(pane2);
 
-        broodleBindCopy(pane);
-        broodleEnsureNavItem();
-    }
-
-    /**
-     * Ensure a navigation item exists for the Nameservers tab.
-     * The sidebar hook should have added it, but if Lagom or another theme
-     * renders navigation differently, we add it via JS as a fallback.
-     */
-    function broodleEnsureNavItem() {
-        // Check if a link to #tabNameservers already exists anywhere
-        var existing = document.querySelector("a[href=\"#tabNameservers\"]");
-        if (existing) return; // sidebar hook worked
-
-        // Lagom: look for the navigation container that holds tab links
-        // Lagom uses various selectors — try common ones
-        var navSelectors = [
-            ".service-detail-nav",
-            ".product-details-nav",
-            ".sidebar-nav-items",
-            ".list-group",
-            "ul.nav.nav-pills.nav-stacked",
-            ".panel-sidebar .list-group",
-            ".card-sidebar .list-group"
-        ];
-
-        var navContainer = null;
-        for (var i = 0; i < navSelectors.length; i++) {
-            var candidates = document.querySelectorAll(navSelectors[i]);
-            for (var j = 0; j < candidates.length; j++) {
-                // Check if this container has links pointing to #tab*
-                var links = candidates[j].querySelectorAll("a[href^=\"#tab\"]");
-                if (links.length > 0) {
-                    navContainer = candidates[j];
-                    break;
+            // Try to add nav item to sidebar
+            var ovLink=document.querySelector("a[href=\"#tabOverview\"]");
+            if(ovLink){
+                var navC=ovLink.parentNode.parentNode;
+                var newLi=ovLink.parentNode.cloneNode(true);
+                var newA=newLi.querySelector("a");
+                if(newA){
+                    newA.setAttribute("href","#broodleNsInfo");
+                    newA.setAttribute("data-toggle","tab");
+                    newA.innerHTML="<i class=\"fas fa-globe fa-fw\"></i> Nameservers";
+                    newLi.classList.remove("active");
                 }
+                navC.appendChild(newLi);
             }
-            if (navContainer) break;
+            return;
         }
-
-        if (!navContainer) {
-            // Last resort: find any element containing a link to #tabOverview
-            var overviewLink = document.querySelector("a[href=\"#tabOverview\"]");
-            if (overviewLink) {
-                navContainer = overviewLink.parentNode.parentNode;
-            }
-        }
-
-        if (!navContainer) return;
-
-        // Clone the structure of an existing nav item
-        var existingItem = navContainer.querySelector("a[href^=\"#tab\"]");
-        if (!existingItem) return;
-
-        var li = existingItem.parentNode;
-        var newItem = li.cloneNode(true);
-        var newLink = newItem.querySelector("a");
-        if (newLink) {
-            newLink.setAttribute("href", "#tabNameservers");
-            newLink.setAttribute("data-toggle", "tab");
-            // Update text content
-            var textNode = newLink.querySelector("span") || newLink;
-            // Remove existing icon if any
-            var icon = newLink.querySelector("i, svg");
-            textNode.textContent = " Nameservers";
-            if (icon) {
-                var newIcon = document.createElement("i");
-                newIcon.className = "fas fa-globe fa-fw";
-                newLink.insertBefore(newIcon, newLink.firstChild);
-            }
-            newItem.classList.remove("active");
-        }
-        navContainer.appendChild(newItem);
     }
 
-    function broodleBindCopy(container) {
-        var btns = container.querySelectorAll(".bns-copy");
-        for (var i = 0; i < btns.length; i++) {
-            btns[i].addEventListener("click", function() {
-                broodleCopy(this.getAttribute("data-ns"), this);
+    function broodleBindCopy(c){
+        var btns=c.querySelectorAll(".bns-copy");
+        for(var i=0;i<btns.length;i++){
+            btns[i].addEventListener("click",function(){
+                doCopy(this.getAttribute("data-ns"),this);
             });
         }
-        var copyAll = container.querySelector(".bns-copy-all");
-        if (copyAll) {
-            copyAll.addEventListener("click", function() {
-                var raw = this.getAttribute("data-all-ns");
-                try { raw = JSON.parse(raw); } catch(e) {}
-                broodleCopy(raw, this);
+        var ca=c.querySelector(".bns-copy-all");
+        if(ca){
+            ca.addEventListener("click",function(){
+                var r=this.getAttribute("data-all-ns");
+                try{r=JSON.parse(r);}catch(e){}
+                doCopy(r,this);
             });
         }
     }
 
-    function broodleCopy(text, btn) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(function(){ broodleDone(btn); });
-        } else {
-            var ta = document.createElement("textarea");
-            ta.value = text;
-            ta.style.cssText = "position:fixed;opacity:0";
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
-            broodleDone(btn);
+    function doCopy(t,btn){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+            navigator.clipboard.writeText(t).then(function(){done(btn);});
+        }else{
+            var ta=document.createElement("textarea");
+            ta.value=t;ta.style.cssText="position:fixed;opacity:0";
+            document.body.appendChild(ta);ta.select();
+            document.execCommand("copy");document.body.removeChild(ta);
+            done(btn);
         }
     }
 
-    function broodleDone(btn) {
+    function done(btn){
         btn.classList.add("copied");
-        var orig = btn.innerHTML;
-        if (btn.classList.contains("bns-copy-all")) {
-            btn.innerHTML = "<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg> Copied!";
+        var o=btn.innerHTML;
+        if(btn.classList.contains("bns-copy-all")){
+            btn.innerHTML="<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg> Copied!";
         }
-        setTimeout(function() {
+        setTimeout(function(){
             btn.classList.remove("copied");
-            if (btn.classList.contains("bns-copy-all")) btn.innerHTML = orig;
-        }, 1500);
+            if(btn.classList.contains("bns-copy-all"))btn.innerHTML=o;
+        },1500);
     }
 
-    // Run when DOM ready
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", broodleInit);
-    } else {
-        // Small delay to ensure Lagom has finished rendering
-        setTimeout(broodleInit, 100);
+    if(document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",broodleInit);
+    }else{
+        setTimeout(broodleInit,150);
     }
 })();
 </script>';
