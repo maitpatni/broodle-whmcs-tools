@@ -544,6 +544,9 @@ function broodle_tools_shared_script()
 .bwp-site:hover{background:var(--input-bg,#f9fafb)}
 .bwp-site+.bwp-site{border-top:1px solid var(--border-color,#f3f4f6)}
 .bwp-site-icon{width:40px;height:40px;border-radius:10px;background:rgba(33,117,155,.08);color:#21759b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bwp-site-thumb{width:64px;height:44px;border-radius:8px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:#f9fafb;flex-shrink:0;position:relative}
+.bwp-site-thumb-inner{width:1280px;height:800px;transform:scale(.05);transform-origin:top left;pointer-events:none}
+.bwp-site-thumb-inner iframe{width:1280px;height:800px;border:none;pointer-events:none}
 .bwp-site-info{flex:1;min-width:0}
 .bwp-site-domain{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bwp-site-meta{font-size:12px;color:var(--text-muted,#6b7280);margin:2px 0 0;display:flex;gap:12px;flex-wrap:wrap}
@@ -1122,9 +1125,10 @@ function broodle_tools_shared_script()
                         var updateBadge=updates.length?"<span class=\"bwp-status-badge update-available\">"+updates.join(", ")+"</span>":"";
                         var statusBadge=inst.alive?"<span class=\"bwp-status-badge active\">Online</span>":"<span class=\"bwp-status-badge inactive\">Offline</span>";
                         var sslBadge=inst.ssl?"<span title=\"SSL enabled\" style=\"color:#059669\">&#128274;</span>":"";
+                        var siteUrl=inst.site_url||("http://"+inst.domain);
 
                         html+="<div class=\"bwp-site\" data-id=\""+inst.id+"\">"
-                            +"<div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z\"/></svg></div>"
+                            +"<div class=\"bwp-site-thumb\"><div class=\"bwp-site-thumb-inner\"><iframe src=\""+bwpEsc(siteUrl)+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\" scrolling=\"no\" tabindex=\"-1\"></iframe></div></div>"
                             +"<div class=\"bwp-site-info\">"
                             +"<p class=\"bwp-site-domain\">"+bwpEsc(inst.displayTitle||inst.site_url||inst.domain)+" "+sslBadge+"</p>"
                             +"<div class=\"bwp-site-meta\">"
@@ -1401,19 +1405,18 @@ function broodle_tools_shared_script()
 
         bwpAjax({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
             if(r.success&&r.security){
-                // Normalize: if object with keys, convert to array
                 var items=r.security;
+                // Backend already returns a clean array of {id, title, status}
                 if(!Array.isArray(items)){
+                    // Fallback: convert object to array
                     var arr=[];
                     for(var k in items){
                         if(items.hasOwnProperty(k)){
                             var v=items[k];
                             if(typeof v==="object"&&v!==null){
-                                v.id=v.id||k;
-                                v.title=v.title||k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," ").replace(/^./,function(m){return m.toUpperCase();});
-                                arr.push(v);
+                                arr.push({id:v.id||k,title:v.title||k,status:v.status||"unknown"});
                             } else if(typeof v==="string"){
-                                arr.push({id:k,status:v,title:k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," ").replace(/^./,function(m){return m.toUpperCase();}),description:""});
+                                arr.push({id:k,title:k,status:v});
                             }
                         }
                     }
@@ -1425,13 +1428,14 @@ function broodle_tools_shared_script()
                 }
                 var appliedCount=0,notAppliedCount=0;
                 items.forEach(function(item){
-                    var s=item.status||"unknown";
+                    var s=(item.status||"unknown").toLowerCase();
                     if(s==="applied"||s==="ok"||s==="success") appliedCount++;
                     else notAppliedCount++;
                 });
+                var pct=Math.round(appliedCount/(appliedCount+notAppliedCount)*100);
                 var html="<div class=\"bwp-sec-summary\">"
                     +"<div class=\"bwp-sec-summary-bar\">"
-                    +"<div class=\"bwp-sec-summary-fill\" style=\"width:"+Math.round(appliedCount/(appliedCount+notAppliedCount)*100)+"%\"></div>"
+                    +"<div class=\"bwp-sec-summary-fill\" style=\"width:"+pct+"%\"></div>"
                     +"</div>"
                     +"<div class=\"bwp-sec-summary-text\">"
                     +"<span style=\"color:#059669\"><strong>"+appliedCount+"</strong> Applied</span>"
@@ -1439,29 +1443,29 @@ function broodle_tools_shared_script()
                     +"<span style=\"color:var(--text-muted,#6b7280)\"><strong>"+items.length+"</strong> Total</span>"
                     +"</div></div>";
                 items.forEach(function(item){
-                    var status=item.status||"unknown";
-                    var iconClass="warning";
-                    var icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
-                    if(status==="applied"||status==="ok"||status==="success"){
-                        iconClass="ok";
+                    var status=(item.status||"unknown").toLowerCase();
+                    var isApplied=status==="applied"||status==="ok"||status==="success";
+                    var isDanger=status==="error"||status==="danger"||status==="failed";
+                    var iconClass=isApplied?"ok":(isDanger?"danger":"warning");
+                    var icon;
+                    if(isApplied){
                         icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>";
-                    } else if(status==="error"||status==="danger"||status==="failed"){
-                        iconClass="danger";
+                    } else if(isDanger){
                         icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"/><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"/></svg>";
+                    } else {
+                        icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
                     }
-                    var measureId=item.id||item.measureId||"";
-                    var canApply=status!=="applied"&&status!=="ok"&&status!=="success"&&measureId;
-                    var canRevert=(status==="applied"||status==="ok"||status==="success")&&measureId;
-                    var statusLabel=status==="applied"?"Applied":(status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
+                    var measureId=item.id||"";
+                    var statusLabel=isApplied?"Applied":(status==="notapplied"||status==="not applied"||status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
                     html+="<div class=\"bwp-security-item\">"
                         +"<div class=\"bwp-sec-icon "+iconClass+"\">"+icon+"</div>"
                         +"<div class=\"bwp-sec-info\">"
-                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||"Security Check")+"</p>"
-                        +(item.description?"<p class=\"bwp-sec-detail\">"+bwpEsc(item.description)+"</p>":"")
+                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||measureId||"Security Check")+"</p>"
+                        +"<p class=\"bwp-sec-detail\">"+bwpEsc(statusLabel)+"</p>"
                         +"</div>"
                         +"<div class=\"bwp-item-actions\">"
-                        +(canApply?"<button class=\"bwp-item-btn update\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityApply(this)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> Apply</button>":"")
-                        +(canRevert?"<button class=\"bwp-item-btn inactive-state\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityRevert(this)\">Revert</button>":"")
+                        +(!isApplied&&measureId?"<button class=\"bwp-item-btn update\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityApply(this)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> Apply</button>":"")
+                        +(isApplied&&measureId?"<button class=\"bwp-item-btn inactive-state\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityRevert(this)\">Revert</button>":"")
                         +"<span class=\"bwp-sec-value "+iconClass+"\">"+bwpEsc(statusLabel)+"</span>"
                         +"</div></div>";
                 });
