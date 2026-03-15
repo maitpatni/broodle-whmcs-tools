@@ -154,15 +154,31 @@ Secondary colors:
 
 - **Primary target**: Lagom WHMCS theme (all versions including 2.x+)
 - **Also supports**: Default WHMCS Six theme, and WHMCS 8.8+ block-based layouts
+- **Lagom2 Template Structure** (`clientareaproductdetails.tpl`):
+  - Outer container: `<div class="tab-content margin-bottom">`
+  - Overview pane: `<div class="tab-pane active" id="Overview">`
+  - Inside Overview: `.product-details.clearfix` (product icon/name/domain)
+  - Hook output: `{foreach $hookOutput}` → `<div class="section section-hook-output">`
+  - Billing/Domain tabs: `.section > .section-body > .panel.panel-default > .panel-nav > ul.nav.nav-tabs` + `.tab-content`
+  - Billing info: `#billingInfo` pane with `.col-md-6.col-lg-3 > .row > .col-12 > .gray-base` (label) + sibling `.col-12` (value)
+  - Product info: `.product-info > ul.list-info` with `.list-info-title` / `.list-info-text` pairs
+  - Other top-level tab panes: `#Downloads`, `#Addons`, `#Changepw`
 - Tab navigation: Multiple fallback selectors for different WHMCS/theme versions
 - The `buildTabs` function uses a multi-strategy insertion approach:
-  1. Insert before Quick Shortcuts section
-  2. Insert after hidden default panels (`[data-bt-hidden]`)
-  3. Insert after panel-tabs panel
-  4. Insert at top of content area (`.content-padded`, `.content-area`, `.main-content`, `.section-body`, etc.)
-  5. Last resort: insert near the `bt-data` div
+  1. **Lagom2 primary**: Insert inside `#Overview` pane, after `.section-hook-output` divs
+  2. **Lagom2 fallback**: Insert after `.product-details` or `.module-client-area` panel
+  3. Insert before Quick Shortcuts section
+  4. Insert after hidden default panels (`[data-bt-hidden]`)
+  5. Insert after panel-tabs panel
+  6. Insert at top of content area (`.content-padded`, `.content-area`, `.main-content`, `.section-body`, etc.)
+  7. Last resort: insert near the `bt-data` div
+- The `hideDefaultTabs` function hides:
+  1. **Lagom2**: `.panel-product-details` and `.panel-nav` containing nav-tabs
+  2. Generic: `ul.panel-tabs.nav.nav-tabs`, `.product-details-tab-container`
+  3. Block-based: `.service-details-blocks`, `.product-details-blocks`
+  4. Section-based: sections with "quick create email" or "addons and extras" titles
+  5. Preserves `.section-hook-output` sections (our hook output lives there)
 - The `init()` function retries up to 10 times (150ms intervals) if the content area isn't ready yet (handles dynamic/lazy-loaded templates)
-- `hideDefaultTabs` hides both old panel-based and new block-based WHMCS structures (`.service-details-blocks`, `.product-details-blocks`, etc.)
 - Dark mode: CSS variables with `[data-theme="dark"]` and `.dark-mode` selectors
 - Uses CSS custom properties: `--card-bg`, `--border-color`, `--heading-color`, `--text-muted`, `--input-bg`
 

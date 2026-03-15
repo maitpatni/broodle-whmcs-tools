@@ -969,7 +969,7 @@ function init(){
     if(!dataEl) return;
     try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
     // Check if the content area is ready; if not, retry with a short delay (handles dynamic/lazy-loaded WHMCS templates)
-    var contentArea=document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".panel")||document.querySelector(".container");
+    var contentArea=document.querySelector("#Overview")||document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".panel")||document.querySelector(".container");
     if(!contentArea){
         if(!init._retries) init._retries=0;
         if(init._retries<10){init._retries++;setTimeout(init,150);return;}
@@ -981,7 +981,17 @@ function init(){
 }
 
 function hideDefaultTabs(){
-    var selectors=["ul.panel-tabs.nav.nav-tabs",".product-details-tab-container",".section-body > ul.nav.nav-tabs",".panel > ul.nav.nav-tabs"];
+    // Lagom2: hide the inner billing/domain/config panel (panel-nav + panel-product-details)
+    document.querySelectorAll(".panel-product-details").forEach(function(panel){
+        panel.setAttribute("data-bt-hidden","1");panel.style.display="none";
+    });
+    // Lagom2: hide panel-nav containing nav-tabs (billing overview, domain info, etc.)
+    document.querySelectorAll(".panel-nav").forEach(function(pn){
+        var panel=pn.closest(".panel");
+        if(panel){panel.setAttribute("data-bt-hidden","1");panel.style.display="none";}
+    });
+    // Generic: hide various nav-tabs patterns across WHMCS/theme versions
+    var selectors=["ul.panel-tabs.nav.nav-tabs",".product-details-tab-container",".section-body > ul.nav.nav-tabs",".panel > ul.nav.nav-tabs",".section-body > .panel > .panel-nav"];
     selectors.forEach(function(sel){
         document.querySelectorAll(sel).forEach(function(el){
             el.style.display="none";
@@ -992,11 +1002,13 @@ function hideDefaultTabs(){
     ["billingInfo","tabOverview","domainInfo","tabAddons"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
     var panelTabs=document.querySelector("ul.panel-tabs");
     if(panelTabs){var panel=panelTabs.closest(".panel");if(panel){panel.style.display="none";panel.setAttribute("data-bt-hidden","1");}}
+    // Lagom2: hide the product-details clearfix section (product icon/name/domain)
+    // We keep it visible — it shows the product name and domain
     // Hide Quick Create Email section (but NOT Quick Shortcuts / server actions)
     document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
     // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
     // Keep Quick Shortcuts visible — only hide Quick Create Email and Addons & Extras
-    document.querySelectorAll(".section").forEach(function(sec){
+    document.querySelectorAll(".section:not(.section-hook-output)").forEach(function(sec){
         var title=sec.querySelector(".section-title,h2,h3");
         if(!title) return;
         var t=(title.textContent||"").toLowerCase().trim();
@@ -1005,8 +1017,9 @@ function hideDefaultTabs(){
             sec.setAttribute("data-bt-hidden","1");
         }
     });
-    // Hide Addons & Extras panels (we move content to overview)
-    document.querySelectorAll(".panel,.card,.sidebar-box,.sidebar-panel").forEach(function(p){
+    // Hide Addons & Extras panels (we move content to overview) — but NOT panel-product-details (already handled)
+    document.querySelectorAll(".panel:not(.panel-product-details),.card,.sidebar-box,.sidebar-panel").forEach(function(p){
+        if(p.getAttribute("data-bt-hidden")==="1") return;
         var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title,.sidebar-header,.sidebar-title");
         if(!h) return;
         var t=(h.textContent||"").toLowerCase();
@@ -1062,8 +1075,9 @@ function enhanceSidebarActions(){
 }
 
 function buildTabs(){
-    // Find the main content area — try multiple selectors for different WHMCS/theme versions
-    var contentArea=document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".container-fluid > .row > .col-md-9,.container-fluid > .row > .col-lg-9")||document.querySelector(".panel:not([data-bt-hidden])")||document.querySelector(".container");
+    // Find the main content area — try Lagom2 first (#Overview pane), then other WHMCS/theme versions
+    var overviewPane=document.querySelector("#Overview");
+    var contentArea=overviewPane||document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".container-fluid > .row > .col-md-9,.container-fluid > .row > .col-lg-9")||document.querySelector(".panel:not([data-bt-hidden])")||document.querySelector(".container");
     if(!contentArea) return;
 
     // Find the Quick Shortcuts section (cPanel server module actions)
@@ -1139,6 +1153,41 @@ function buildTabs(){
     wrap.appendChild(nav);wrap.appendChild(panes);
     // Insert our tabs — try multiple strategies for different WHMCS/theme versions
     var inserted=false;
+    // Strategy 0 (Lagom2): Insert inside #Overview pane, after the hook-output sections and before the hidden panel
+    if(!inserted&&overviewPane){
+        // Find the last section-hook-output div (our hook output is rendered there)
+        var hookSections=overviewPane.querySelectorAll(".section-hook-output");
+        if(hookSections.length){
+            var lastHook=hookSections[hookSections.length-1];
+            if(lastHook.nextSibling){lastHook.parentNode.insertBefore(wrap,lastHook.nextSibling);}
+            else{lastHook.parentNode.appendChild(wrap);}
+            inserted=true;
+        }
+        // Fallback: insert after product-details div
+        if(!inserted){
+            var prodDetails=overviewPane.querySelector(".product-details");
+            if(prodDetails){
+                if(prodDetails.nextSibling){prodDetails.parentNode.insertBefore(wrap,prodDetails.nextSibling);}
+                else{prodDetails.parentNode.appendChild(wrap);}
+                inserted=true;
+            }
+        }
+        // Fallback: insert after module-client-area
+        if(!inserted){
+            var moduleArea=overviewPane.querySelector(".module-client-area");
+            var modulePanel=moduleArea?moduleArea.closest(".panel"):null;
+            if(modulePanel){
+                if(modulePanel.nextSibling){modulePanel.parentNode.insertBefore(wrap,modulePanel.nextSibling);}
+                else{modulePanel.parentNode.appendChild(wrap);}
+                inserted=true;
+            }
+        }
+        // Last Lagom2 fallback: append to #Overview
+        if(!inserted){
+            overviewPane.appendChild(wrap);
+            inserted=true;
+        }
+    }
     // Strategy 1: Insert before Quick Shortcuts section
     if(!inserted&&quickShortcutsSection&&quickShortcutsSection.parentNode){
         quickShortcutsSection.parentNode.insertBefore(wrap,quickShortcutsSection);
@@ -1198,25 +1247,61 @@ function buildOverviewPane(){
     var pane=$("bt-pane-overview");if(!pane) return;
     var pairs=[];
     var billingEl=$("billingInfo")||$("tabOverview");
+    // Lagom2: billing info is in the billingInfo tab-pane with .col-md-6.col-lg-3 > .row > .col-12 > .gray-base (label) + sibling .col-12 (value)
     if(billingEl){
-        billingEl.querySelectorAll(".col-sm-6.col-md-3.m-b-2x,.col-sm-6.col-md-3").forEach(function(col){
-            var lbl=col.querySelector(".text-faded.text-small,.text-faded");if(!lbl) return;
-            var label=lbl.textContent.trim().replace(/:$/,"");
-            var sib=lbl.nextElementSibling;var val=sib?sib.innerHTML.trim():"";
-            if(!val){var c=col.cloneNode(true);var l2=c.querySelector(".text-faded");if(l2)l2.remove();val=c.innerHTML.trim();}
-            if(label&&val) pairs.push({label:label,value:val});
+        // Strategy 1: Lagom2 layout — .col-md-6.col-lg-3 > .row > .col-12 pairs
+        billingEl.querySelectorAll(".col-md-6.col-lg-3,.col-lg-3").forEach(function(col){
+            var row=col.querySelector(".row");if(!row) return;
+            var cols=row.querySelectorAll(".col-12,.col-xs-12");
+            if(cols.length>=2){
+                var labelEl=cols[0].querySelector(".gray-base,span");
+                var label=labelEl?(labelEl.textContent||"").trim():(cols[0].textContent||"").trim();
+                label=label.replace(/:$/,"");
+                var val=cols[1].innerHTML.trim();
+                if(label&&val) pairs.push({label:label,value:val});
+            }
         });
+        // Strategy 2: Old WHMCS layout — .col-sm-6.col-md-3 with .text-faded
+        if(!pairs.length){
+            billingEl.querySelectorAll(".col-sm-6.col-md-3.m-b-2x,.col-sm-6.col-md-3").forEach(function(col){
+                var lbl=col.querySelector(".text-faded.text-small,.text-faded");if(!lbl) return;
+                var label=lbl.textContent.trim().replace(/:$/,"");
+                var sib=lbl.nextElementSibling;var val=sib?sib.innerHTML.trim():"";
+                if(!val){var c=col.cloneNode(true);var l2=c.querySelector(".text-faded");if(l2)l2.remove();val=c.innerHTML.trim();}
+                if(label&&val) pairs.push({label:label,value:val});
+            });
+        }
+        // Strategy 3: h4-based layout
         if(!pairs.length){var rc=billingEl.querySelector(".col-md-6.text-center");
             if(rc){rc.querySelectorAll("h4").forEach(function(h4){
                 var label=h4.textContent.trim().replace(/:$/,"");var val="";var s=h4.nextSibling;
                 while(s&&!(s.nodeType===1&&s.tagName==="H4")){if(s.nodeType===3)val+=s.textContent.trim();else if(s.nodeType===1)val+=s.outerHTML;s=s.nextSibling;}
                 val=val.trim();if(label&&val)pairs.push({label:label,value:val});
             });}}
+        // Strategy 4: row-based layout
         if(!pairs.length){billingEl.querySelectorAll(".row").forEach(function(r){
             var l=r.querySelector(".col-sm-5,.col-md-5");var v=r.querySelector(".col-sm-7,.col-md-7");
             if(l&&v)pairs.push({label:l.textContent.trim().replace(/:$/,""),value:v.innerHTML.trim()});
         });}
         billingEl.style.display="none";
+    }
+    // Lagom2: Also try to get product info from .product-info .list-info (status, reg date, billing cycle, etc.)
+    if(!pairs.length){
+        var productInfo=document.querySelector(".product-info .list-info");
+        if(productInfo){
+            productInfo.querySelectorAll("li").forEach(function(li){
+                var titleEl=li.querySelector(".list-info-title");
+                var textEl=li.querySelector(".list-info-text");
+                if(titleEl&&textEl){
+                    var label=(titleEl.textContent||"").trim().replace(/:$/,"");
+                    var val=textEl.innerHTML.trim();
+                    if(label&&val) pairs.push({label:label,value:val});
+                }
+            });
+            // Hide the product-info section since we're showing it in our overview
+            var productInfoSection=productInfo.closest(".product-info");
+            if(productInfoSection){productInfoSection.style.display="none";}
+        }
     }
 
     var html="";
