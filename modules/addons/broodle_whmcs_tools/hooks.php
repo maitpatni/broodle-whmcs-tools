@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.25\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.26\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -630,7 +630,7 @@ function broodle_tools_css_wp()
 
 /* Sidebar — icon box buttons */
 .list-group-tab-nav{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
-.list-group-tab-nav .list-group-item{display:flex!important;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.list-group-tab-nav .list-group-item{display:flex!important;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03);position:relative}
 .list-group-tab-nav .list-group-item:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.08);transform:translateY(-1px);color:#0a5ed3}
 .list-group-tab-nav .list-group-item .fas,.list-group-tab-nav .list-group-item .fa,.list-group-tab-nav .list-group-item .far,.list-group-tab-nav .list-group-item .fab,.list-group-tab-nav .list-group-item .fal,.list-group-tab-nav .list-group-item .lm,.list-group-tab-nav .list-group-item .ls{display:none!important}
 .list-group-tab-nav .list-group-item .loading{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
@@ -640,11 +640,11 @@ function broodle_tools_css_wp()
 .list-group-tab-nav .list-group-item .bt-action-label span{font-size:10px;font-weight:500;color:var(--text-muted,#6b7280)}
 /* Actions panel: CSS-only icons via ::before */
 .list-group-tab-nav .bt-act-cpanel::before,.list-group-tab-nav .bt-act-webmail::before,.list-group-tab-nav .bt-act-password::before,.list-group-tab-nav .bt-act-cancel::before{content:"";width:34px;height:34px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background-size:24px 24px;background-repeat:no-repeat;background-position:center}
-.list-group-tab-nav .bt-act-cpanel::before{background-color:rgba(255,106,0,.08);background-image:url(modules/addons/broodle_whmcs_tools/cpanel-icon.png);background-size:cover;border-radius:8px}
+.list-group-tab-nav .bt-act-cpanel::before{background-color:#ff6c2c;background-image:url(modules/addons/broodle_whmcs_tools/cpanel-icon.png);background-size:22px 22px;background-repeat:no-repeat;background-position:center;border-radius:8px}
 .list-group-tab-nav .bt-act-webmail::before{background-color:rgba(10,94,211,.08);background-image:url(modules/addons/broodle_whmcs_tools/webmail-icon.webp);background-size:cover;border-radius:8px}
 .list-group-tab-nav .bt-act-password::before{background-color:rgba(124,58,237,.08);background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%237c3aed%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Crect x=%273%27 y=%2711%27 width=%2718%27 height=%2711%27 rx=%272%27/%3E%3Cpath d=%27M7 11V7a5 5 0 0 1 10 0v4%27/%3E%3Ccircle cx=%2712%27 cy=%2716%27 r=%271%27/%3E%3C/svg%3E");background-size:18px 18px}
 .list-group-tab-nav .bt-act-cancel::before{background-color:rgba(239,68,68,.1);background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ef4444%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%2710%27/%3E%3Cline x1=%2715%27 y1=%279%27 x2=%279%27 y2=%2715%27/%3E%3Cline x1=%279%27 y1=%279%27 x2=%2715%27 y2=%2715%27/%3E%3C/svg%3E");background-size:18px 18px}
-.list-group-tab-nav .bt-act-cpanel:hover::before{background-color:rgba(255,106,0,.14)}
+.list-group-tab-nav .bt-act-cpanel:hover::before{background-color:#e55e22}
 .list-group-tab-nav .bt-act-webmail:hover::before{background-color:rgba(10,94,211,.14)}
 .list-group-tab-nav .bt-act-password:hover::before{background-color:rgba(124,58,237,.14)}
 .list-group-tab-nav .bt-act-cancel:hover::before{background-color:rgba(239,68,68,.16)}
