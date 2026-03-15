@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.28\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.29\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -639,15 +639,19 @@ function broodle_tools_css_wp()
 .list-group-tab-nav .list-group-item .bt-action-label{display:flex;flex-direction:column;gap:1px}
 .list-group-tab-nav .list-group-item .bt-action-label span{font-size:10px;font-weight:500;color:var(--text-muted,#6b7280)}
 /* Actions panel: CSS-only icons via ::before */
-.list-group-tab-nav .bt-act-cpanel::before,.list-group-tab-nav .bt-act-webmail::before,.list-group-tab-nav .bt-act-password::before,.list-group-tab-nav .bt-act-cancel::before{content:"";width:34px;height:34px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background-size:24px 24px;background-repeat:no-repeat;background-position:center}
+.list-group-tab-nav .bt-act-cpanel::before,.list-group-tab-nav .bt-act-webmail::before,.list-group-tab-nav .bt-act-password::before,.list-group-tab-nav .bt-act-cancel::before,.list-group-tab-nav .bt-act-upgrade::before,.list-group-tab-nav .bt-act-renew::before{content:"";width:34px;height:34px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background-size:24px 24px;background-repeat:no-repeat;background-position:center}
 .list-group-tab-nav .bt-act-cpanel::before{background-color:#ff6c2c;background-image:url(modules/addons/broodle_whmcs_tools/cpanel-icon.png);background-size:22px 22px;background-repeat:no-repeat;background-position:center;border-radius:8px}
 .list-group-tab-nav .bt-act-webmail::before{background-color:rgba(10,94,211,.08);background-image:url(modules/addons/broodle_whmcs_tools/webmail-icon.webp);background-size:cover;border-radius:8px}
 .list-group-tab-nav .bt-act-password::before{background-color:#ff6c2c;background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Crect x=%273%27 y=%2711%27 width=%2718%27 height=%2711%27 rx=%272%27/%3E%3Cpath d=%27M7 11V7a5 5 0 0 1 10 0v4%27/%3E%3Ccircle cx=%2712%27 cy=%2716%27 r=%271%27/%3E%3C/svg%3E");background-size:18px 18px}
 .list-group-tab-nav .bt-act-cancel::before{background-color:rgba(239,68,68,.1);background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ef4444%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%2710%27/%3E%3Cline x1=%2715%27 y1=%279%27 x2=%279%27 y2=%2715%27/%3E%3Cline x1=%279%27 y1=%279%27 x2=%2715%27 y2=%2715%27/%3E%3C/svg%3E");background-size:18px 18px}
+.list-group-tab-nav .bt-act-upgrade::before{background-color:#ff6c2c;background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpolyline points=%2717 1 21 5 17 9%27/%3E%3Cpath d=%27M3 11V9a4 4 0 0 1 4-4h14%27/%3E%3Cpolyline points=%277 23 3 19 7 15%27/%3E%3Cpath d=%27M21 13v2a4 4 0 0 1-4 4H3%27/%3E%3C/svg%3E");background-size:18px 18px}
+.list-group-tab-nav .bt-act-renew::before{background-color:#ff6c2c;background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpolyline points=%2723 4 23 10 17 10%27/%3E%3Cpath d=%27M20.49 15a9 9 0 1 1-2.12-9.36L23 10%27/%3E%3C/svg%3E");background-size:18px 18px}
 .list-group-tab-nav .bt-act-cpanel:hover::before{background-color:#e55e22}
 .list-group-tab-nav .bt-act-webmail:hover::before{background-color:rgba(10,94,211,.14)}
 .list-group-tab-nav .bt-act-password:hover::before{background-color:#e55e22}
 .list-group-tab-nav .bt-act-cancel:hover::before{background-color:rgba(239,68,68,.16)}
+.list-group-tab-nav .bt-act-upgrade:hover::before{background-color:#e55e22}
+.list-group-tab-nav .bt-act-renew:hover::before{background-color:#e55e22}
 /* Overview panel items (DOM-modified) */
 .list-group-tab-nav .list-group-item[id*="cpanel"] .bt-action-icon{background:rgba(255,106,0,.08);color:#ff6a00}
 .list-group-tab-nav .list-group-item[id*="webmail"] .bt-action-icon{background:rgba(10,94,211,.08);color:#0a5ed3}
