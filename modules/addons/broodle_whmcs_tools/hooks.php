@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.23\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.24\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -630,7 +630,7 @@ function broodle_tools_css_wp()
 
 /* Sidebar — icon box buttons */
 .list-group-tab-nav{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
-.list-group-tab-nav .list-group-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.list-group-tab-nav .list-group-item{display:flex!important;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .list-group-tab-nav .list-group-item:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.08);transform:translateY(-1px);color:#0a5ed3}
 .list-group-tab-nav .list-group-item .fas,.list-group-tab-nav .list-group-item .fa,.list-group-tab-nav .list-group-item .far,.list-group-tab-nav .list-group-item .fab,.list-group-tab-nav .list-group-item .fal,.list-group-tab-nav .list-group-item .lm,.list-group-tab-nav .list-group-item .ls{display:none}
 .list-group-tab-nav .list-group-item .bt-action-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
