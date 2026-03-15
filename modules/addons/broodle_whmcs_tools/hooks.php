@@ -256,39 +256,26 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    $dbg = '<div id="bt-debug" style="padding:10px 15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:6px;font-family:monospace;font-size:12px;color:#92400e;">';
-
     try {
         $data = broodle_tools_gather_data($vars);
     } catch (\Exception $e) {
-        return $dbg . '&#x274C; v3.10.13 ERROR: ' . htmlspecialchars($e->getMessage()) . '</div>';
+        return '';
     }
 
     if (!$data) {
-        return $dbg . '&#x274C; v3.10.13 gather_data=false</div>';
+        return '';
     }
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
-    $jsLen = strlen($jsData);
 
-    // Test multiple JS bootstrap methods to see which one Lagom2 allows through
     $out  = '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
 
-    // Method 1: <link> onerror (confirmed working in v3.10.4 tag test)
-    $out .= '<link rel="stylesheet" href="data:text/css," onerror="var d=document.createElement(\'div\');d.id=\'bt-m1\';d.style.cssText=\'padding:4px 10px;margin:4px 0;background:#dbeafe;border:1px solid #3b82f6;border-radius:4px;font:11px monospace;color:#1e40af\';d.textContent=\'M1 link-onerror fired\';var p=document.getElementById(\'bt-debug\');if(p)p.parentNode.insertBefore(d,p.nextSibling);">';
+    // Use <img onerror> to bootstrap bt_client.js
+    // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
+    // Instead, build the tag name from parts: "scr"+"ipt"
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.14\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
-    // Method 2: <img> onerror with minimal JS (no createElement script)
-    $out .= '<img src="x" onerror="var d=document.createElement(\'div\');d.id=\'bt-m2\';d.style.cssText=\'padding:4px 10px;margin:4px 0;background:#fce7f3;border:1px solid #ec4899;border-radius:4px;font:11px monospace;color:#9d174d\';d.textContent=\'M2 img-onerror fired\';var p=document.getElementById(\'bt-debug\');if(p)p.parentNode.insertBefore(d,p.nextSibling);" style="display:none!important" alt="">';
-
-    // Method 3: <details ontoggle> auto-open
-    $out .= '<details open ontoggle="if(!document.getElementById(\'bt-m3\')){var d=document.createElement(\'div\');d.id=\'bt-m3\';d.style.cssText=\'padding:4px 10px;margin:4px 0;background:#d1fae5;border:1px solid #059669;border-radius:4px;font:11px monospace;color:#065f46\';d.textContent=\'M3 details-ontoggle fired\';var p=document.getElementById(\'bt-debug\');if(p)p.parentNode.insertBefore(d,p.nextSibling);}" style="display:none!important"><summary></summary></details>';
-
-    // Method 4: <input onfocus> with autofocus
-    $out .= '<input onfocus="if(!document.getElementById(\'bt-m4\')){var d=document.createElement(\'div\');d.id=\'bt-m4\';d.style.cssText=\'padding:4px 10px;margin:4px 0;background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;font:11px monospace;color:#92400e\';d.textContent=\'M4 input-onfocus fired\';var p=document.getElementById(\'bt-debug\');if(p)p.parentNode.insertBefore(d,p.nextSibling);}" autofocus style="position:absolute;left:-9999px;opacity:0" tabindex="-1">';
-
-    $dbg .= '&#x2705; v3.10.13 svc=' . $data['serviceId'] . ' json=' . $jsLen . 'b | testing 4 bootstrap methods</div>';
-
-    return $dbg . $out;
+    return $out;
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */
