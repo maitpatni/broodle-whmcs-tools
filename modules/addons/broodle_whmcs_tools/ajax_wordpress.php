@@ -428,51 +428,78 @@ switch ($action) {
         $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
             "/v1/security-measures/checker?installationId={$instId}");
 
-        if ($result['success'] && is_array($result['data'])) {
-            // WP Toolkit returns { "measureId": { "status": "..." }, ... } — normalize to array
+        if ($result['success']) {
             $raw = $result['data'];
             $measures = [];
+
             // Known measure titles for human-readable display
             $titles = [
-                'blockAccessToSensitiveFiles'       => 'Block access to sensitive files',
-                'blockAccessToHtaccess'             => 'Block access to .htaccess and .htpasswd',
-                'blockAccessToXmlrpc'               => 'Block unauthorized access to xmlrpc.php',
-                'blockAuthorScans'                  => 'Block author scans',
-                'blockDirectoryBrowsing'            => 'Block directory browsing',
-                'blockPhpExecutionInWpContent'      => 'Forbid execution of PHP scripts in wp-content/uploads',
-                'blockPhpExecutionInWpIncludes'     => 'Forbid execution of PHP scripts in wp-includes',
-                'blockPhpExecutionInCacheDir'       => 'Disable PHP execution in cache directories',
-                'changeDefaultAdminUsername'         => 'Change default administrator username',
-                'changeDefaultDbPrefix'             => 'Change default database table prefix',
-                'configureSecurityKeys'             => 'Configure security keys',
-                'disableFileEditing'                => 'Disable file editing in WordPress Dashboard',
-                'disableScriptsConcatenation'       => 'Disable scripts concatenation for admin panel',
-                'enableBotProtection'               => 'Enable bot protection',
-                'restrictAccessToFilesAndDirectories'=> 'Restrict access to files and directories',
-                'turnOffPingbacks'                  => 'Turn off pingbacks',
+                'blockAccessToSensitiveFiles'        => 'Block access to sensitive files',
+                'blockAccessToHtaccess'              => 'Block access to .htaccess and .htpasswd',
+                'blockAccessToXmlrpc'                => 'Block unauthorized access to xmlrpc.php',
+                'blockAuthorScans'                   => 'Block author scans',
+                'blockDirectoryBrowsing'             => 'Block directory browsing',
+                'blockPhpExecutionInWpContent'       => 'Forbid PHP execution in wp-content/uploads',
+                'blockPhpExecutionInWpIncludes'      => 'Forbid PHP execution in wp-includes',
+                'blockPhpExecutionInCacheDir'        => 'Disable PHP execution in cache directories',
+                'changeDefaultAdminUsername'          => 'Change default administrator username',
+                'changeDefaultDbPrefix'              => 'Change default database table prefix',
+                'configureSecurityKeys'              => 'Configure security keys',
+                'disableFileEditing'                 => 'Disable file editing in WordPress Dashboard',
+                'disableScriptsConcatenation'        => 'Disable scripts concatenation for admin panel',
+                'enableBotProtection'                => 'Enable bot protection',
+                'restrictAccessToFilesAndDirectories' => 'Restrict access to files and directories',
+                'turnOffPingbacks'                   => 'Turn off pingbacks',
             ];
-            foreach ($raw as $key => $val) {
-                if (is_array($val)) {
-                    $measures[] = [
-                        'id'          => $key,
-                        'title'       => $titles[$key] ?? ucwords(str_replace(['-', '_'], ' ', preg_replace('/([a-z])([A-Z])/', '$1 $2', $key))),
-                        'status'      => $val['status'] ?? 'unknown',
-                        'description' => $val['description'] ?? $val['detail'] ?? '',
-                    ];
-                } elseif (is_string($val)) {
-                    // Simple "measureId" => "status" format
-                    $measures[] = [
-                        'id'     => $key,
-                        'title'  => $titles[$key] ?? ucwords(str_replace(['-', '_'], ' ', preg_replace('/([a-z])([A-Z])/', '$1 $2', $key))),
-                        'status' => $val,
-                        'description' => '',
-                    ];
+
+            // Helper to make a title from camelCase ID
+            $makeTitle = function ($id) use ($titles) {
+                if (isset($titles[$id])) return $titles[$id];
+                // Convert camelCase to words
+                $words = preg_replace('/([a-z])([A-Z])/', '$1 $2', $id);
+                $words = str_replace(['_', '-'], ' ', $words);
+                return ucfirst($words);
+            };
+
+            if (is_array($raw)) {
+                foreach ($raw as $key => $val) {
+                    if (is_array($val)) {
+                        // Could be { "id": "measureName", "status": "applied" } (indexed array)
+                        // or { "measureName": { "status": "applied" } } (associative)
+                        if (isset($val['id']) && isset($val['status'])) {
+                            // Indexed array item with id+status
+                            $mid = $val['id'];
+                            $measures[] = [
+                                'id'     => $mid,
+                                'title'  => $makeTitle($mid),
+                                'status' => $val['status'],
+                            ];
+                        } elseif (isset($val['status'])) {
+                            // Associative: key is the measure ID
+                            $measures[] = [
+                                'id'     => $key,
+                                'title'  => $makeTitle($key),
+                                'status' => $val['status'],
+                            ];
+                        } else {
+                            // Unknown structure, try to extract something useful
+                            $measures[] = [
+                                'id'     => is_string($key) ? $key : ($val['id'] ?? "measure_{$key}"),
+                                'title'  => $makeTitle(is_string($key) ? $key : ($val['id'] ?? "measure_{$key}")),
+                                'status' => $val['status'] ?? 'unknown',
+                            ];
+                        }
+                    } elseif (is_string($val)) {
+                        // Simple key => status format
+                        $measures[] = [
+                            'id'     => $key,
+                            'title'  => $makeTitle($key),
+                            'status' => $val,
+                        ];
+                    }
                 }
             }
-            // If it was already an indexed array, pass through
-            if (empty($measures) && isset($raw[0])) {
-                $measures = $raw;
-            }
+
             echo json_encode(['success' => true, 'security' => $measures]);
         } else {
             echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Security scan failed']);
