@@ -33,6 +33,7 @@ function broodle_tools_wp_enabled() { return broodle_tools_setting_enabled('twea
 function broodle_tools_domain_enabled() { return broodle_tools_setting_enabled('tweak_domain_management'); }
 function broodle_tools_db_enabled() { return broodle_tools_setting_enabled('tweak_database_management'); }
 function broodle_tools_ssl_enabled() { return broodle_tools_setting_enabled('tweak_ssl_management'); }
+function broodle_tools_dns_enabled() { return broodle_tools_setting_enabled('tweak_dns_management'); }
 
 function broodle_tools_get_service_id($vars)
 {
@@ -153,6 +154,7 @@ function broodle_tools_ensure_defaults()
             'tweak_domain_management'  => '1',
             'tweak_database_management'=> '1',
             'tweak_ssl_management'     => '1',
+            'tweak_dns_management'     => '1',
             'auto_update_enabled'      => '0',
         ];
         foreach ($defaults as $key => $value) {
@@ -224,6 +226,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $wpEnabled = broodle_tools_wp_enabled();
     $dbEnabled = broodle_tools_db_enabled();
     $sslEnabled = broodle_tools_ssl_enabled();
+    $dnsEnabled = broodle_tools_dns_enabled();
 
     // JSON data for JS
     $jsData = json_encode([
@@ -234,6 +237,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         'wpEnabled' => $wpEnabled,
         'dbEnabled' => $dbEnabled,
         'sslEnabled' => $sslEnabled,
+        'dnsEnabled' => $dnsEnabled,
         'nsEnabled' => broodle_tools_ns_enabled(),
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
@@ -300,9 +304,9 @@ function broodle_tools_shared_styles()
 function broodle_tools_css_hide()
 {
     return '<style>
-.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.quick-shortcut-container,.quick-shortcut,.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.sidebar-shortcuts,.sidebar-quick-create{display:none!important}
-.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"],.panel-body .quick-shortcut,.panel-body .quick-shortcuts{display:none!important}
-.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"],.sidebar-right .quick-shortcut{display:none!important}
+.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section{display:none!important}
+.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"]{display:none!important}
+.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"]{display:none!important}
 #Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
 #cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel{display:none!important}
 .bt-hidden-section{display:none!important}
@@ -931,9 +935,10 @@ function hideDefaultTabs(){
     ["billingInfo","tabOverview","domainInfo","tabAddons"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
     var panelTabs=document.querySelector("ul.panel-tabs");
     if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
-    // Hide Quick Create Email section
-    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut],#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
+    // Hide Quick Create Email section (but NOT Quick Shortcuts / server actions)
+    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
     // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
+    // Keep Quick Shortcuts visible — only hide Quick Create Email and Addons & Extras
     document.querySelectorAll(".section").forEach(function(sec){
         var title=sec.querySelector(".section-title,h2,h3");
         if(!title) return;
@@ -948,7 +953,7 @@ function hideDefaultTabs(){
         var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title,.sidebar-header,.sidebar-title");
         if(!h) return;
         var t=(h.textContent||"").toLowerCase();
-        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1||t.indexOf("shortcut")!==-1){
+        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1){
             p.setAttribute("data-bt-hidden","1");p.style.display="none";
         }
     });
@@ -960,9 +965,30 @@ function buildTabs(){
     var target=document.querySelector(".panel");
     if(!target) target=document.querySelector(".section-body");
     if(!target) return;
-    var hiddenPanel=document.querySelector("ul.panel-tabs");
-    var insertAfter=hiddenPanel?hiddenPanel.closest(".panel"):null;
-    if(!insertAfter) insertAfter=target;
+
+    // Find the Quick Shortcuts section (cPanel server module actions)
+    var quickShortcutsSection=null;
+    document.querySelectorAll(".section").forEach(function(sec){
+        if(quickShortcutsSection) return;
+        var title=sec.querySelector(".section-title,h2,h3");
+        if(!title) return;
+        var t=(title.textContent||"").toLowerCase().trim();
+        if(t.indexOf("quick shortcut")!==-1||t.indexOf("actions")!==-1||t.indexOf("server actions")!==-1){
+            quickShortcutsSection=sec;
+        }
+    });
+    // Also check panels with shortcut-related headings
+    if(!quickShortcutsSection){
+        document.querySelectorAll(".panel,.card").forEach(function(p){
+            if(quickShortcutsSection) return;
+            var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title");
+            if(!h) return;
+            var t=(h.textContent||"").toLowerCase();
+            if(t.indexOf("quick shortcut")!==-1||t.indexOf("shortcut")!==-1||t.indexOf("actions")!==-1){
+                quickShortcutsSection=p;
+            }
+        });
+    }
 
     var wrap=document.createElement("div");
     wrap.className="bt-wrap";wrap.id="bt-wrap";
@@ -976,6 +1002,7 @@ function buildTabs(){
         {id:"ssl",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\\x27/></svg>",label:"SSL",check:"sslEnabled"},
         {id:"email",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x272\\x27 y=\\x274\\x27 width=\\x2720\\x27 height=\\x2716\\x27 rx=\\x272\\x27/><path d=\\x27m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\\x27/></svg>",label:"Email Accounts",check:"emailEnabled"},
         {id:"databases",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><ellipse cx=\\x2712\\x27 cy=\\x275\\x27 rx=\\x279\\x27 ry=\\x273\\x27/><path d=\\x27M21 12c0 1.66-4 3-9 3s-9-1.34-9-3\\x27/><path d=\\x27M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5\\x27/></svg>",label:"Databases",check:"dbEnabled"},
+        {id:"dns",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M12 2L2 7l10 5 10-5-10-5z\\x27/><path d=\\x27M2 17l10 5 10-5\\x27/><path d=\\x27M2 12l10 5 10-5\\x27/></svg>",label:"DNS Manager",check:"dnsEnabled"},
         {id:"wordpress",icon:wpIcon,label:"WordPress",check:"wpEnabled"}
     ];
 
@@ -998,6 +1025,7 @@ function buildTabs(){
             if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
             if(t.id==="wordpress"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadWpInstances();}
             if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
+            if(t.id==="dns"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDnsDomains();}
         });
         nav.appendChild(btn);
 
@@ -1009,8 +1037,22 @@ function buildTabs(){
     });
 
     wrap.appendChild(nav);wrap.appendChild(panes);
-    if(insertAfter&&insertAfter.parentNode) insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
-    else document.querySelector(".main-content,.content-padded,.section-body,.container").appendChild(wrap);
+    // Insert our tabs BEFORE the Quick Shortcuts section so tabs appear first
+    if(quickShortcutsSection&&quickShortcutsSection.parentNode){
+        quickShortcutsSection.parentNode.insertBefore(wrap,quickShortcutsSection);
+    } else {
+        // Fallback: insert after the hidden panel or at the top of the content area
+        var hiddenPanel=document.querySelector("ul.panel-tabs");
+        var insertAfter=hiddenPanel?hiddenPanel.closest(".panel"):null;
+        if(insertAfter&&insertAfter.parentNode){
+            insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
+        } else {
+            var container=document.querySelector(".main-content,.content-padded,.section-body,.container");
+            if(container){
+                container.insertBefore(wrap,container.firstChild);
+            }
+        }
+    }
 
     buildOverviewPane();
     if(C.domainEnabled) buildDomainsPane();

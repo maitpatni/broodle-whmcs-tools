@@ -44,6 +44,7 @@ if (!$service || (int) $service->userid !== $clientId) {
 $domainActions = ['get_parent_domains', 'add_addon_domain', 'add_subdomain', 'delete_domain'];
 $dbActions = ['list_databases', 'create_database', 'create_db_user', 'delete_database', 'delete_db_user', 'assign_db_user', 'get_phpmyadmin_url'];
 $sslActions = ['ssl_status', 'start_autossl', 'autossl_progress', 'autossl_problems'];
+$dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_edit_record', 'dns_delete_record', 'dns_bulk_delete'];
 
 // Handle addon description lookup (no cPanel needed)
 if ($action === 'get_addon_description') {
@@ -89,6 +90,8 @@ if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_database_management';
 } elseif (in_array($action, $sslActions)) {
     $featureKey = 'tweak_ssl_management';
+} elseif (in_array($action, $dnsActions)) {
+    $featureKey = 'tweak_dns_management';
 } else {
     $featureKey = 'tweak_email_list';
 }
@@ -917,6 +920,370 @@ switch ($action) {
         }
 
         echo json_encode(['success' => true, 'problems' => $problems]);
+        break;
+
+    // ── DNS Management Actions ──
+
+    case 'dns_list_domains':
+        // Get all domains for this cPanel account
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=DomainInfo"
+             . "&cpanel_jsonapi_func=list_domains";
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        $domains = [];
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $data = $json['result']['data'] ?? [];
+            if (!empty($data['main_domain'])) $domains[] = ['domain' => $data['main_domain'], 'type' => 'main'];
+            if (!empty($data['addon_domains'])) {
+                foreach ($data['addon_domains'] as $d) $domains[] = ['domain' => $d, 'type' => 'addon'];
+            }
+            if (!empty($data['parked_domains'])) {
+                foreach ($data['parked_domains'] as $d) $domains[] = ['domain' => $d, 'type' => 'parked'];
+            }
+            if (!empty($data['sub_domains'])) {
+                $addonSet = array_map('strtolower', $data['addon_domains'] ?? []);
+                $mainDomain = strtolower($data['main_domain'] ?? '');
+                foreach ($data['sub_domains'] as $sd) {
+                    $sdLower = strtolower($sd);
+                    $isAddonSub = false;
+                    foreach ($addonSet as $ad) {
+                        if ($sdLower === strtolower($ad) . '.' . $mainDomain) { $isAddonSub = true; break; }
+                    }
+                    if (!$isAddonSub) $domains[] = ['domain' => $sd, 'type' => 'sub'];
+                }
+            }
+        }
+        if (empty($domains) && !empty($service->domain)) {
+            $domains[] = ['domain' => $service->domain, 'type' => 'main'];
+        }
+        echo json_encode(['success' => true, 'domains' => $domains]);
+        break;
+
+    case 'dns_fetch_records':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        if (empty($domain)) {
+            echo json_encode(['success' => false, 'message' => 'Missing domain']);
+            exit;
+        }
+
+        // Use cPanel API 2 ZoneEdit::fetchzone_records (no UAPI equivalent exists)
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=ZoneEdit"
+             . "&cpanel_jsonapi_func=fetchzone_records"
+             . "&domain=" . urlencode($domain)
+             . "&customonly=0";
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, 30);
+        $records = [];
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $data = $json['cpanelresult']['data'] ?? [];
+            foreach ($data as $rec) {
+                if (!is_array($rec)) continue;
+                $type = $rec['type'] ?? '';
+                // Skip raw/comment lines and $TTL directives
+                if ($type === ':RAW' || $type === '$TTL' || $type === '') continue;
+                $record = [
+                    'line'    => $rec['Line'] ?? ($rec['line'] ?? 0),
+                    'type'    => $type,
+                    'name'    => $rec['name'] ?? '',
+                    'ttl'     => (int)($rec['ttl'] ?? 14400),
+                    'class'   => $rec['class'] ?? 'IN',
+                ];
+                switch ($type) {
+                    case 'A':
+                    case 'AAAA':
+                        $record['address'] = $rec['address'] ?? '';
+                        break;
+                    case 'CNAME':
+                        $record['cname'] = $rec['cname'] ?? '';
+                        break;
+                    case 'MX':
+                        $record['exchange'] = $rec['exchange'] ?? '';
+                        $record['preference'] = (int)($rec['preference'] ?? 0);
+                        break;
+                    case 'TXT':
+                        $record['txtdata'] = $rec['txtdata'] ?? '';
+                        break;
+                    case 'SRV':
+                        $record['priority'] = (int)($rec['priority'] ?? 0);
+                        $record['weight'] = (int)($rec['weight'] ?? 0);
+                        $record['port'] = (int)($rec['port'] ?? 0);
+                        $record['target'] = $rec['target'] ?? '';
+                        break;
+                    case 'CAA':
+                        $record['flag'] = (int)($rec['flag'] ?? 0);
+                        $record['tag'] = $rec['tag'] ?? '';
+                        $record['value'] = $rec['value'] ?? '';
+                        break;
+                    case 'NS':
+                        $record['nsdname'] = $rec['nsdname'] ?? '';
+                        break;
+                    case 'SOA':
+                        $record['mname'] = $rec['mname'] ?? '';
+                        $record['rname'] = $rec['rname'] ?? '';
+                        $record['serial'] = $rec['serial'] ?? '';
+                        $record['refresh'] = (int)($rec['refresh'] ?? 0);
+                        $record['retry'] = (int)($rec['retry'] ?? 0);
+                        $record['expire'] = (int)($rec['expire'] ?? 0);
+                        $record['minimum'] = (int)($rec['minimum'] ?? 0);
+                        break;
+                }
+                $records[] = $record;
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch DNS records']);
+            exit;
+        }
+        echo json_encode(['success' => true, 'records' => $records, 'domain' => $domain]);
+        break;
+
+    case 'dns_add_record':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $type   = isset($_POST['type']) ? strtoupper(trim($_POST['type'])) : '';
+        $name   = isset($_POST['name']) ? trim($_POST['name']) : '';
+        $ttl    = isset($_POST['ttl']) ? (int) $_POST['ttl'] : 14400;
+
+        if (empty($domain) || empty($type)) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+
+        // Build the API URL based on record type
+        $params = "&domain=" . urlencode($domain)
+                . "&name=" . urlencode($name)
+                . "&type=" . urlencode($type)
+                . "&ttl=" . $ttl
+                . "&class=IN";
+
+        switch ($type) {
+            case 'A':
+            case 'AAAA':
+                $address = isset($_POST['address']) ? trim($_POST['address']) : '';
+                if (empty($address)) { echo json_encode(['success' => false, 'message' => 'IP address is required']); exit; }
+                $params .= "&address=" . urlencode($address);
+                break;
+            case 'CNAME':
+                $cname = isset($_POST['cname']) ? trim($_POST['cname']) : '';
+                if (empty($cname)) { echo json_encode(['success' => false, 'message' => 'CNAME target is required']); exit; }
+                $params .= "&cname=" . urlencode($cname);
+                break;
+            case 'MX':
+                $exchange = isset($_POST['exchange']) ? trim($_POST['exchange']) : '';
+                $preference = isset($_POST['preference']) ? (int) $_POST['preference'] : 10;
+                if (empty($exchange)) { echo json_encode(['success' => false, 'message' => 'Mail server is required']); exit; }
+                $params .= "&exchange=" . urlencode($exchange) . "&preference=" . $preference;
+                break;
+            case 'TXT':
+                $txtdata = isset($_POST['txtdata']) ? trim($_POST['txtdata']) : '';
+                if (empty($txtdata)) { echo json_encode(['success' => false, 'message' => 'TXT data is required']); exit; }
+                $params .= "&txtdata=" . urlencode($txtdata);
+                break;
+            case 'SRV':
+                $priority = isset($_POST['priority']) ? (int) $_POST['priority'] : 0;
+                $weight = isset($_POST['weight']) ? (int) $_POST['weight'] : 0;
+                $srvPort = isset($_POST['port']) ? (int) $_POST['port'] : 0;
+                $target = isset($_POST['target']) ? trim($_POST['target']) : '';
+                if (empty($target)) { echo json_encode(['success' => false, 'message' => 'Target is required']); exit; }
+                $params .= "&priority=" . $priority . "&weight=" . $weight . "&port=" . $srvPort . "&target=" . urlencode($target);
+                break;
+            case 'CAA':
+                $flag = isset($_POST['flag']) ? (int) $_POST['flag'] : 0;
+                $tag = isset($_POST['tag']) ? trim($_POST['tag']) : 'issue';
+                $value = isset($_POST['value']) ? trim($_POST['value']) : '';
+                if (empty($value)) { echo json_encode(['success' => false, 'message' => 'CAA value is required']); exit; }
+                $params .= "&flag=" . $flag . "&tag=" . urlencode($tag) . "&value=" . urlencode($value);
+                break;
+            default:
+                echo json_encode(['success' => false, 'message' => 'Unsupported record type: ' . $type]);
+                exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=ZoneEdit"
+             . "&cpanel_jsonapi_func=add_zone_record"
+             . $params;
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $cpResult = $json['cpanelresult']['data'][0] ?? [];
+            $status = $cpResult['result']['status'] ?? ($cpResult['status'] ?? ($cpResult['result'] ?? 0));
+            if ($status == 1 || $status === true) {
+                $newLine = $cpResult['result']['newserial'] ?? ($cpResult['newserial'] ?? '');
+                echo json_encode(['success' => true, 'message' => 'DNS record added successfully', 'newserial' => $newLine]);
+            } else {
+                $err = $cpResult['result']['statusmsg'] ?? ($cpResult['statusmsg'] ?? ($cpResult['result']['message'] ?? 'Failed to add record'));
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'dns_edit_record':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $line   = isset($_POST['line']) ? (int) $_POST['line'] : 0;
+        $type   = isset($_POST['type']) ? strtoupper(trim($_POST['type'])) : '';
+        $name   = isset($_POST['name']) ? trim($_POST['name']) : '';
+        $ttl    = isset($_POST['ttl']) ? (int) $_POST['ttl'] : 14400;
+
+        if (empty($domain) || !$line || empty($type)) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+
+        $params = "&domain=" . urlencode($domain)
+                . "&Line=" . $line
+                . "&name=" . urlencode($name)
+                . "&type=" . urlencode($type)
+                . "&ttl=" . $ttl
+                . "&class=IN";
+
+        switch ($type) {
+            case 'A':
+            case 'AAAA':
+                $address = isset($_POST['address']) ? trim($_POST['address']) : '';
+                $params .= "&address=" . urlencode($address);
+                break;
+            case 'CNAME':
+                $cname = isset($_POST['cname']) ? trim($_POST['cname']) : '';
+                $params .= "&cname=" . urlencode($cname);
+                break;
+            case 'MX':
+                $exchange = isset($_POST['exchange']) ? trim($_POST['exchange']) : '';
+                $preference = isset($_POST['preference']) ? (int) $_POST['preference'] : 10;
+                $params .= "&exchange=" . urlencode($exchange) . "&preference=" . $preference;
+                break;
+            case 'TXT':
+                $txtdata = isset($_POST['txtdata']) ? trim($_POST['txtdata']) : '';
+                $params .= "&txtdata=" . urlencode($txtdata);
+                break;
+            case 'SRV':
+                $priority = isset($_POST['priority']) ? (int) $_POST['priority'] : 0;
+                $weight = isset($_POST['weight']) ? (int) $_POST['weight'] : 0;
+                $srvPort = isset($_POST['port']) ? (int) $_POST['port'] : 0;
+                $target = isset($_POST['target']) ? trim($_POST['target']) : '';
+                $params .= "&priority=" . $priority . "&weight=" . $weight . "&port=" . $srvPort . "&target=" . urlencode($target);
+                break;
+            case 'CAA':
+                $flag = isset($_POST['flag']) ? (int) $_POST['flag'] : 0;
+                $tag = isset($_POST['tag']) ? trim($_POST['tag']) : 'issue';
+                $value = isset($_POST['value']) ? trim($_POST['value']) : '';
+                $params .= "&flag=" . $flag . "&tag=" . urlencode($tag) . "&value=" . urlencode($value);
+                break;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=ZoneEdit"
+             . "&cpanel_jsonapi_func=edit_zone_record"
+             . $params;
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $cpResult = $json['cpanelresult']['data'][0] ?? [];
+            $status = $cpResult['result']['status'] ?? ($cpResult['status'] ?? ($cpResult['result'] ?? 0));
+            if ($status == 1 || $status === true) {
+                echo json_encode(['success' => true, 'message' => 'DNS record updated successfully']);
+            } else {
+                $err = $cpResult['result']['statusmsg'] ?? ($cpResult['statusmsg'] ?? 'Failed to update record');
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'dns_delete_record':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $line   = isset($_POST['line']) ? (int) $_POST['line'] : 0;
+
+        if (empty($domain) || !$line) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=ZoneEdit"
+             . "&cpanel_jsonapi_func=remove_zone_record"
+             . "&domain=" . urlencode($domain)
+             . "&line=" . $line;
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $cpResult = $json['cpanelresult']['data'][0] ?? [];
+            $status = $cpResult['result']['status'] ?? ($cpResult['status'] ?? ($cpResult['result'] ?? 0));
+            if ($status == 1 || $status === true) {
+                echo json_encode(['success' => true, 'message' => 'DNS record deleted']);
+            } else {
+                $err = $cpResult['result']['statusmsg'] ?? ($cpResult['statusmsg'] ?? 'Failed to delete record');
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'dns_bulk_delete':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $lines  = isset($_POST['lines']) ? trim($_POST['lines']) : '';
+
+        if (empty($domain) || empty($lines)) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+
+        $lineArr = array_filter(array_map('intval', explode(',', $lines)));
+        if (empty($lineArr)) {
+            echo json_encode(['success' => false, 'message' => 'No valid line numbers']);
+            exit;
+        }
+
+        // Delete in reverse order to avoid line number shifts
+        rsort($lineArr);
+        $deleted = 0;
+        $errors = [];
+        foreach ($lineArr as $line) {
+            $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=2"
+                 . "&cpanel_jsonapi_module=ZoneEdit"
+                 . "&cpanel_jsonapi_func=remove_zone_record"
+                 . "&domain=" . urlencode($domain)
+                 . "&line=" . $line;
+
+            $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+            if ($r['code'] === 200 && $r['body']) {
+                $json = json_decode($r['body'], true);
+                $cpResult = $json['cpanelresult']['data'][0] ?? [];
+                $status = $cpResult['result']['status'] ?? ($cpResult['status'] ?? ($cpResult['result'] ?? 0));
+                if ($status == 1 || $status === true) {
+                    $deleted++;
+                } else {
+                    $errors[] = "Line {$line}: " . ($cpResult['result']['statusmsg'] ?? 'Failed');
+                }
+            } else {
+                $errors[] = "Line {$line}: Connection failed";
+            }
+        }
+
+        $msg = "Deleted {$deleted} of " . count($lineArr) . " records";
+        if (!empty($errors)) $msg .= '. Errors: ' . implode('; ', array_slice($errors, 0, 3));
+        echo json_encode(['success' => $deleted > 0, 'message' => $msg, 'deleted' => $deleted, 'total' => count($lineArr)]);
         break;
 
     default:
