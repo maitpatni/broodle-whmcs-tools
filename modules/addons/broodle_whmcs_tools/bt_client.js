@@ -58,8 +58,30 @@ function injectStyles(){
 /* ─── Sidebar Enhancement ─── */
 function styleSidebarActions(){
     var modPath="modules/addons/broodle_whmcs_tools/";
+    // DEBUG: Log sidebar structure to console
+    console.log("[BT] styleSidebarActions running");
+    document.querySelectorAll(".panel-sidebar, .panel-actions, .panel-default, .sidebar, #sidebar, [class*='sidebar']").forEach(function(el){
+        console.log("[BT] sidebar element:", el.className, el.id, el.outerHTML.substring(0,500));
+    });
+    // Also log all <a> tags in the sidebar area
+    var sidebarArea=document.querySelector("#Primary_Sidebar, .sidebar, .col-md-3, .col-sm-3, .col-lg-3");
+    if(sidebarArea){
+        console.log("[BT] sidebar area found:", sidebarArea.className);
+        sidebarArea.querySelectorAll("a").forEach(function(a){
+            console.log("[BT] sidebar link:", a.id, a.className, a.textContent.trim().substring(0,60), a.href);
+        });
+    } else {
+        console.log("[BT] No sidebar area found. Checking all panels...");
+        document.querySelectorAll(".panel, .card").forEach(function(p){
+            var t=(p.textContent||"").toLowerCase();
+            if(t.indexOf("cpanel")!==-1||t.indexOf("webmail")!==-1||t.indexOf("actions")!==-1){
+                console.log("[BT] panel with actions:", p.className, p.id, p.outerHTML.substring(0,800));
+            }
+        });
+    }
     // Target both .list-group-tab-nav and .panel-actions .list-group (Lagom2 renders cPanel/Webmail buttons in either)
     var navs=document.querySelectorAll(".list-group-tab-nav, .panel-actions .list-group, .panel-actions .panel-body");
+    console.log("[BT] navs found:", navs.length);
     navs.forEach(function(nav){
         // Detect if this is the Actions panel (has cpanel/webmail links) or Overview panel
         var isActionsPanel=false;
