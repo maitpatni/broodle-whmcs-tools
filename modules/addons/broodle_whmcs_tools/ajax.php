@@ -57,7 +57,28 @@ if ($action === 'get_addon_description') {
         exit;
     }
     $desc = strip_tags($addon->description ?? '');
-    echo json_encode(['success' => true, 'description' => $desc]);
+    // Get pricing — use client's currency, fallback to currency 1
+    $clientCurrency = Capsule::table('tblclients')->where('id', $clientId)->value('currency') ?: 1;
+    $pricing = Capsule::table('tblpricing')
+        ->where('type', 'addon')
+        ->where('relid', $addonId)
+        ->where('currency', $clientCurrency)
+        ->first();
+    $currency = Capsule::table('tblcurrencies')->where('id', $clientCurrency)->first();
+    $prefix = $currency->prefix ?? '';
+    $suffix = $currency->suffix ?? '';
+    $price = '';
+    $cycle = $addon->billingcycle ?? '';
+    if ($pricing) {
+        if ($pricing->monthly > 0) $price = $prefix . number_format($pricing->monthly, 2) . $suffix . '/mo';
+        elseif ($pricing->quarterly > 0) $price = $prefix . number_format($pricing->quarterly, 2) . $suffix . '/qtr';
+        elseif ($pricing->semiannually > 0) $price = $prefix . number_format($pricing->semiannually, 2) . $suffix . '/6mo';
+        elseif ($pricing->annually > 0) $price = $prefix . number_format($pricing->annually, 2) . $suffix . '/yr';
+        elseif ($pricing->biennially > 0) $price = $prefix . number_format($pricing->biennially, 2) . $suffix . '/2yr';
+        elseif ($pricing->triennially > 0) $price = $prefix . number_format($pricing->triennially, 2) . $suffix . '/3yr';
+        if (strtolower($cycle) === 'onetime' && $pricing->monthly > 0) $price = $prefix . number_format($pricing->monthly, 2) . $suffix . ' one-time';
+    }
+    echo json_encode(['success' => true, 'description' => $desc, 'price' => trim($price)]);
     exit;
 }
 
