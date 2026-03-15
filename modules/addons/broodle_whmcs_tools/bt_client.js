@@ -58,6 +58,13 @@ function injectStyles(){
 /* ─── Sidebar Enhancement ─── */
 function styleSidebarActions(){
     var modPath="modules/addons/broodle_whmcs_tools/";
+    // Debug: check cPanel link visibility
+    var cpLink=document.getElementById("Primary_Sidebar-Service_Details_Actions-cpanel");
+    if(cpLink){
+        console.log("[BT] cPanel link BEFORE styling:",cpLink.style.display,cpLink.offsetHeight,cpLink.offsetParent,cpLink.parentElement.className,cpLink.parentElement.style.display,cpLink.parentElement.parentElement.className,cpLink.parentElement.parentElement.style.display,cpLink.parentElement.parentElement.parentElement?cpLink.parentElement.parentElement.parentElement.className:"",cpLink.parentElement.parentElement.parentElement?cpLink.parentElement.parentElement.parentElement.style.display:"");
+    } else {
+        console.log("[BT] cPanel link NOT FOUND by ID");
+    }
     var navs=document.querySelectorAll(".list-group-tab-nav");
     navs.forEach(function(nav){
         // Detect if this is the Actions panel (has cpanel/webmail links) or Overview panel
@@ -130,6 +137,20 @@ function styleSidebarActions(){
             item.insertBefore(iconDiv,item.firstChild);
         });
     });
+    // Debug: check cPanel link visibility AFTER styling
+    var cpLink2=document.getElementById("Primary_Sidebar-Service_Details_Actions-cpanel");
+    if(cpLink2){
+        console.log("[BT] cPanel link AFTER styling:",cpLink2.style.display,cpLink2.offsetHeight,cpLink2.innerHTML.substring(0,200));
+        // Walk up parents to find what's hidden
+        var el=cpLink2;
+        while(el&&el!==document.body){
+            var cs=window.getComputedStyle(el);
+            if(cs.display==="none"||cs.visibility==="hidden"||cs.opacity==="0"){
+                console.log("[BT] HIDDEN ancestor:",el.tagName,el.id,el.className,cs.display,cs.visibility,cs.opacity);
+            }
+            el=el.parentElement;
+        }
+    }
 }
 
 function init(){
