@@ -435,10 +435,10 @@ function broodle_tools_css_cards()
 .bt-addon-tip-btn{width:18px;height:18px;border-radius:50%;border:none;background:transparent;color:var(--text-muted,#c0c5cc);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .12s;padding:0}
 .bt-addon-tip-btn:hover{color:#0a5ed3}
 .bt-addon-tip-btn.loading{opacity:.4}
-.bt-addon-tooltip{position:absolute;bottom:calc(100% + 10px);right:-8px;width:240px;padding:10px 13px;background:var(--heading-color,#1f2937);color:#f3f4f6;font-size:11px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:100;display:none;word-wrap:break-word;max-height:120px;overflow-y:auto}
-.bt-addon-tooltip::after{content:"";position:absolute;top:100%;right:16px;border:5px solid transparent;border-top-color:var(--heading-color,#1f2937)}
-.bt-addon-tip-wrap:hover .bt-addon-tooltip,.bt-addon-tip-wrap.show-tip .bt-addon-tooltip{display:block}
-@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:190px;right:-4px}}
+.bt-addon-tooltip{position:fixed;width:300px;padding:10px 13px;background:var(--heading-color,#1f2937);color:#f3f4f6;font-size:11px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:9999;display:none;word-wrap:break-word;pointer-events:none}
+.bt-addon-tooltip::after{display:none}
+.bt-addon-tip-wrap.show-tip .bt-addon-tooltip{display:block}
+@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:240px}}
 </style>';
 }
 
@@ -1042,8 +1042,7 @@ function buildOverviewPane(){
 
     // Nameservers (accordion, closed by default)
     if(C.nsEnabled&&C.ns&&C.ns.ns&&C.ns.ns.length){
-        var nsCount=C.ns.ns.length+(C.ns.ip?1:0);
-        html+="<div class=\"bt-accordion\" id=\"btAccNs\"><div class=\"bt-accordion-head\" onclick=\"this.parentElement.classList.toggle(\\x27open\\x27)\"><div class=\"bt-accordion-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z\"/></svg></div><div class=\"bt-accordion-info\"><h5>Nameservers</h5><p>"+nsCount+" record"+(nsCount!==1?"s":"")+" · Point your domain to these nameservers</p></div><svg class=\"bt-accordion-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"6 9 12 15 18 9\"/></svg></div><div class=\"bt-accordion-body\"><div class=\"bt-list\" style=\"padding:4px 10px 10px\">";
+        html+="<div class=\"bt-accordion\" id=\"btAccNs\"><div class=\"bt-accordion-head\" onclick=\"this.parentElement.classList.toggle(\\x27open\\x27)\"><div class=\"bt-accordion-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z\"/></svg></div><div class=\"bt-accordion-info\"><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div><svg class=\"bt-accordion-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"6 9 12 15 18 9\"/></svg></div><div class=\"bt-accordion-body\"><div class=\"bt-list\" style=\"padding:4px 10px 10px\">";
         C.ns.ns.forEach(function(ns,i){
             html+="<div class=\"bt-row\"><div class=\"bt-row-icon ns\">NS"+(i+1)+"</div><div class=\"bt-row-info\"><span class=\"bt-row-name mono\">"+esc(ns)+"</span></div><button type=\"button\" class=\"bt-copy\" data-copy=\""+esc(ns)+"\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\" ry=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/></svg></button></div>";
         });
@@ -1164,6 +1163,7 @@ function buildOverviewPane(){
         scroller.addEventListener("touchend",onDragEnd);
         // Tooltip + pricing: fetch on hover/click
         var tipCache={};
+        function posTip(anchor,tip){var r=anchor.getBoundingClientRect();tip.style.left=Math.max(8,r.left-280)+"px";tip.style.top=(r.top-tip.offsetHeight-8)+"px";if(r.top-tip.offsetHeight-8<8){tip.style.top=(r.bottom+8)+"px";}}
         pane.querySelectorAll(".bt-addon-tip-wrap").forEach(function(wrap){
             var btn=wrap.querySelector(".bt-addon-tip-btn");
             var tip=wrap.querySelector(".bt-addon-tooltip");
@@ -1182,8 +1182,9 @@ function buildOverviewPane(){
                     }
                 });
             }
-            wrap.addEventListener("mouseenter",loadTip);
-            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();wrap.classList.toggle("show-tip");});
+            wrap.addEventListener("mouseenter",function(){loadTip();posTip(btn,tip);});
+            wrap.addEventListener("mouseleave",function(){tip.style.display="none";});
+            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();wrap.classList.toggle("show-tip");posTip(btn,tip);});
         });
         document.addEventListener("click",function(){pane.querySelectorAll(".bt-addon-tip-wrap.show-tip").forEach(function(w){w.classList.remove("show-tip");});});
         // Prefetch pricing for visible page
