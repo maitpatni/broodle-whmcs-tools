@@ -256,18 +256,23 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    $data = broodle_tools_gather_data($vars);
-    if (!$data) return '';
+    try {
+        $data = broodle_tools_gather_data($vars);
+    } catch (\Exception $e) {
+        return '';
+    }
+
+    if (!$data) {
+        return '';
+    }
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-    // MINIMAL output — just CSS hide + config div + JS bootstrap
-    // No modals, no extra CSS — keep output small to avoid truncation
-    $output  = broodle_tools_css_hide();
-    $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
-    $output .= '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.9";document.head.appendChild(s);\' style="display:none!important">';
-
-    return $output;
+    // Minimal output: hidden config div + img onerror bootstrap to load bt_client.js
+    // All CSS is injected by bt_client.js via injectStyles()
+    // All modals are injected by bt_client.js via buildModalsHtml()
+    return '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>'
+         . '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.10";document.head.appendChild(s);\' style="display:none!important">';
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */
