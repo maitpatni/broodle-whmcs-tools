@@ -32,6 +32,7 @@ function broodle_tools_email_enabled() { return broodle_tools_setting_enabled('t
 function broodle_tools_wp_enabled() { return broodle_tools_setting_enabled('tweak_wordpress_toolkit'); }
 function broodle_tools_domain_enabled() { return broodle_tools_setting_enabled('tweak_domain_management'); }
 function broodle_tools_db_enabled() { return broodle_tools_setting_enabled('tweak_database_management'); }
+function broodle_tools_ssl_enabled() { return broodle_tools_setting_enabled('tweak_ssl_management'); }
 
 function broodle_tools_get_service_id($vars)
 {
@@ -151,6 +152,7 @@ function broodle_tools_ensure_defaults()
             'tweak_wordpress_toolkit'  => '0',
             'tweak_domain_management'  => '1',
             'tweak_database_management'=> '1',
+            'tweak_ssl_management'     => '1',
             'auto_update_enabled'      => '0',
         ];
         foreach ($defaults as $key => $value) {
@@ -221,6 +223,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $domains = broodle_tools_domain_enabled() ? broodle_tools_get_domains_detailed($serviceId) : null;
     $wpEnabled = broodle_tools_wp_enabled();
     $dbEnabled = broodle_tools_db_enabled();
+    $sslEnabled = broodle_tools_ssl_enabled();
 
     // JSON data for JS
     $jsData = json_encode([
@@ -230,6 +233,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         'domains' => $domains,
         'wpEnabled' => $wpEnabled,
         'dbEnabled' => $dbEnabled,
+        'sslEnabled' => $sslEnabled,
         'nsEnabled' => broodle_tools_ns_enabled(),
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
@@ -439,6 +443,19 @@ function broodle_tools_css_cards()
 .bt-addon-tooltip::after{display:none}
 .bt-addon-tip-wrap.show-tip .bt-addon-tooltip{display:block}
 @media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:240px}}
+/* SSL Pane */
+.bt-ssl-row .bt-row-info{flex-wrap:wrap}
+.bt-ssl-meta{display:flex;align-items:center;gap:12px;flex-shrink:0;font-size:11px;color:var(--text-muted,#6b7280)}
+.bt-ssl-meta span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.bt-ssl-issuer{color:var(--text-muted,#6b7280)}
+.bt-ssl-days-ok{color:#059669}.bt-ssl-days-warn{color:#d97706}.bt-ssl-days-danger{color:#ef4444}
+.bt-row-icon.ssl-valid{background:rgba(5,150,105,.08);color:#059669}
+.bt-row-icon.ssl-selfsigned{background:rgba(217,119,6,.08);color:#d97706}
+.bt-row-icon.ssl-expired{background:rgba(239,68,68,.08);color:#ef4444}
+.bt-row-icon.ssl-expiring{background:rgba(217,119,6,.08);color:#d97706}
+.bt-badge-red{background:rgba(239,68,68,.08);color:#ef4444}
+.bt-ssl-generate:hover{background:rgba(5,150,105,.06)!important}
+@media(max-width:600px){.bt-ssl-meta{flex-direction:column;align-items:flex-start;gap:4px}}
 </style>';
 }
 
@@ -803,6 +820,21 @@ function broodle_tools_css_dark()
 
 /* --- Ensure SVG strokes are visible in dark --- */
 [data-theme="dark"] .bt-empty svg,.dark-mode .bt-empty svg{opacity:.3}
+
+/* --- SSL Pane dark mode --- */
+[data-theme="dark"] .bt-row-icon.ssl-valid,.dark-mode .bt-row-icon.ssl-valid{background:rgba(52,211,153,.12);color:#34d399}
+[data-theme="dark"] .bt-row-icon.ssl-selfsigned,.dark-mode .bt-row-icon.ssl-selfsigned{background:rgba(251,191,36,.12);color:#fbbf24}
+[data-theme="dark"] .bt-row-icon.ssl-expired,.dark-mode .bt-row-icon.ssl-expired{background:rgba(248,113,113,.12);color:#f87171}
+[data-theme="dark"] .bt-row-icon.ssl-expiring,.dark-mode .bt-row-icon.ssl-expiring{background:rgba(251,191,36,.12);color:#fbbf24}
+[data-theme="dark"] .bt-badge-red,.dark-mode .bt-badge-red{background:rgba(248,113,113,.12);color:#f87171}
+[data-theme="dark"] .bt-ssl-meta,.dark-mode .bt-ssl-meta{color:var(--text-muted,#6b7280)}
+[data-theme="dark"] .bt-ssl-issuer,.dark-mode .bt-ssl-issuer{color:var(--text-muted,#9ca3af)}
+[data-theme="dark"] .bt-ssl-days-ok,.dark-mode .bt-ssl-days-ok{color:#34d399}
+[data-theme="dark"] .bt-ssl-days-warn,.dark-mode .bt-ssl-days-warn{color:#fbbf24}
+[data-theme="dark"] .bt-ssl-days-danger,.dark-mode .bt-ssl-days-danger{color:#f87171}
+[data-theme="dark"] .bt-ssl-generate,.dark-mode .bt-ssl-generate{color:#34d399!important;border-color:#34d399!important}
+[data-theme="dark"] .bt-ssl-generate:hover,.dark-mode .bt-ssl-generate:hover{background:rgba(52,211,153,.08)!important}
+[data-theme="dark"] #btSslRunAutossl,.dark-mode #btSslRunAutossl{background:#059669}
 </style>';
 }
 
@@ -940,6 +972,7 @@ function buildTabs(){
     var tabs=[
         {id:"overview",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x273\\x27 y=\\x273\\x27 width=\\x2718\\x27 height=\\x2718\\x27 rx=\\x272\\x27/><path d=\\x27M3 9h18M9 21V9\\x27/></svg>",label:"Overview"},
         {id:"domains",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><circle cx=\\x2712\\x27 cy=\\x2712\\x27 r=\\x2710\\x27/><line x1=\\x272\\x27 y1=\\x2712\\x27 x2=\\x2722\\x27 y2=\\x2712\\x27/><path d=\\x27M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z\\x27/></svg>",label:"Domains",check:"domainEnabled"},
+        {id:"ssl",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\\x27/></svg>",label:"SSL",check:"sslEnabled"},
         {id:"email",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x272\\x27 y=\\x274\\x27 width=\\x2720\\x27 height=\\x2716\\x27 rx=\\x272\\x27/><path d=\\x27m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\\x27/></svg>",label:"Email Accounts",check:"emailEnabled"},
         {id:"databases",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><ellipse cx=\\x2712\\x27 cy=\\x275\\x27 rx=\\x279\\x27 ry=\\x273\\x27/><path d=\\x27M21 12c0 1.66-4 3-9 3s-9-1.34-9-3\\x27/><path d=\\x27M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5\\x27/></svg>",label:"Databases",check:"dbEnabled"},
         {id:"wordpress",icon:wpIcon,label:"WordPress",check:"wpEnabled"}
@@ -963,6 +996,7 @@ function buildTabs(){
             var pane=$("bt-pane-"+t.id);if(pane) pane.classList.add("active");
             if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
             if(t.id==="wordpress"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadWpInstances();}
+            if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
         });
         nav.appendChild(btn);
 
@@ -981,6 +1015,7 @@ function buildTabs(){
     if(C.domainEnabled) buildDomainsPane();
     if(C.emailEnabled) buildEmailPane();
     if(C.dbEnabled) buildDatabasesPane();
+    if(C.sslEnabled) buildSSLPane();
     if(C.wpEnabled) buildWpPane();
 }
 
@@ -1331,6 +1366,107 @@ function submitAssignDb(){
         showMsg(msg,r.message||"Done",r.success);
         if(r.success){setTimeout(function(){$("bdbAssignModal").style.display="none";loadDatabases();},800);}
     });
+}
+
+/* ─── SSL Pane ─── */
+function buildSSLPane(){
+    var pane=$("bt-pane-ssl");if(!pane) return;
+    pane.innerHTML="<div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\" style=\"background:#059669\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg></div><div><h5>SSL Certificates</h5><p class=\"bt-ssl-count\">Loading...</p></div></div><div class=\"bt-card-head-right\"><button type=\"button\" class=\"bt-btn-add\" id=\"btSslRunAutossl\" style=\"background:#059669\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> Run AutoSSL</button></div></div><div class=\"bt-list\" id=\"bt-ssl-list\"><div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading SSL status...</span></div></div></div>";
+    $("btSslRunAutossl").addEventListener("click",function(){startAutoSSL(this);});
+}
+
+function loadSSLStatus(){
+    var list=$("bt-ssl-list");if(!list) return;
+    list.innerHTML="<div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading SSL status...</span></div>";
+    post({action:"ssl_status"},function(r){
+        if(!r.success){list.innerHTML="<div class=\"bt-empty\"><span>"+(r.message||"Failed to load SSL status")+"</span></div>";return;}
+        var certs=r.certificates||[];
+        var countEl=document.querySelector(".bt-ssl-count");
+        if(countEl) countEl.textContent=certs.length+" domain"+(certs.length!==1?"s":"");
+        if(!certs.length){list.innerHTML="<div class=\"bt-empty\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg><span>No SSL data found</span></div>";return;}
+        var html="";
+        certs.forEach(function(c){
+            var statusCls="bt-ssl-valid";var statusTxt="Valid";var statusIcon="check";var badgeCls="bt-badge-green";
+            var issuer=c.issuer||"Unknown";
+            var isAutoSSL=issuer.toLowerCase().indexOf("cpanel")!==-1||issuer.toLowerCase().indexOf("autossl")!==-1||issuer.toLowerCase().indexOf("comodo")!==-1||issuer.toLowerCase().indexOf("sectigo")!==-1||issuer.toLowerCase().indexOf("let\\x27s encrypt")!==-1||issuer.toLowerCase().indexOf("letsencrypt")!==-1;
+            var isSelfSigned=c.is_self_signed||issuer.toLowerCase().indexOf("self-signed")!==-1||issuer.toLowerCase().indexOf("cpanel")!==-1&&c.type==="self-signed"||c.self_signed;
+            if(isSelfSigned){statusCls="bt-ssl-selfsigned";statusTxt="Self-Signed";statusIcon="warning";badgeCls="bt-badge-amber";}
+            var daysLeft=null;
+            if(c.expiry_epoch){
+                var now=Math.floor(Date.now()/1000);
+                daysLeft=Math.floor((c.expiry_epoch-now)/86400);
+                if(daysLeft<0){statusCls="bt-ssl-expired";statusTxt="Expired";statusIcon="expired";badgeCls="bt-badge-red";}
+                else if(daysLeft<=7&&!isSelfSigned){statusCls="bt-ssl-expiring";statusTxt="Expiring Soon";statusIcon="warning";badgeCls="bt-badge-amber";}
+            }
+            if(!c.has_cert){statusCls="bt-ssl-none";statusTxt="No SSL";statusIcon="none";badgeCls="bt-badge-red";}
+            var iconSvg="";
+            if(statusIcon==="check") iconSvg="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>";
+            else if(statusIcon==="warning") iconSvg="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
+            else if(statusIcon==="expired") iconSvg="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"/><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"/></svg>";
+            else iconSvg="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>";
+            var rowIconCls=statusCls==="bt-ssl-valid"?"ssl-valid":statusCls==="bt-ssl-selfsigned"?"ssl-selfsigned":statusCls==="bt-ssl-expired"||statusCls==="bt-ssl-none"?"ssl-expired":"ssl-expiring";
+            html+="<div class=\"bt-row bt-ssl-row\" data-domain=\""+esc(c.domain)+"\"><div class=\"bt-row-icon "+rowIconCls+"\">"+iconSvg+"</div><div class=\"bt-row-info\" style=\"flex-wrap:wrap;gap:4px 8px\"><span class=\"bt-row-name\">"+esc(c.domain)+"</span><span class=\"bt-row-badge "+badgeCls+"\">"+statusTxt+"</span></div><div class=\"bt-ssl-meta\">";
+            if(c.has_cert&&!isSelfSigned){
+                html+="<span class=\"bt-ssl-issuer\" title=\"Issuer: "+esc(issuer)+"\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> "+esc(issuer)+"</span>";
+                if(daysLeft!==null){
+                    var daysCls=daysLeft<=7?"bt-ssl-days-danger":daysLeft<=30?"bt-ssl-days-warn":"bt-ssl-days-ok";
+                    html+="<span class=\"bt-ssl-expiry "+daysCls+"\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg> "+daysLeft+"d left</span>";
+                }
+            }
+            html+="</div><div class=\"bt-row-actions\">";
+            if(isSelfSigned||!c.has_cert||statusCls==="bt-ssl-expired"){
+                html+="<button type=\"button\" class=\"bt-row-btn bt-ssl-generate\" data-domain=\""+esc(c.domain)+"\" style=\"color:#059669;border-color:#059669\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg><span>Generate SSL</span></button>";
+            }
+            html+="</div></div>";
+        });
+        list.innerHTML=html;
+        // Bind generate buttons
+        list.querySelectorAll(".bt-ssl-generate").forEach(function(b){b.addEventListener("click",function(){startAutoSSL($("btSslRunAutossl"));});});
+    });
+}
+
+function startAutoSSL(btn){
+    if(!btn) return;
+    var origHtml=btn.innerHTML;
+    btn.disabled=true;
+    btn.innerHTML="<div class=\"bt-spinner\" style=\"width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Running AutoSSL...";
+    post({action:"start_autossl"},function(r){
+        if(!r.success){btn.disabled=false;btn.innerHTML=origHtml;alert(r.message||"Failed to start AutoSSL");return;}
+        // Poll for progress
+        pollAutoSSL(btn,origHtml);
+    });
+}
+
+function pollAutoSSL(btn,origHtml){
+    var pollCount=0;var maxPolls=60;
+    function doPoll(){
+        pollCount++;
+        if(pollCount>maxPolls){btn.disabled=false;btn.innerHTML=origHtml;loadSSLStatus();return;}
+        post({action:"autossl_progress"},function(r){
+            if(r.in_progress){
+                btn.innerHTML="<div class=\"bt-spinner\" style=\"width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle\"></div> AutoSSL in progress... ("+pollCount+"/"+maxPolls+")";
+                setTimeout(doPoll,5000);
+            }else{
+                btn.disabled=false;btn.innerHTML=origHtml;
+                // Reload SSL status to show updated certs
+                var pane=$("bt-pane-ssl");if(pane) pane.dataset.loaded="";
+                loadSSLStatus();
+                // Check for problems
+                post({action:"autossl_problems"},function(pr){
+                    if(pr.success&&pr.problems&&pr.problems.length){
+                        var list=$("bt-ssl-list");
+                        if(list){
+                            var msgHtml="<div class=\"bt-msg error\" style=\"display:block;margin:10px 14px\"><strong>AutoSSL Issues:</strong><ul style=\"margin:6px 0 0;padding-left:18px\">";
+                            pr.problems.forEach(function(p){msgHtml+="<li>"+esc(p.domain||p)+": "+esc(p.problem||p.message||"Unknown issue")+"</li>";});
+                            msgHtml+="</ul></div>";
+                            list.insertAdjacentHTML("afterbegin",msgHtml);
+                        }
+                    }
+                });
+            }
+        });
+    }
+    setTimeout(doPoll,5000);
 }
 
 /* ─── WordPress Pane ─── */

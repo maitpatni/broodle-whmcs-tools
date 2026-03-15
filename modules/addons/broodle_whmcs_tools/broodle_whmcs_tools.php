@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.5.3');
+define('BROODLE_TOOLS_VERSION', '3.6.0');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -58,6 +58,7 @@ function broodle_whmcs_tools_activate()
             'tweak_wordpress_toolkit' => '0',
             'tweak_domain_management' => '1',
             'tweak_database_management' => '1',
+            'tweak_ssl_management'  => '1',
             'auto_update_enabled'   => '0',
         ];
 
@@ -110,6 +111,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_wordpress_toolkit',
             'tweak_domain_management',
             'tweak_database_management',
+            'tweak_ssl_management',
             'auto_update_enabled',
         ];
 
@@ -174,6 +176,7 @@ function broodle_tools_render_admin($vars, $settings)
     $wpToolkitEnabled = !empty($settings['tweak_wordpress_toolkit']) && $settings['tweak_wordpress_toolkit'] === '1';
     $domainMgmtEnabled = !empty($settings['tweak_domain_management']) && $settings['tweak_domain_management'] === '1';
     $dbMgmtEnabled = !empty($settings['tweak_database_management']) && $settings['tweak_database_management'] === '1';
+    $sslMgmtEnabled = !empty($settings['tweak_ssl_management']) && $settings['tweak_ssl_management'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -350,6 +353,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_database_management" value="1" ' . ($dbMgmtEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>SSL Management</h4>
+                            <p>Show an SSL tab on cPanel product details with SSL certificate status, expiry info, and AutoSSL generation.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_ssl_management" value="1" ' . ($sslMgmtEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>

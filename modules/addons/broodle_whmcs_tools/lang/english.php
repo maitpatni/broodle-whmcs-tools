@@ -48,3 +48,18 @@ $_ADDONLANG['add_domain']          = 'Add Domain';
 $_ADDONLANG['add_subdomain']       = 'Add Subdomain';
 $_ADDONLANG['delete_domain']       = 'Delete Domain';
 $_ADDONLANG['visit_website']       = 'Visit Website';
+
+// SSL Management
+$_ADDONLANG['ssl']                 = 'SSL';
+$_ADDONLANG['ssl_management']      = 'SSL Management';
+$_ADDONLANG['ssl_certificates']    = 'SSL Certificates';
+$_ADDONLANG['ssl_status']          = 'SSL Status';
+$_ADDONLANG['ssl_valid']           = 'Valid';
+$_ADDONLANG['ssl_self_signed']     = 'Self-Signed';
+$_ADDONLANG['ssl_expired']         = 'Expired';
+$_ADDONLANG['ssl_no_cert']         = 'No SSL';
+$_ADDONLANG['ssl_generate']        = 'Generate SSL';
+$_ADDONLANG['ssl_run_autossl']     = 'Run AutoSSL';
+$_ADDONLANG['ssl_autossl_running'] = 'AutoSSL in progress...';
+$_ADDONLANG['ssl_issuer']          = 'Issuer';
+$_ADDONLANG['ssl_expiry']          = 'Expiry';
