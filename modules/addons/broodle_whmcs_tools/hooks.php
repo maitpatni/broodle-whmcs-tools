@@ -316,7 +316,7 @@ function broodle_tools_css_hide()
 function broodle_tools_css_tabs()
 {
     return '<style>
-.bt-wrap{margin-top:15px;font-family:inherit}
+.bt-wrap{margin-top:15px;margin-bottom:24px;font-family:inherit}
 .bt-wrap *{font-family:inherit}
 .bt-tabs-nav{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:2px solid var(--border-color,#e5e7eb);padding:0;margin:0}
 .bt-tabs-nav::-webkit-scrollbar{display:none}
@@ -602,6 +602,25 @@ function broodle_tools_css_wp()
 .bwp-msg.success{background:rgba(5,150,101,.08);color:#059669}
 .bwp-msg.error{background:rgba(239,68,68,.08);color:#ef4444}
 .bwp-msg.info{background:rgba(10,94,211,.08);color:#0a5ed3}
+
+/* Sidebar Actions — icon box buttons */
+.panel-actions .list-group-tab-nav{display:flex;flex-direction:column;gap:8px;padding:12px}
+.panel-actions .list-group-tab-nav .list-group-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .18s ease;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.panel-actions .list-group-tab-nav .list-group-item:hover{border-color:rgba(10,94,211,.3);box-shadow:0 4px 12px rgba(10,94,211,.1);transform:translateY(-1px);color:#0a5ed3}
+.panel-actions .list-group-tab-nav .list-group-item .fas,.panel-actions .list-group-tab-nav .list-group-item .fa{display:none}
+.panel-actions .list-group-tab-nav .list-group-item .bt-action-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.panel-actions .list-group-tab-nav .list-group-item .bt-action-icon svg{width:20px;height:20px}
+.panel-actions .list-group-tab-nav .list-group-item .bt-action-label{display:flex;flex-direction:column;gap:2px}
+.panel-actions .list-group-tab-nav .list-group-item .bt-action-label span{font-size:10px;font-weight:500;color:var(--text-muted,#6b7280)}
+.panel-actions .list-group-tab-nav .list-group-item[data-identifier="cpanel"] .bt-action-icon{background:rgba(255,106,0,.08);color:#ff6a00}
+.panel-actions .list-group-tab-nav .list-group-item[data-identifier="webmail"] .bt-action-icon{background:rgba(10,94,211,.08);color:#0a5ed3}
+.panel-actions .list-group-tab-nav .list-group-item[id*="Change_Password"] .bt-action-icon{background:rgba(124,58,237,.08);color:#7c3aed}
+.panel-actions .list-group-tab-nav .list-group-item[data-identifier="cpanel"]:hover .bt-action-icon{background:rgba(255,106,0,.14)}
+.panel-actions .list-group-tab-nav .list-group-item[data-identifier="webmail"]:hover .bt-action-icon{background:rgba(10,94,211,.14)}
+.panel-actions .list-group-tab-nav .list-group-item[id*="Change_Password"]:hover .bt-action-icon{background:rgba(124,58,237,.14)}
+.panel-actions .panel-heading{border-bottom:none;padding:14px 16px 4px}
+.panel-actions .panel-heading .panel-title{font-size:13px;font-weight:700;color:var(--heading-color,#374151);letter-spacing:.3px;text-transform:uppercase}
+.panel-actions .panel-heading .panel-title .fas.fa-wrench{color:var(--text-muted,#9ca3af)}
 </style>';
 }
 
@@ -840,6 +859,11 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-ssl-generate,.dark-mode .bt-ssl-generate{color:#34d399!important;border-color:#34d399!important}
 [data-theme="dark"] .bt-ssl-generate:hover,.dark-mode .bt-ssl-generate:hover{background:rgba(52,211,153,.08)!important}
 [data-theme="dark"] #btSslRunAutossl,.dark-mode #btSslRunAutossl{background:#059669}
+
+/* Sidebar Actions dark mode */
+[data-theme="dark"] .panel-actions .list-group-tab-nav .list-group-item,.dark-mode .panel-actions .list-group-tab-nav .list-group-item{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+[data-theme="dark"] .panel-actions .list-group-tab-nav .list-group-item:hover,.dark-mode .panel-actions .list-group-tab-nav .list-group-item:hover{border-color:rgba(91,156,246,.35);box-shadow:0 4px 12px rgba(91,156,246,.12);color:#5b9cf6}
+[data-theme="dark"] .panel-actions .panel-heading .panel-title,.dark-mode .panel-actions .panel-heading .panel-title{color:var(--heading-color,#d1d5db)}
 </style>';
 }
 
@@ -919,6 +943,7 @@ function init(){
     if(!dataEl) return;
     try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
     hideDefaultTabs();
+    enhanceSidebarActions();
     buildTabs();
     bindModals();
 }
@@ -959,6 +984,39 @@ function hideDefaultTabs(){
     });
     // Also hide by sidebar menu item IDs
     ["Primary_Sidebar-productdetails_addons_and_extras"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
+}
+
+function enhanceSidebarActions(){
+    // Official cPanel icon (orange gear/dashboard)
+    var cpanelIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg></div>';
+    // Webmail envelope icon (blue)
+    var webmailIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>';
+    // Password lock icon (purple)
+    var passwordIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>';
+
+    var panel=document.querySelector(".panel-actions");
+    if(!panel) return;
+
+    panel.querySelectorAll(".list-group-tab-nav .list-group-item").forEach(function(item){
+        var id=item.getAttribute("data-identifier")||item.id||"";
+        var text=item.textContent.trim().replace(/\s+/g," ");
+        var icon="";var subtitle="";
+
+        if(id==="cpanel"||text.toLowerCase().indexOf("cpanel")!==-1){
+            icon=cpanelIcon;subtitle="Server Control Panel";
+        } else if(id==="webmail"||text.toLowerCase().indexOf("webmail")!==-1){
+            icon=webmailIcon;subtitle="Email Client";
+        } else if(id.indexOf("Change_Password")!==-1||text.toLowerCase().indexOf("change password")!==-1){
+            icon=passwordIcon;subtitle="Update Account Password";
+        }
+
+        if(icon){
+            // Clean the text (remove spinner and old icon)
+            var label=text.replace(/Log in to /i,"").replace(/Login to /i,"").trim();
+            if(label.toLowerCase()==="cpanel") label="cPanel";
+            item.innerHTML=icon+'<div class="bt-action-label"><strong>'+label+'</strong><span>'+subtitle+'</span></div>';
+        }
+    });
 }
 
 function buildTabs(){
@@ -1059,6 +1117,7 @@ function buildTabs(){
     if(C.emailEnabled) buildEmailPane();
     if(C.dbEnabled) buildDatabasesPane();
     if(C.sslEnabled) buildSSLPane();
+    if(C.dnsEnabled) buildDnsPane();
     if(C.wpEnabled) buildWpPane();
 }
 
