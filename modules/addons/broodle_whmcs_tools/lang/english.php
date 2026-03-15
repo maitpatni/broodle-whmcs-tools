@@ -36,3 +36,15 @@ $_ADDONLANG['wp_deactivate']      = 'Deactivate';
 $_ADDONLANG['wp_update']          = 'Update';
 $_ADDONLANG['wp_delete']          = 'Delete';
 $_ADDONLANG['wp_visit_site']      = 'Visit Site';
+
+// Domain Management
+$_ADDONLANG['domains']             = 'Domains';
+$_ADDONLANG['domain_management']   = 'Domain Management';
+$_ADDONLANG['addon_domain']        = 'Addon Domain';
+$_ADDONLANG['subdomain']           = 'Subdomain';
+$_ADDONLANG['parked_domain']       = 'Alias Domain';
+$_ADDONLANG['primary_domain']      = 'Primary Domain';
+$_ADDONLANG['add_domain']          = 'Add Domain';
+$_ADDONLANG['add_subdomain']       = 'Add Subdomain';
+$_ADDONLANG['delete_domain']       = 'Delete Domain';
+$_ADDONLANG['visit_website']       = 'Visit Website';

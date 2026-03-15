@@ -40,9 +40,11 @@ if (!$service || (int) $service->userid !== $clientId) {
     exit;
 }
 
-// Check email tweak is enabled
+// Check feature toggle based on action
+$domainActions = ['get_parent_domains', 'add_addon_domain', 'add_subdomain', 'delete_domain'];
+$featureKey = in_array($action, $domainActions) ? 'tweak_domain_management' : 'tweak_email_list';
 $enabled = Capsule::table('mod_broodle_tools_settings')
-    ->where('setting_key', 'tweak_email_list')
+    ->where('setting_key', $featureKey)
     ->value('setting_value');
 if ($enabled !== '1') {
     echo json_encode(['success' => false, 'message' => 'Feature disabled']);
@@ -308,6 +310,170 @@ switch ($action) {
         $domains = array_unique($domains);
         sort($domains);
         echo json_encode(['success' => true, 'domains' => $domains]);
+        break;
+
+    case 'get_parent_domains':
+        // Get main + addon domains (for subdomain parent selection)
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=DomainInfo"
+             . "&cpanel_jsonapi_func=list_domains";
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+
+        $domains = [];
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $data = $json['result']['data'] ?? ($json['cpanelresult']['data'] ?? []);
+            if (!empty($data)) {
+                if (isset($data['main_domain'])) $domains[] = $data['main_domain'];
+                if (!empty($data['addon_domains'])) $domains = array_merge($domains, $data['addon_domains']);
+            }
+        }
+        if (empty($domains) && !empty($service->domain)) {
+            $domains[] = $service->domain;
+        }
+        $domains = array_unique($domains);
+        sort($domains);
+        echo json_encode(['success' => true, 'domains' => $domains]);
+        break;
+
+    case 'add_addon_domain':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $docroot = isset($_POST['docroot']) ? trim($_POST['docroot']) : '';
+
+        if (empty($domain)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a domain name']);
+            exit;
+        }
+        if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $domain)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid domain name']);
+            exit;
+        }
+        if (empty($docroot)) $docroot = $domain;
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=AddonDomain"
+             . "&cpanel_jsonapi_func=addaddondomain"
+             . "&newdomain=" . urlencode($domain)
+             . "&subdomain=" . urlencode(str_replace('.', '', $domain))
+             . "&dir=" . urlencode($docroot);
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $status = $json['result']['status'] ?? ($json['cpanelresult']['data'][0]['result'] ?? null);
+            if ($status == 1 || $status === true) {
+                echo json_encode(['success' => true, 'message' => 'Addon domain added successfully']);
+            } else {
+                $err = $json['result']['errors'][0] ?? ($json['cpanelresult']['data'][0]['reason'] ?? 'Failed to add domain. You may have reached your plan limit.');
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'add_subdomain':
+        $subdomain = isset($_POST['subdomain']) ? trim($_POST['subdomain']) : '';
+        $domain    = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $docroot   = isset($_POST['docroot']) ? trim($_POST['docroot']) : '';
+
+        if (empty($subdomain) || empty($domain)) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all fields']);
+            exit;
+        }
+        if (!preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/', $subdomain)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid subdomain name']);
+            exit;
+        }
+        if (empty($docroot)) $docroot = $subdomain . '.' . $domain;
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=SubDomain"
+             . "&cpanel_jsonapi_func=addsubdomain"
+             . "&domain=" . urlencode($subdomain)
+             . "&rootdomain=" . urlencode($domain)
+             . "&dir=" . urlencode($docroot);
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $status = $json['result']['status'] ?? ($json['cpanelresult']['data'][0]['result'] ?? null);
+            if ($status == 1 || $status === true) {
+                echo json_encode(['success' => true, 'message' => 'Subdomain created successfully']);
+            } else {
+                $err = $json['result']['errors'][0] ?? ($json['cpanelresult']['data'][0]['reason'] ?? 'Failed to create subdomain');
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'delete_domain':
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $type   = isset($_POST['type']) ? trim($_POST['type']) : '';
+
+        if (empty($domain) || empty($type)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        if ($type === 'main') {
+            echo json_encode(['success' => false, 'message' => 'Cannot delete the primary domain']);
+            exit;
+        }
+
+        $url = '';
+        if ($type === 'addon') {
+            $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=AddonDomain"
+                 . "&cpanel_jsonapi_func=deladdondomain"
+                 . "&domain=" . urlencode($domain)
+                 . "&subdomain=" . urlencode(str_replace('.', '', $domain) . '.' . $service->domain);
+        } elseif ($type === 'sub') {
+            $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=SubDomain"
+                 . "&cpanel_jsonapi_func=delsubdomain"
+                 . "&domain=" . urlencode($domain);
+        } elseif ($type === 'parked') {
+            $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Park"
+                 . "&cpanel_jsonapi_func=unpark"
+                 . "&domain=" . urlencode($domain);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Unknown domain type']);
+            exit;
+        }
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $status = $json['result']['status'] ?? ($json['cpanelresult']['data'][0]['result'] ?? null);
+            if ($status == 1 || $status === true) {
+                echo json_encode(['success' => true, 'message' => 'Domain deleted successfully']);
+            } else {
+                $err = $json['result']['errors'][0] ?? ($json['cpanelresult']['data'][0]['reason'] ?? 'Failed to delete domain');
+                echo json_encode(['success' => false, 'message' => $err]);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
         break;
 
     default:

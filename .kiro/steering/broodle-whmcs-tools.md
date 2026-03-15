@@ -54,6 +54,7 @@ Created on activation, dropped on deactivation.
 | `tweak_nameservers_tab` | `1` | Show Nameservers tab on cPanel service details |
 | `tweak_email_list` | `1` | Show Email Accounts section on cPanel service details |
 | `tweak_wordpress_toolkit` | `0` | Show WordPress Toolkit tab on cPanel service details |
+| `tweak_domain_management` | `1` | Show Domains tab with addon/sub/parked domain management |
 | `auto_update_enabled` | `0` | Enable auto-update checks from GitHub |
 
 Use `broodle_tools_get_setting($key, $default)` to read settings. Use `broodle_tools_setting_enabled($key)` for boolean checks.
@@ -146,6 +147,7 @@ Secondary colors:
 | `bt-` | Admin settings page |
 | `bns-` | Nameservers card (shared card styles used by email too) |
 | `bem-` | Email management (rows, buttons, modals, fields) |
+| `bdm-` | Domain management (rows, badges, modals, buttons) |
 | `bwp-` | WordPress Toolkit (cards, sites, detail panel, tabs) |
 
 ### Theme Compatibility
@@ -158,7 +160,8 @@ Secondary colors:
 ### Layout Rules
 
 - **Nameservers**: Injected as a tab in the bottom panel-tabs nav (alongside Overview, etc.)
-- **Email Accounts**: Injected as a tab in the bottom panel-tabs nav (after Nameservers, before WordPress Manager)
+- **Email Accounts**: Injected as a tab in the bottom panel-tabs nav (after Nameservers, before Domains)
+- **Domains**: Injected as a tab in the bottom panel-tabs nav (after Email Accounts, before WordPress Manager)
 - **WordPress Manager**: Injected as a tab in the bottom panel-tabs nav
 - **Default "Quick Create Email Account"**: Hidden via CSS (`.quick-create-email`) and JS (scans headings for "quick create email" text)
 

@@ -450,6 +450,46 @@ function broodle_tools_shared_script()
 [data-theme="dark"] .bem-input-group,.dark-mode .bem-input-group{border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bem-at,.dark-mode .bem-at{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
 
+/* Domain Management */
+.bdm-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:9px;transition:background .15s}
+.bdm-row:hover{background:var(--input-bg,#f9fafb)}
+.bdm-row+.bdm-row{border-top:1px solid var(--border-color,#f3f4f6)}
+.bdm-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bdm-icon.main{background:rgba(10,94,211,.08);color:#0a5ed3}
+.bdm-icon.addon{background:rgba(5,150,105,.08);color:#059669}
+.bdm-icon.sub{background:rgba(124,58,237,.08);color:#7c3aed}
+.bdm-icon.parked{background:rgba(217,119,6,.08);color:#d97706}
+.bdm-info{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
+.bdm-name{font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdm-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
+.bdm-badge-main{background:rgba(10,94,211,.08);color:#0a5ed3}
+.bdm-badge-addon{background:rgba(5,150,105,.08);color:#059669}
+.bdm-badge-sub{background:rgba(124,58,237,.08);color:#7c3aed}
+.bdm-badge-parked{background:rgba(217,119,6,.08);color:#d97706}
+.bdm-actions{display:flex;gap:6px;flex-shrink:0}
+.bdm-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s;white-space:nowrap;text-decoration:none}
+.bdm-btn span{display:none}
+.bdm-btn:hover span{display:inline}
+.bdm-btn-visit{color:#0a5ed3}.bdm-btn-visit:hover{background:rgba(10,94,211,.06);border-color:#0a5ed3;text-decoration:none;color:#0a5ed3}
+.bdm-btn-del{color:#ef4444}.bdm-btn-del:hover{background:rgba(239,68,68,.06);border-color:#ef4444}
+.bdm-empty{padding:30px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bdm-empty svg{opacity:.4}
+.bdm-head-btns{display:flex;gap:8px}
+.bdm-sub-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
+.bdm-sub-btn:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}
+.bdm-docroot-wrap{display:flex;align-items:center;border:1px solid var(--border-color,#d1d5db);border-radius:8px;overflow:hidden;transition:border-color .15s}
+.bdm-docroot-wrap:focus-within{border-color:#0a5ed3;box-shadow:0 0 0 3px rgba(10,94,211,.1)}
+.bdm-docroot-prefix{padding:9px 10px;font-size:13px;color:var(--text-muted,#9ca3af);background:var(--input-bg,#f9fafb);border-right:1px solid var(--border-color,#e5e7eb);white-space:nowrap;flex-shrink:0}
+.bdm-docroot-wrap input{border:none;border-radius:0;flex:1;min-width:0;padding:9px 12px;font-size:14px;color:var(--heading-color,#111827);background:var(--input-bg,#fff);outline:none}
+.bdm-docroot-wrap input:focus{box-shadow:none}
+[data-theme="dark"] .bdm-row:hover,.dark-mode .bdm-row:hover{background:var(--input-bg,#111827)}
+[data-theme="dark"] .bdm-btn,.dark-mode .bdm-btn{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bdm-sub-btn,.dark-mode .bdm-sub-btn{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bdm-docroot-wrap,.dark-mode .bdm-docroot-wrap{border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bdm-docroot-prefix,.dark-mode .bdm-docroot-prefix{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bdm-docroot-wrap input,.dark-mode .bdm-docroot-wrap input{background:var(--input-bg,#111827);color:var(--heading-color,#f3f4f6)}
+@media(max-width:600px){.bdm-btn span{display:none!important}.bdm-actions{gap:4px}.bdm-btn{padding:5px 7px}.bdm-head-btns{flex-direction:column;gap:4px}.bdm-info{flex-direction:column;align-items:flex-start;gap:4px}}
+
 /* WordPress Toolkit */
 .bwp-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bwp-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
@@ -593,6 +633,26 @@ function broodle_tools_shared_script()
             }
         }
 
+        // Domains → tab (before WordPress)
+        var dmSrc=document.getElementById("broodle-domain-source");
+        if(dmSrc){
+            if(!serviceId) serviceId=dmSrc.getAttribute("data-service-id")||0;
+            var dmHtml=dmSrc.innerHTML;dmSrc.parentNode.removeChild(dmSrc);
+            if(!document.getElementById("broodleDomainInfo")){
+                if(tabNav&&tabContent){
+                    var dLi=document.createElement("li");
+                    dLi.innerHTML="<a href=\"#broodleDomainInfo\" data-toggle=\"tab\"><i class=\"fas fa-sitemap\"></i> Domains</a>";
+                    tabNav.appendChild(dLi);
+                    var dP=document.createElement("div");
+                    dP.className="panel-body tab-pane";dP.id="broodleDomainInfo";dP.innerHTML=dmHtml;
+                    tabContent.appendChild(dP);bindDomainActions(dP);
+                }else{
+                    var to3=document.getElementById("tabOverview");
+                    if(to3&&to3.parentNode){var dP2=document.createElement("div");dP2.id="broodleDomainInfo";dP2.className="tab-pane fade";dP2.innerHTML=dmHtml;to3.parentNode.appendChild(dP2);bindDomainActions(dP2);}
+                }
+            }
+        }
+
         // Modal handlers
         document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){var m=this.closest(".bem-overlay");if(m)m.style.display="none";});});
         document.querySelectorAll(".bem-overlay").forEach(function(o){o.addEventListener("click",function(e){if(e.target===o)o.style.display="none";});});
@@ -606,6 +666,18 @@ function broodle_tools_shared_script()
         if(passSubmit)passSubmit.addEventListener("click",submitPassword);
         var delSubmit=document.getElementById("bemDelSubmit");
         if(delSubmit)delSubmit.addEventListener("click",submitDelete);
+
+        // Domain modal bindings
+        var addAddonBtn=document.getElementById("bdmAddAddonBtn");
+        if(addAddonBtn)addAddonBtn.addEventListener("click",openAddonModal);
+        var addSubBtn=document.getElementById("bdmAddSubBtn");
+        if(addSubBtn)addSubBtn.addEventListener("click",openSubModal);
+        var addonSubmit=document.getElementById("bdmAddonSubmit");
+        if(addonSubmit)addonSubmit.addEventListener("click",submitAddonDomain);
+        var subSubmit=document.getElementById("bdmSubSubmit");
+        if(subSubmit)subSubmit.addEventListener("click",submitSubdomain);
+        var domDelSubmit=document.getElementById("bdmDelSubmit");
+        if(domDelSubmit)domDelSubmit.addEventListener("click",submitDomainDelete);
     }
 
     function hideDefaultEmailSection(){
@@ -698,6 +770,87 @@ function broodle_tools_shared_script()
         ajaxPost({action:"delete_email",email:delTarget},function(r){
             btn.disabled=false;btn.textContent="Delete";
             if(r.success){showMsg(msg,r.message,true);var row=document.querySelector(".bem-row[data-email=\""+delTarget+"\"]");if(row)row.style.display="none";setTimeout(function(){location.reload();},1200);}
+            else{showMsg(msg,r.message,false);}
+        });
+    }
+
+    /* ─── Domain Management ─── */
+    var domDelTarget="";var domDelType="";
+    var domDomainsLoaded=false;
+
+    function bindDomainActions(c){
+        c.querySelectorAll(".bdm-btn-del").forEach(function(b){b.addEventListener("click",function(){openDomainDelModal(this.getAttribute("data-domain"),this.getAttribute("data-type"));});});
+    }
+
+    function openAddonModal(){
+        document.getElementById("bdmAddonModal").style.display="flex";
+        document.getElementById("bdmAddonDomain").value="";document.getElementById("bdmAddonDocroot").value="";
+        document.getElementById("bdmAddonMsg").style.display="none";
+        var domInput=document.getElementById("bdmAddonDomain");
+        var docInput=document.getElementById("bdmAddonDocroot");
+        domInput.oninput=function(){docInput.value=domInput.value;};
+    }
+
+    function submitAddonDomain(){
+        var btn=document.getElementById("bdmAddonSubmit"),msg=document.getElementById("bdmAddonMsg");
+        var domain=document.getElementById("bdmAddonDomain").value.trim();
+        var docroot=document.getElementById("bdmAddonDocroot").value.trim();
+        if(!domain){showMsg(msg,"Please enter a domain name",false);return;}
+        if(!docroot) docroot=domain;
+        btn.disabled=true;btn.textContent="Adding...";
+        ajaxPost({action:"add_addon_domain",domain:domain,docroot:docroot},function(r){
+            btn.disabled=false;btn.textContent="Add Domain";showMsg(msg,r.message,r.success);
+            if(r.success)setTimeout(function(){location.reload();},1200);
+        });
+    }
+
+    function openSubModal(){
+        document.getElementById("bdmSubModal").style.display="flex";
+        document.getElementById("bdmSubName").value="";document.getElementById("bdmSubDocroot").value="";
+        document.getElementById("bdmSubMsg").style.display="none";
+        if(!domDomainsLoaded){
+            ajaxPost({action:"get_parent_domains"},function(r){
+                var sel=document.getElementById("bdmSubParent");sel.innerHTML="";
+                if(r.success&&r.domains&&r.domains.length){r.domains.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent=d;sel.appendChild(o);});}
+                else{sel.innerHTML="<option>No domains</option>";}
+                domDomainsLoaded=true;
+            });
+        }
+        var nameInput=document.getElementById("bdmSubName");
+        var docInput=document.getElementById("bdmSubDocroot");
+        var selParent=document.getElementById("bdmSubParent");
+        function updateSubDocroot(){docInput.value=nameInput.value+(nameInput.value?".":"")+selParent.value;}
+        nameInput.oninput=updateSubDocroot;
+        selParent.onchange=updateSubDocroot;
+    }
+
+    function submitSubdomain(){
+        var btn=document.getElementById("bdmSubSubmit"),msg=document.getElementById("bdmSubMsg");
+        var name=document.getElementById("bdmSubName").value.trim();
+        var parent=document.getElementById("bdmSubParent").value;
+        var docroot=document.getElementById("bdmSubDocroot").value.trim();
+        if(!name){showMsg(msg,"Please enter a subdomain name",false);return;}
+        if(!docroot) docroot=name+"."+parent;
+        btn.disabled=true;btn.textContent="Adding...";
+        ajaxPost({action:"add_subdomain",subdomain:name,domain:parent,docroot:docroot},function(r){
+            btn.disabled=false;btn.textContent="Add Subdomain";showMsg(msg,r.message,r.success);
+            if(r.success)setTimeout(function(){location.reload();},1200);
+        });
+    }
+
+    function openDomainDelModal(domain,type){
+        domDelTarget=domain;domDelType=type;
+        document.getElementById("bdmDelModal").style.display="flex";
+        document.getElementById("bdmDelDomain").textContent=domain;
+        document.getElementById("bdmDelMsg").style.display="none";
+    }
+
+    function submitDomainDelete(){
+        var btn=document.getElementById("bdmDelSubmit"),msg=document.getElementById("bdmDelMsg");
+        btn.disabled=true;btn.textContent="Deleting...";
+        ajaxPost({action:"delete_domain",domain:domDelTarget,type:domDelType},function(r){
+            btn.disabled=false;btn.textContent="Delete";
+            if(r.success){showMsg(msg,r.message,true);var row=document.querySelector(".bdm-row[data-domain=\""+domDelTarget+"\"]");if(row)row.style.display="none";setTimeout(function(){location.reload();},1200);}
             else{showMsg(msg,r.message,false);}
         });
     }
