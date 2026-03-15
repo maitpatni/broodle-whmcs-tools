@@ -256,23 +256,30 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+    $dbg = '<div id="bt-debug" style="padding:10px 15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:6px;font-family:monospace;font-size:12px;color:#92400e;">';
+
     try {
         $data = broodle_tools_gather_data($vars);
     } catch (\Exception $e) {
-        return '';
+        return $dbg . '&#x274C; v3.10.12 ERROR: ' . htmlspecialchars($e->getMessage()) . '</div>';
     }
 
     if (!$data) {
-        return '';
+        return $dbg . '&#x274C; v3.10.12 gather_data=false</div>';
     }
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $jsLen = strlen($jsData);
+
+    $dbg .= '&#x2705; v3.10.12 svc=' . $data['serviceId'] . ' json=' . $jsLen . 'b</div>';
 
     // Minimal output: hidden config div + img onerror bootstrap to load bt_client.js
     // All CSS is injected by bt_client.js via injectStyles()
     // All modals are injected by bt_client.js via buildModalsHtml()
-    return '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>'
-         . '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.10";document.head.appendChild(s);\' style="display:none!important">';
+    $out  = '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" onerror="(function(){if(document.getElementById(\'bt-js-loaded\'))return;var m=document.createElement(\'div\');m.id=\'bt-js-loaded\';m.style.cssText=\'padding:6px 15px;margin:4px 0;background:#d1fae5;border:1px solid #059669;border-radius:4px;font-family:monospace;font-size:11px;color:#065f46\';m.textContent=\'JS bootstrap fired\';var p=document.getElementById(\'bt-debug\');if(p)p.parentNode.insertBefore(m,p.nextSibling);var s=document.createElement(\'script\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.12\';s.onload=function(){m.textContent+=\' | bt_client.js loaded OK\';};s.onerror=function(){m.textContent+=\' | bt_client.js FAILED to load\';m.style.background=\'#fee2e2\';m.style.borderColor=\'#ef4444\';m.style.color=\'#991b1b\';};document.head.appendChild(s);})()" style="display:none!important" alt="">';
+
+    return $dbg . $out;
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */
