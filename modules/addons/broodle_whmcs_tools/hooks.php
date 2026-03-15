@@ -395,6 +395,18 @@ function broodle_tools_css_cards()
 .bt-btn-add:hover{background:#0950b3}
 .bt-btn-outline{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
 .bt-btn-outline:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}
+.bt-addons-section{margin-top:20px}
+.bt-addon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px 16px}
+.bt-addon-card{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--input-bg,#f9fafb);border:1px solid var(--border-color,#f3f4f6);border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.bt-addon-card:hover{border-color:rgba(10,94,211,.2);box-shadow:0 2px 8px rgba(10,94,211,.05)}
+.bt-addon-icon{width:36px;height:36px;border-radius:9px;background:rgba(124,58,237,.08);color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bt-addon-info{flex:1;min-width:0;overflow:hidden}
+.bt-addon-name{font-size:13px;font-weight:600;color:var(--heading-color,#111827);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-addon-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(124,58,237,.25);background:rgba(124,58,237,.06);color:#7c3aed;transition:all .15s;white-space:nowrap;text-decoration:none;flex-shrink:0}
+.bt-addon-btn:hover{background:rgba(124,58,237,.12);border-color:#7c3aed;text-decoration:none;color:#7c3aed}
+.bt-addon-btn-green{border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.06);color:#059669}
+.bt-addon-btn-green:hover{background:rgba(5,150,105,.12);border-color:#059669;color:#059669}
+@media(max-width:480px){.bt-addon-grid{grid-template-columns:1fr}}
 </style>';
 }
 
@@ -551,6 +563,8 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-input-group,.dark-mode .bt-input-group{border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bt-at,[data-theme="dark"] .bt-prefix,.dark-mode .bt-at,.dark-mode .bt-prefix{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bt-upgrades,.dark-mode .bt-upgrades{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-addon-card,.dark-mode .bt-addon-card{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-addon-card:hover,.dark-mode .bt-addon-card:hover{border-color:rgba(10,94,211,.3)}
 [data-theme="dark"] .bt-btn-outline,.dark-mode .bt-btn-outline{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bwp-detail-panel,.dark-mode .bwp-detail-panel{background:var(--card-bg,#1f2937)}
 </style>';
@@ -603,6 +617,25 @@ function doCopy(t,btn){if(navigator.clipboard){navigator.clipboard.writeText(t).
 var wpSvg16="<svg width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\" fill=\\"currentColor\\"><path d=\\"M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8\\"/><path d=\\"M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z\\"/><path fill-rule=\\"evenodd\\" d=\\"M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8\\"/></svg>";
 var wpSvg20=wpSvg16.replace(/width=\\"16\\"/g,"width=\\"20\\"").replace(/height=\\"16\\"/g,"height=\\"20\\"");
 var wpSvg32=wpSvg16.replace(/width=\\"16\\"/g,"width=\\"32\\"").replace(/height=\\"16\\"/g,"height=\\"32\\"");
+
+/* ─── Addon/Upgrade Icon Helpers ─── */
+function btAddonIcon(name){
+    var n=name.toLowerCase();
+    if(n.indexOf("wordpress")!==-1||n.indexOf("wp ")!==-1) return wpSvg16;
+    if(n.indexOf("site builder")!==-1||n.indexOf("sitebuilder")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x273\\x27 y=\\x273\\x27 width=\\x2718\\x27 height=\\x2718\\x27 rx=\\x272\\x27/><path d=\\x27M3 9h18M9 21V9\\x27/></svg>";
+    if(n.indexOf("ssl")!==-1||n.indexOf("certificate")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x273\\x27 y=\\x2711\\x27 width=\\x2718\\x27 height=\\x2711\\x27 rx=\\x272\\x27/><path d=\\x27M7 11V7a5 5 0 0 1 10 0v4\\x27/></svg>";
+    if(n.indexOf("email")!==-1||n.indexOf("mail")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x272\\x27 y=\\x274\\x27 width=\\x2720\\x27 height=\\x2716\\x27 rx=\\x272\\x27/><path d=\\x27m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\\x27/></svg>";
+    if(n.indexOf("store")!==-1||n.indexOf("ecommerce")!==-1||n.indexOf("woocommerce")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><circle cx=\\x279\\x27 cy=\\x2721\\x27 r=\\x271\\x27/><circle cx=\\x2720\\x27 cy=\\x2721\\x27 r=\\x271\\x27/><path d=\\x271 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6\\x27/></svg>";
+    return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\\x27/></svg>";
+}
+function btUpgradeIcon(name){
+    var n=name.toLowerCase();
+    if(n.indexOf("ram")!==-1||n.indexOf("memory")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x272\\x27 y=\\x276\\x27 width=\\x2720\\x27 height=\\x2712\\x27 rx=\\x272\\x27/><path d=\\x276 6V4\\x27/><path d=\\x2710 6V4\\x27/><path d=\\x2714 6V4\\x27/><path d=\\x2718 6V4\\x27/></svg>";
+    if(n.indexOf("backup")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\\x27/><polyline points=\\x277 10 12 15 17 10\\x27/><line x1=\\x2712\\x27 y1=\\x2715\\x27 x2=\\x2712\\x27 y2=\\x273\\x27/></svg>";
+    if(n.indexOf("cpu")!==-1||n.indexOf("core")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x274\\x27 y=\\x274\\x27 width=\\x2716\\x27 height=\\x2716\\x27 rx=\\x272\\x27/><rect x=\\x279\\x27 y=\\x279\\x27 width=\\x276\\x27 height=\\x276\\x27/><path d=\\x272 9h2M2 15h2M20 9h2M20 15h2M9 2v2M15 2v2M9 20v2M15 20v2\\x27/></svg>";
+    if(n.indexOf("disk")!==-1||n.indexOf("storage")!==-1) return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><ellipse cx=\\x2712\\x27 cy=\\x275\\x27 rx=\\x279\\x27 ry=\\x273\\x27/><path d=\\x27M21 12c0 1.66-4 3-9 3s-9-1.34-9-3\\x27/><path d=\\x27M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5\\x27/></svg>";
+    return "<svg width=\\x2716\\x27 height=\\x2716\\x27 viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><polyline points=\\x2723 6 13.5 15.5 8.5 10.5 1 18\\x27/><polyline points=\\x2717 6 23 6 23 12\\x27/></svg>";
+}
 
 /* ─── Init ─── */
 function init(){
@@ -780,16 +813,58 @@ function buildOverviewPane(){
         html+="</div></div></div>";
     }
 
-    // Addons/Upgrades — scrape from hidden tabs and panels
-    var addonsHtml="";
+    // Addons/Upgrades — parse from hidden WHMCS panels into clean UI
+    var addonItems=[];var upgradeItems=[];
+    // Parse the Addons & Extras select options
+    var extrasPanel=$("cPanelExtrasPurchasePanel");
+    if(extrasPanel){
+        var form=extrasPanel.querySelector("form");
+        var tokenInput=form?form.querySelector("input[name=token]"):null;
+        var svcInput=form?form.querySelector("input[name=serviceid]"):null;
+        var token=tokenInput?tokenInput.value:"";
+        var svcId=svcInput?svcInput.value:"";
+        extrasPanel.querySelectorAll("select[name=aid] option").forEach(function(opt){
+            var name=opt.textContent.trim();var aid=opt.value;
+            if(!name||!aid) return;
+            // Categorize: backup/ram/resource = upgrade, rest = addon
+            var nl=name.toLowerCase();
+            if(nl.indexOf("backup")!==-1||nl.indexOf("ram")!==-1||nl.indexOf("cpu")!==-1||nl.indexOf("disk")!==-1||nl.indexOf("bandwidth")!==-1||nl.indexOf("upgrade")!==-1||nl.indexOf("resource")!==-1){
+                upgradeItems.push({name:name,aid:aid,token:token,svcId:svcId});
+            }else{
+                addonItems.push({name:name,aid:aid,token:token,svcId:svcId});
+            }
+        });
+    }
+    // Also check tabAddons for configurable options / upgrade links (not email forms)
     var addonsEl=$("tabAddons");
-    if(addonsEl&&addonsEl.innerHTML.trim()){addonsHtml+=addonsEl.innerHTML;addonsEl.style.display="none";}
-    document.querySelectorAll("[data-bt-hidden]").forEach(function(p){
-        var body=p.querySelector(".panel-body,.card-body");
-        if(body&&body.innerHTML.trim()) addonsHtml+=body.innerHTML;
-    });
-    if(addonsHtml.trim()){
-        html+="<div class=\"bt-upgrades\"><h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Addons &amp; Available Upgrades</h4>"+addonsHtml+"</div>";
+    if(addonsEl){
+        addonsEl.querySelectorAll("a[href*=upgrade],a[href*=configoptions],.btn[href*=upgrade]").forEach(function(a){
+            var txt=a.textContent.trim();var href=a.getAttribute("href")||"";
+            if(txt&&href) upgradeItems.push({name:txt,link:href});
+        });
+        addonsEl.style.display="none";
+    }
+    // Render addons section
+    if(addonItems.length){
+        html+="<div class=\"bt-addons-section\"><div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\" style=\"background:rgba(124,58,237,.1);color:#7c3aed\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2v20M2 12h20\"/></svg></div><div><h5>Available Addons</h5><p>"+addonItems.length+" addon"+(addonItems.length!==1?"s":"")+" available</p></div></div></div><div class=\"bt-addon-grid\">";
+        addonItems.forEach(function(a){
+            var icon=btAddonIcon(a.name);
+            html+="<div class=\"bt-addon-card\"><div class=\"bt-addon-icon\">"+icon+"</div><div class=\"bt-addon-info\"><span class=\"bt-addon-name\">"+esc(a.name)+"</span></div><form method=\"post\" action=\"cart.php?a=add\" style=\"margin:0\"><input type=\"hidden\" name=\"token\" value=\""+esc(a.token)+"\"><input type=\"hidden\" name=\"serviceid\" value=\""+esc(a.svcId)+"\"><input type=\"hidden\" name=\"aid\" value=\""+esc(a.aid)+"\"><button type=\"submit\" class=\"bt-addon-btn\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2v20M2 12h20\"/></svg> Add</button></form></div>";
+        });
+        html+="</div></div></div>";
+    }
+    // Render upgrades section
+    if(upgradeItems.length){
+        html+="<div class=\"bt-addons-section\"><div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\" style=\"background:rgba(5,150,105,.1);color:#059669\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg></div><div><h5>Available Upgrades</h5><p>"+upgradeItems.length+" upgrade"+(upgradeItems.length!==1?"s":"")+" available</p></div></div></div><div class=\"bt-addon-grid\">";
+        upgradeItems.forEach(function(u){
+            var icon=btUpgradeIcon(u.name);
+            if(u.link){
+                html+="<div class=\"bt-addon-card\"><div class=\"bt-addon-icon\" style=\"background:rgba(5,150,105,.08);color:#059669\">"+icon+"</div><div class=\"bt-addon-info\"><span class=\"bt-addon-name\">"+esc(u.name)+"</span></div><a href=\""+esc(u.link)+"\" class=\"bt-addon-btn bt-addon-btn-green\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"17 1 21 5 17 9\"/><path d=\"M3 11V9a4 4 0 0 1 4-4h14\"/></svg> Upgrade</a></div>";
+            }else{
+                html+="<div class=\"bt-addon-card\"><div class=\"bt-addon-icon\" style=\"background:rgba(5,150,105,.08);color:#059669\">"+icon+"</div><div class=\"bt-addon-info\"><span class=\"bt-addon-name\">"+esc(u.name)+"</span></div><form method=\"post\" action=\"cart.php?a=add\" style=\"margin:0\"><input type=\"hidden\" name=\"token\" value=\""+esc(u.token)+"\"><input type=\"hidden\" name=\"serviceid\" value=\""+esc(u.svcId)+"\"><input type=\"hidden\" name=\"aid\" value=\""+esc(u.aid)+"\"><button type=\"submit\" class=\"bt-addon-btn bt-addon-btn-green\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"17 1 21 5 17 9\"/><path d=\"M3 11V9a4 4 0 0 1 4-4h14\"/></svg> Purchase</button></form></div>";
+            }
+        });
+        html+="</div></div></div>";
     }
 
     pane.innerHTML=html;
