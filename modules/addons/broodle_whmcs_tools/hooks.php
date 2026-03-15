@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.18\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.19\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
