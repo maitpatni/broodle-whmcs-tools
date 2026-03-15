@@ -261,25 +261,12 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-    // APPROACH: <style> works, <script> stripped, <img onerror> works.
-    // Problem: large output may get truncated by Smarty/Lagom2.
-    // Solution: output CSS + config div + small img-onerror that dynamically
-    // loads the full JS from a separate .js file in the module directory.
-
-    // 1. CSS (style tags work)
-    $output = broodle_tools_shared_styles();
-
-    // 2. Config data in hidden div
+    // MINIMAL output — just CSS hide + config div + JS bootstrap
+    // No modals, no extra CSS — keep output small to avoid truncation
+    $output  = broodle_tools_css_hide();
     $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
-
-    // 3. Modal HTML
-    $output .= broodle_tools_modals();
-    $output .= broodle_tools_wp_detail_modal();
-
-    // 4. Bootstrap: img onerror loads external JS file
-    $jsUrl = 'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.7';
-    $boot = 'var s=document.createElement("script");s.src="' . $jsUrl . '";document.head.appendChild(s);';
-    $output .= '<img src="data:image/gif," onerror=\'' . $boot . '\' style="display:none!important">';
+    $output .= '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.8";document.head.appendChild(s);\' style="display:none!important">';
+    $output .= '<div style="padding:12px;margin:10px 0;background:#d1fae5;border:2px solid #059669;border-radius:8px;font-family:monospace;font-size:13px;">✅ v3.10.8 hook output length: ' . strlen($output) . ' chars</div>';
 
     return $output;
 });
