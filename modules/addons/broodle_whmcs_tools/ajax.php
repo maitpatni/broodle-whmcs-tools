@@ -138,7 +138,7 @@ if (empty($accessHash) && empty($password)) {
 }
 
 /** Make a WHM API call. */
-function broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url)
+function broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, $timeout = 20)
 {
     $headers = [];
     if (!empty($accessHash)) {
@@ -148,7 +148,7 @@ function broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $access
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_TIMEOUT        => $timeout,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
     ]);
@@ -686,16 +686,35 @@ switch ($action) {
     // ── SSL Management Actions ──
 
     case 'ssl_status':
-        // Use UAPI SSL::installed_hosts to get all domains with SSL info
+        // Step 1: Get all domains for this account
+        $urlDomains = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=DomainInfo"
+             . "&cpanel_jsonapi_func=list_domains";
+        $rDom = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomains);
+        $allDomains = [];
+        if ($rDom['code'] === 200 && $rDom['body']) {
+            $jsonDom = json_decode($rDom['body'], true);
+            $domData = $jsonDom['result']['data'] ?? [];
+            if (!empty($domData['main_domain'])) $allDomains[] = $domData['main_domain'];
+            if (!empty($domData['addon_domains'])) $allDomains = array_merge($allDomains, $domData['addon_domains']);
+            if (!empty($domData['parked_domains'])) $allDomains = array_merge($allDomains, $domData['parked_domains']);
+        }
+        if (empty($allDomains) && !empty($service->domain)) $allDomains[] = $service->domain;
+        $allDomains = array_unique($allDomains);
+
+        // Step 2: Get SSL info via installed_hosts
         $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=3"
              . "&cpanel_jsonapi_module=SSL"
              . "&cpanel_jsonapi_func=installed_hosts";
 
-        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
-        $certificates = [];
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, 30);
 
+        // Build a map of domain => cert info from installed_hosts
+        $sslMap = [];
         if ($r['code'] === 200 && $r['body']) {
             $json = json_decode($r['body'], true);
             $hosts = $json['result']['data'] ?? [];
@@ -703,46 +722,62 @@ switch ($action) {
             if (is_array($hosts)) {
                 foreach ($hosts as $host) {
                     if (!is_array($host)) continue;
-                    $domain = $host['servername'] ?? ($host['domain'] ?? '');
+                    $domain = $host['servername'] ?? '';
                     if (!$domain) continue;
 
                     $cert = [];
                     $cert['domain'] = $domain;
                     $cert['has_cert'] = true;
 
-                    // Certificate details
-                    $certData = $host['certificate'] ?? $host;
-                    $issuerOrg = $certData['issuer.organizationName'] ?? ($certData['issuer_organization'] ?? '');
-                    $issuerCN = $certData['issuer.commonName'] ?? ($certData['issuer_common_name'] ?? '');
+                    // Certificate details are nested under 'certificate' object
+                    $certObj = $host['certificate'] ?? [];
+                    if (!is_array($certObj)) $certObj = [];
+
+                    // Issuer is a nested object: certificate.issuer.organizationName / certificate.issuer.commonName
+                    $issuerObj = $certObj['issuer'] ?? [];
+                    if (is_array($issuerObj)) {
+                        $issuerOrg = $issuerObj['organizationName'] ?? '';
+                        $issuerCN = $issuerObj['commonName'] ?? '';
+                    } else {
+                        // Fallback if issuer is a string
+                        $issuerOrg = '';
+                        $issuerCN = is_string($issuerObj) ? $issuerObj : '';
+                    }
                     $cert['issuer'] = $issuerOrg ?: $issuerCN ?: 'Unknown';
 
-                    // Check if self-signed
-                    $isSelfSigned = false;
-                    if (isset($host['is_self_signed'])) {
-                        $isSelfSigned = (bool) $host['is_self_signed'];
-                    } elseif (isset($certData['self_signed'])) {
-                        $isSelfSigned = (bool) $certData['self_signed'];
-                    } else {
-                        // Heuristic: if issuer contains "cPanel" and subject matches, it's likely self-signed
-                        $subjectCN = $certData['subject.commonName'] ?? ($certData['subject_common_name'] ?? '');
-                        if (stripos($cert['issuer'], 'cpanel') !== false && $subjectCN === $cert['issuer']) {
-                            $isSelfSigned = true;
-                        }
-                    }
+                    // Self-signed: certificate.is_self_signed (integer 0/1)
+                    $isSelfSigned = !empty($certObj['is_self_signed']);
+
                     $cert['is_self_signed'] = $isSelfSigned;
                     $cert['self_signed'] = $isSelfSigned;
 
-                    // Expiry
-                    $expiryEpoch = $certData['not_after'] ?? ($host['not_after'] ?? null);
+                    // Expiry: certificate.not_after (epoch)
+                    $expiryEpoch = $certObj['not_after'] ?? null;
                     if ($expiryEpoch) {
                         $cert['expiry_epoch'] = (int) $expiryEpoch;
                         $cert['expiry_date'] = date('Y-m-d', (int) $expiryEpoch);
                     }
 
+                    // AutoSSL flag: certificate.is_autossl (integer 0/1)
+                    $isAutoSSL = !empty($certObj['is_autossl']);
+
                     // Type detection
                     $issuerLower = strtolower($cert['issuer']);
                     if ($isSelfSigned) {
                         $cert['type'] = 'self-signed';
+                    } elseif ($isAutoSSL) {
+                        // Use the autossl provider display name if available
+                        $providerName = $certObj['auto_ssl_provider_display_name'] ?? ($certObj['auto_ssl_provider'] ?? '');
+                        if ($providerName) {
+                            $cert['issuer'] = $providerName . ' (AutoSSL)';
+                        } elseif (strpos($issuerLower, 'let\'s encrypt') !== false || strpos($issuerLower, 'letsencrypt') !== false) {
+                            $cert['issuer'] = "Let's Encrypt";
+                        } elseif (strpos($issuerLower, 'comodo') !== false || strpos($issuerLower, 'sectigo') !== false) {
+                            $cert['issuer'] = 'Sectigo (AutoSSL)';
+                        } else {
+                            $cert['issuer'] = $cert['issuer'] ?: 'AutoSSL';
+                        }
+                        $cert['type'] = 'autossl';
                     } elseif (strpos($issuerLower, 'let\'s encrypt') !== false || strpos($issuerLower, 'letsencrypt') !== false) {
                         $cert['type'] = 'autossl';
                         $cert['issuer'] = "Let's Encrypt";
@@ -756,59 +791,79 @@ switch ($action) {
                         $cert['type'] = 'commercial';
                     }
 
-                    $certificates[] = $cert;
+                    $sslMap[strtolower($domain)] = $cert;
+
+                    // Also map all covered domains from certificate.domains array
+                    $coveredDomains = $certObj['domains'] ?? [];
+                    if (is_array($coveredDomains)) {
+                        foreach ($coveredDomains as $covDom) {
+                            if (is_string($covDom) && !isset($sslMap[strtolower($covDom)])) {
+                                $covCert = $cert;
+                                $covCert['domain'] = $covDom;
+                                $sslMap[strtolower($covDom)] = $covCert;
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // If no certs found from installed_hosts, try to get domain list and mark as no SSL
-        if (empty($certificates)) {
-            $urlDomains = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
-                 . "&cpanel_jsonapi_module=DomainInfo"
-                 . "&cpanel_jsonapi_func=list_domains";
-            $rDom = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomains);
-            if ($rDom['code'] === 200 && $rDom['body']) {
-                $jsonDom = json_decode($rDom['body'], true);
-                $domData = $jsonDom['result']['data'] ?? [];
-                $allDomains = [];
-                if (!empty($domData['main_domain'])) $allDomains[] = $domData['main_domain'];
-                if (!empty($domData['addon_domains'])) $allDomains = array_merge($allDomains, $domData['addon_domains']);
-                if (!empty($domData['parked_domains'])) $allDomains = array_merge($allDomains, $domData['parked_domains']);
-                foreach ($allDomains as $dom) {
-                    $certificates[] = [
-                        'domain' => $dom,
-                        'has_cert' => false,
-                        'issuer' => '',
-                        'is_self_signed' => false,
-                        'self_signed' => false,
-                        'type' => 'none',
-                    ];
-                }
+        // Step 3: Merge — every domain gets an entry, with SSL info if available
+        $certificates = [];
+        foreach ($allDomains as $dom) {
+            $key = strtolower($dom);
+            if (isset($sslMap[$key])) {
+                $certificates[] = $sslMap[$key];
+                unset($sslMap[$key]);
+            } else {
+                $certificates[] = [
+                    'domain' => $dom,
+                    'has_cert' => false,
+                    'issuer' => '',
+                    'is_self_signed' => false,
+                    'self_signed' => false,
+                    'type' => 'none',
+                ];
             }
+        }
+        // Add any remaining SSL hosts not in the domain list (e.g. mail/cpanel subdomains)
+        foreach ($sslMap as $extra) {
+            $certificates[] = $extra;
         }
 
         echo json_encode(['success' => true, 'certificates' => $certificates]);
         break;
 
     case 'start_autossl':
-        // Use UAPI SSL::start_autossl_check to trigger AutoSSL
-        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=3"
-             . "&cpanel_jsonapi_module=SSL"
-             . "&cpanel_jsonapi_func=start_autossl_check";
+        // Use WHM API start_autossl_check_for_one_user (more reliable than UAPI when called via WHM)
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/start_autossl_check_for_one_user"
+             . "?api.version=1"
+             . "&username=" . urlencode($cpUsername);
 
-        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, 30);
 
         if ($r['code'] === 200 && $r['body']) {
             $json = json_decode($r['body'], true);
-            $status = $json['result']['status'] ?? 0;
+            $meta = $json['metadata'] ?? [];
+            $status = $meta['result'] ?? ($json['result']['status'] ?? 0);
             if ($status == 1) {
                 echo json_encode(['success' => true, 'message' => 'AutoSSL check started']);
             } else {
-                $err = $json['result']['errors'][0] ?? 'Failed to start AutoSSL';
+                $err = $meta['reason'] ?? ($json['result']['errors'][0] ?? 'Failed to start AutoSSL');
+                // Fallback: try UAPI method
+                $urlUapi = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                     . "&cpanel_jsonapi_apiversion=3"
+                     . "&cpanel_jsonapi_module=SSL"
+                     . "&cpanel_jsonapi_func=start_autossl_check";
+                $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlUapi, 30);
+                if ($r2['code'] === 200 && $r2['body']) {
+                    $json2 = json_decode($r2['body'], true);
+                    if (($json2['result']['status'] ?? 0) == 1) {
+                        echo json_encode(['success' => true, 'message' => 'AutoSSL check started']);
+                        break;
+                    }
+                }
                 echo json_encode(['success' => false, 'message' => $err]);
             }
         } else {

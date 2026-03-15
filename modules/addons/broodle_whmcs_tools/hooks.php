@@ -439,9 +439,9 @@ function broodle_tools_css_cards()
 .bt-addon-tip-btn{width:18px;height:18px;border-radius:50%;border:none;background:transparent;color:var(--text-muted,#c0c5cc);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .12s;padding:0}
 .bt-addon-tip-btn:hover{color:#0a5ed3}
 .bt-addon-tip-btn.loading{opacity:.4}
-.bt-addon-tooltip{position:fixed;width:300px;padding:10px 13px;background:var(--heading-color,#1f2937);color:#f3f4f6;font-size:11px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:9999;display:none;word-wrap:break-word;pointer-events:none}
+.bt-addon-tooltip{position:fixed;width:300px;padding:10px 13px;background:#1f2937;color:#f3f4f6;font-size:12px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:9999;word-wrap:break-word;opacity:0;visibility:hidden;transition:opacity .15s,visibility .15s;pointer-events:none}
+.bt-addon-tooltip.visible{opacity:1;visibility:visible}
 .bt-addon-tooltip::after{display:none}
-.bt-addon-tip-wrap.show-tip .bt-addon-tooltip{display:block}
 @media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:240px}}
 /* SSL Pane */
 .bt-ssl-row .bt-row-info{flex-wrap:wrap}
@@ -706,7 +706,6 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-addon-dot,.dark-mode .bt-addon-dot{background:var(--border-color,#4b5563)}
 [data-theme="dark"] .bt-addon-dot.active,.dark-mode .bt-addon-dot.active{background:#5b9cf6}
 [data-theme="dark"] .bt-addon-tooltip,.dark-mode .bt-addon-tooltip{background:#111827;color:#e5e7eb;box-shadow:0 8px 28px rgba(0,0,0,.4)}
-[data-theme="dark"] .bt-addon-tooltip::after,.dark-mode .bt-addon-tooltip::after{border-top-color:#111827}
 [data-theme="dark"] .bt-addon-tip-btn,.dark-mode .bt-addon-tip-btn{color:var(--text-muted,#6b7280)}
 [data-theme="dark"] .bt-addon-tip-btn:hover,.dark-mode .bt-addon-tip-btn:hover{color:#5b9cf6}
 
@@ -1198,7 +1197,24 @@ function buildOverviewPane(){
         scroller.addEventListener("touchend",onDragEnd);
         // Tooltip + pricing: fetch on hover/click
         var tipCache={};
-        function posTip(anchor,tip){var r=anchor.getBoundingClientRect();tip.style.left=Math.max(8,r.left-280)+"px";tip.style.top=(r.top-tip.offsetHeight-8)+"px";if(r.top-tip.offsetHeight-8<8){tip.style.top=(r.bottom+8)+"px";}}
+        var activeTip=null;
+        function showTip(anchor,tip){
+            if(activeTip&&activeTip!==tip) activeTip.classList.remove("visible");
+            activeTip=tip;
+            // Move to body if not already there
+            if(tip.parentNode!==document.body) document.body.appendChild(tip);
+            tip.classList.add("visible");
+            // Position after visible so we can measure
+            var r=anchor.getBoundingClientRect();
+            var tw=tip.offsetWidth||300;var th=tip.offsetHeight||60;
+            var left=r.left+r.width/2-tw/2;
+            if(left<8) left=8;
+            if(left+tw>window.innerWidth-8) left=window.innerWidth-tw-8;
+            var top=r.top-th-8;
+            if(top<8) top=r.bottom+8;
+            tip.style.left=left+"px";tip.style.top=top+"px";
+        }
+        function hideTip(tip){tip.classList.remove("visible");activeTip=null;}
         pane.querySelectorAll(".bt-addon-tip-wrap").forEach(function(wrap){
             var btn=wrap.querySelector(".bt-addon-tip-btn");
             var tip=wrap.querySelector(".bt-addon-tooltip");
@@ -1211,17 +1227,16 @@ function buildOverviewPane(){
                     btn.classList.remove("loading");
                     var desc=(r.success&&r.description)?r.description:"No description available";
                     tipCache[aid]=desc;tip.textContent=desc;
-                    // Also set pricing
                     if(r.price){
                         pane.querySelectorAll(".bt-addon-price[data-aid=\\x22"+aid+"\\x22]").forEach(function(pe){pe.textContent=r.price;pe.classList.add("visible");});
                     }
                 });
             }
-            wrap.addEventListener("mouseenter",function(){loadTip();posTip(btn,tip);});
-            wrap.addEventListener("mouseleave",function(){tip.style.display="none";});
-            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();wrap.classList.toggle("show-tip");posTip(btn,tip);});
+            wrap.addEventListener("mouseenter",function(){loadTip();showTip(btn,tip);});
+            wrap.addEventListener("mouseleave",function(){hideTip(tip);});
+            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();if(tip.classList.contains("visible")){hideTip(tip);}else{showTip(btn,tip);}});
         });
-        document.addEventListener("click",function(){pane.querySelectorAll(".bt-addon-tip-wrap.show-tip").forEach(function(w){w.classList.remove("show-tip");});});
+        document.addEventListener("click",function(e){if(activeTip&&!e.target.closest(".bt-addon-tip-wrap")){hideTip(activeTip);}});
         // Prefetch pricing for visible page
         var firstPageItems=pane.querySelectorAll(".bt-addon-page:first-child .bt-addon-tip-btn[data-aid]");
         firstPageItems.forEach(function(btn){
