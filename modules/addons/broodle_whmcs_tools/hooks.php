@@ -214,7 +214,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         }
     }
 
-    // ── Email Accounts Section (standalone, not a tab) ──
+    // ── Email Accounts Tab ──
     if (broodle_tools_email_enabled()) {
         $cpData = broodle_tools_get_cpanel_service($serviceId);
         if ($cpData) {
@@ -223,7 +223,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         }
     }
 
-    // ── WordPress Toolkit Tab ──
+    // ── WordPress Manager Tab ──
     if (broodle_tools_wp_enabled()) {
         $cpData = broodle_tools_get_cpanel_service($serviceId);
         if ($cpData) {
@@ -266,7 +266,7 @@ function broodle_tools_build_ns_output($nameservers, $serverIp)
     return '<div id="broodle-ns-source" style="display:none"><div class="bns-card" style="margin-top:20px"><div class="bns-card-head"><div class="bns-card-head-left"><div class="bns-icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div></div></div><div class="bns-list">' . $rows . '</div></div></div>';
 }
 
-/* ─── Email Accounts Section Builder (standalone) ─────────── */
+/* ─── Email Accounts Tab Builder ──────────────────────────── */
 
 function broodle_tools_build_email_output($emails, $serviceId)
 {
@@ -292,8 +292,8 @@ function broodle_tools_build_email_output($emails, $serviceId)
     }
 
     return '
-<div id="broodle-email-section" style="display:none" data-service-id="' . (int) $serviceId . '">
-  <div class="bns-card">
+<div id="broodle-email-source" style="display:none" data-service-id="' . (int) $serviceId . '">
+  <div class="bns-card" style="margin-top:20px">
     <div class="bns-card-head">
       <div class="bns-card-head-left">
         <div class="bns-icon-circle">
@@ -560,31 +560,24 @@ function broodle_tools_shared_script()
             }
         }
 
-        // Email → standalone section after Quick Shortcuts
-        var emSrc=document.getElementById("broodle-email-section");
+        // Email → tab (before WordPress)
+        var emSrc=document.getElementById("broodle-email-source");
         if(emSrc){
             serviceId=emSrc.getAttribute("data-service-id")||0;
-            emSrc.style.display="block";
-            // Find insertion point: after Quick Shortcuts / sidebar section
-            var inserted=false;
-            // Lagom: look for .quick-shortcut-container or section with shortcuts
-            var shortcuts=document.querySelector(".quick-shortcut-container,.shortcuts-container,.panel-shortcuts");
-            if(shortcuts){
-                var parent=shortcuts.closest(".section-body")||shortcuts.closest(".panel")||shortcuts.parentNode;
-                if(parent){parent.parentNode.insertBefore(emSrc,parent.nextSibling);inserted=true;}
+            var emHtml=emSrc.innerHTML;emSrc.parentNode.removeChild(emSrc);
+            if(!document.getElementById("broodleEmailInfo")){
+                if(tabNav&&tabContent){
+                    var eLi=document.createElement("li");
+                    eLi.innerHTML="<a href=\"#broodleEmailInfo\" data-toggle=\"tab\"><i class=\"fas fa-envelope\"></i> Email Accounts</a>";
+                    tabNav.appendChild(eLi);
+                    var eP=document.createElement("div");
+                    eP.className="panel-body tab-pane";eP.id="broodleEmailInfo";eP.innerHTML=emHtml;
+                    tabContent.appendChild(eP);bindCopy(eP);bindEmailActions(eP);
+                }else{
+                    var to2=document.getElementById("tabOverview");
+                    if(to2&&to2.parentNode){var eP2=document.createElement("div");eP2.id="broodleEmailInfo";eP2.className="tab-pane fade";eP2.innerHTML=emHtml;to2.parentNode.appendChild(eP2);bindCopy(eP2);bindEmailActions(eP2);}
+                }
             }
-            // Fallback: insert after the panel that contains the tabs
-            if(!inserted&&panel){
-                var panelParent=panel.closest(".section-body")||panel.parentNode;
-                if(panelParent&&panelParent.parentNode){panelParent.parentNode.insertBefore(emSrc,panelParent.nextSibling);inserted=true;}
-            }
-            // Fallback: insert before the first .section-body
-            if(!inserted){
-                var sb=document.querySelector(".section-body");
-                if(sb&&sb.parentNode){sb.parentNode.insertBefore(emSrc,sb.nextSibling);inserted=true;}
-            }
-            emSrc.style.margin="20px 0";
-            bindCopy(emSrc);bindEmailActions(emSrc);
         }
 
         // Modal handlers
@@ -715,7 +708,7 @@ function broodle_tools_shared_script()
 
         if(tabNav){
             var li=document.createElement("li");
-            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress</a>";
+            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
             tabNav.appendChild(li);
             var tabContent=panel?panel.querySelector(".tab-content"):null;
             if(tabContent){

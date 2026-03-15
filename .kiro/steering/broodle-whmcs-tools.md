@@ -158,8 +158,8 @@ Secondary colors:
 ### Layout Rules
 
 - **Nameservers**: Injected as a tab in the bottom panel-tabs nav (alongside Overview, etc.)
-- **Email Accounts**: Standalone section injected after Quick Shortcuts container (NOT a tab)
-- **WordPress Toolkit**: Injected as a tab in the bottom panel-tabs nav
+- **Email Accounts**: Injected as a tab in the bottom panel-tabs nav (after Nameservers, before WordPress Manager)
+- **WordPress Manager**: Injected as a tab in the bottom panel-tabs nav
 - **Default "Quick Create Email Account"**: Hidden via CSS (`.quick-create-email`) and JS (scans headings for "quick create email" text)
 
 ### Modal Pattern

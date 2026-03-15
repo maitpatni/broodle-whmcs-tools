@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '2.0.0');
+define('BROODLE_TOOLS_VERSION', '2.1.0');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -260,7 +260,7 @@ function broodle_tools_render_admin($vars, $settings)
                     <div class="bt-row">
                         <div class="bt-row-info">
                             <h4>Email Accounts List</h4>
-                            <p>Show an Emails tab on cPanel product details listing all email accounts.</p>
+                            <p>Show an Email Accounts tab on cPanel product details listing all email accounts.</p>
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_email_list" value="1" ' . ($emailListEnabled ? 'checked' : '') . '>
