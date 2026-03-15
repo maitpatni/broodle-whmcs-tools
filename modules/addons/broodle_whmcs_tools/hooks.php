@@ -428,17 +428,21 @@ function broodle_tools_shared_script()
 @media(max-width:480px){#tabOverview .broodle-overview-grid{grid-template-columns:1fr}}
 
 /* ─── Addons/Upgrades in Overview ─── */
+#tabOverview .broodle-overview-section{margin-top:20px}
 #tabOverview .broodle-upgrades-section{margin-top:20px;padding:18px 20px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:12px}
 #tabOverview .broodle-upgrades-section h4{margin:0 0 14px;font-size:14px;font-weight:700;color:var(--heading-color,#111827);display:flex;align-items:center;gap:8px}
 #tabOverview .broodle-upgrades-section h4 svg{color:#0a5ed3}
 #tabOverview .broodle-upgrades-section .panel,#tabOverview .broodle-upgrades-section .card{border:none;box-shadow:none;margin:0;background:transparent}
 #tabOverview .broodle-upgrades-section .panel-heading,#tabOverview .broodle-upgrades-section .card-header{display:none}
 #tabOverview .broodle-upgrades-section .panel-body,#tabOverview .broodle-upgrades-section .card-body{padding:0}
+#tabOverview .broodle-upgrades-section > h3{display:none}
 #tabOverview .broodle-upgrades-section table{width:100%;border-collapse:separate;border-spacing:0}
 #tabOverview .broodle-upgrades-section table td,#tabOverview .broodle-upgrades-section table th{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border-color,#f3f4f6)}
 #tabOverview .broodle-upgrades-section table tr:last-child td{border-bottom:none}
 #tabOverview .broodle-upgrades-section .btn,#tabOverview .broodle-upgrades-section a.btn{font-size:12px;padding:5px 14px;border-radius:7px}
+#tabOverview .broodle-upgrades-section .alert{border-radius:8px;font-size:13px}
 [data-theme="dark"] #tabOverview .broodle-upgrades-section,.dark-mode #tabOverview .broodle-upgrades-section{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] #tabOverview .broodle-overview-section,.dark-mode #tabOverview .broodle-overview-section{background:transparent}
 
 .bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
@@ -604,7 +608,6 @@ function broodle_tools_shared_script()
 .bwp-preview-dots span:nth-child(2){background:#f59e0b}
 .bwp-preview-dots span:nth-child(3){background:#22c55e}
 .bwp-preview-url{flex:1;font-size:9px;color:var(--text-muted,#6b7280);background:var(--card-bg,#fff);padding:2px 7px;border-radius:4px;border:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SFMono-Regular",Consolas,monospace}
-.bwp-preview-frame{width:1280px;height:800px;border:none;background:#fff;transform:scale(.234);transform-origin:top left}
 .bwp-preview-frame-wrap{width:100%;height:187px;overflow:hidden;position:relative;background:var(--input-bg,#f3f4f6)}
 .bwp-preview-col{flex-shrink:0;width:300px;display:flex;flex-direction:column;gap:8px}
 .bwp-overview-hero{display:flex;gap:18px;align-items:flex-start}
@@ -703,34 +706,66 @@ function broodle_tools_shared_script()
     function enhanceBillingOverview(){
         var tab=document.getElementById("tabOverview");
         if(!tab) return;
-        // Lagom theme: rows are .row > .col-sm-5 (label) + .col-sm-7 (value)
-        // Also handle: .detail-row, dl/dt/dd, table rows
-        var pairs=[];
-        // Strategy 1: Bootstrap .row with col-sm-5 + col-sm-7
-        var rows=tab.querySelectorAll(".row");
-        rows.forEach(function(r){
-            var lbl=r.querySelector(".col-sm-5,.col-md-5,.col-xs-5,.col-lg-5");
-            var val=r.querySelector(".col-sm-7,.col-md-7,.col-xs-7,.col-lg-7");
-            if(lbl&&val){pairs.push({label:lbl.textContent.trim().replace(/:$/,""),value:val.innerHTML.trim(),el:r});}
+
+        // ── Rename the tab link from "Billing Overview" / "Overview" to just "Overview" ──
+        // Find the link that points to #tabOverview in any nav
+        var allLinks=document.querySelectorAll("a[href=\\x27#tabOverview\\x27],a[data-target=\\x27#tabOverview\\x27],a[data-bs-target=\\x27#tabOverview\\x27]");
+        allLinks.forEach(function(a){
+            var icon=a.querySelector("i,svg");
+            if(icon){a.textContent="";a.appendChild(icon);a.appendChild(document.createTextNode(" Overview"));}
+            else{a.textContent="Overview";}
         });
-        // Strategy 2: definition list
+
+        // ── Parse billing details ──
+        // twenty-one theme: .col-md-6.text-center with <h4>Label</h4> followed by text
+        // Lagom theme: may use .col-sm-5 + .col-sm-7 rows
+        // six theme: similar to twenty-one
+        var pairs=[];
+
+        // Strategy 1: h4 + text siblings in the right column
+        var rightCol=tab.querySelector(".col-md-6.text-center");
+        if(rightCol){
+            var h4s=rightCol.querySelectorAll("h4");
+            h4s.forEach(function(h4){
+                var label=h4.textContent.trim().replace(/:$/,"");
+                // Value is the next sibling text/element until next h4
+                var val="";var sib=h4.nextSibling;
+                while(sib&&!(sib.nodeType===1&&sib.tagName==="H4")){
+                    if(sib.nodeType===3) val+=sib.textContent.trim();
+                    else if(sib.nodeType===1) val+=sib.outerHTML;
+                    sib=sib.nextSibling;
+                }
+                val=val.trim();
+                if(label&&val) pairs.push({label:label,value:val});
+            });
+            if(pairs.length) rightCol.style.display="none";
+        }
+
+        // Strategy 2: Bootstrap .row with col-sm-5 + col-sm-7 (Lagom/six)
+        if(!pairs.length){
+            var rows=tab.querySelectorAll(".row");
+            rows.forEach(function(r){
+                var lbl=r.querySelector(".col-sm-5,.col-md-5");
+                var val=r.querySelector(".col-sm-7,.col-md-7");
+                if(lbl&&val){
+                    pairs.push({label:lbl.textContent.trim().replace(/:$/,""),value:val.innerHTML.trim(),el:r});
+                }
+            });
+            if(pairs.length){
+                pairs.forEach(function(p){if(p.el&&p.el.parentNode)p.el.style.display="none";});
+            }
+        }
+
+        // Strategy 3: definition list
         if(!pairs.length){
             var dts=tab.querySelectorAll("dt");
             dts.forEach(function(dt){
                 var dd=dt.nextElementSibling;
-                if(dd&&dd.tagName==="DD"){pairs.push({label:dt.textContent.trim().replace(/:$/,""),value:dd.innerHTML.trim(),el:dt});}
+                if(dd&&dd.tagName==="DD"){pairs.push({label:dt.textContent.trim().replace(/:$/,""),value:dd.innerHTML.trim()});dt.style.display="none";dd.style.display="none";}
             });
         }
-        // Strategy 3: table rows
-        if(!pairs.length){
-            var trs=tab.querySelectorAll("table tr");
-            trs.forEach(function(tr){
-                var cells=tr.querySelectorAll("td,th");
-                if(cells.length>=2){pairs.push({label:cells[0].textContent.trim().replace(/:$/,""),value:cells[1].innerHTML.trim(),el:tr});}
-            });
-        }
+
         if(pairs.length){
-            // Build grid
             var grid=document.createElement("div");
             grid.className="broodle-overview-grid";
             pairs.forEach(function(p){
@@ -740,93 +775,123 @@ function broodle_tools_shared_script()
                 card.innerHTML="<div class=\"broodle-ov-label\">"+escHtml(p.label)+"</div><div class=\"broodle-ov-value\">"+p.value+"</div>";
                 grid.appendChild(card);
             });
-            // Remove all original detail rows
-            pairs.forEach(function(p){
-                if(p.el&&p.el.parentNode){
-                    if(p.el.tagName==="DT"){var dd=p.el.nextElementSibling;if(dd&&dd.tagName==="DD")dd.remove();}
-                    p.el.remove();
-                }
-            });
-            // Insert grid at top of tab
-            if(tab.firstChild) tab.insertBefore(grid,tab.firstChild);
-            else tab.appendChild(grid);
+            // Insert after the product status card or at top
+            var productCard=tab.querySelector(".card,.product-details");
+            if(productCard&&productCard.parentNode===tab){
+                productCard.parentNode.insertBefore(grid,productCard.nextSibling);
+            }else{
+                tab.appendChild(grid);
+            }
         }
 
-        // Move "Addons and Extras" / configurable options section into the overview tab
+        // ── Move Nameservers into Overview tab ──
+        moveNameserversIntoOverview(tab);
+
+        // ── Move Addons & Extras into Overview tab ──
         moveAddonsSection(tab);
     }
 
+    function moveNameserversIntoOverview(tab){
+        var nsSrc=document.getElementById("broodle-ns-source");
+        if(!nsSrc) return;
+        var nsHtml=nsSrc.innerHTML;
+        nsSrc.parentNode.removeChild(nsSrc);
+        var nsDiv=document.createElement("div");
+        nsDiv.className="broodle-overview-section";
+        nsDiv.innerHTML=nsHtml;
+        tab.appendChild(nsDiv);
+        bindCopy(nsDiv);
+    }
+
     function moveAddonsSection(tab){
-        // Find the Addons/Extras section — Lagom theme renders it as a panel outside tabs
-        // Look for headings containing "addon", "extra", "configurable", "upgrade"
-        var candidates=document.querySelectorAll(".panel,.card,.section,.module-section");
-        var addonsPanel=null;
-        candidates.forEach(function(panel){
-            // Skip if already inside our tab
+        // WHMCS twenty-one theme: #tabAddons is a sibling tab pane
+        var addonsTab=document.getElementById("tabAddons");
+        if(addonsTab){
+            var hasContent=addonsTab.querySelector(".card,.row,.alert,.col-10");
+            if(hasContent){
+                var wrapper=document.createElement("div");
+                wrapper.className="broodle-upgrades-section";
+                wrapper.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Addons &amp; Available Upgrades</h4>";
+                // Move all children from addonsTab into wrapper
+                while(addonsTab.firstChild) wrapper.appendChild(addonsTab.firstChild);
+                tab.appendChild(wrapper);
+                // Hide the Addons tab link
+                var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs,.nav.nav-tabs");
+                if(tabNav){
+                    var tabLinks=tabNav.querySelectorAll("li,.nav-item");
+                    tabLinks.forEach(function(li){
+                        var a=li.querySelector("a");
+                        if(a){
+                            var href=(a.getAttribute("href")||"");
+                            var txt=(a.textContent||"").toLowerCase();
+                            if(href==="#tabAddons"||txt.indexOf("addon")!==-1){
+                                li.style.display="none";
+                            }
+                        }
+                    });
+                }
+                addonsTab.style.display="none";
+            }
+        }
+
+        // Also look for standalone panels outside tabs with addon/extra/configurable content
+        var allPanels=document.querySelectorAll(".panel,.card,.section,.module-section");
+        allPanels.forEach(function(panel){
             if(tab.contains(panel)) return;
             var heading=panel.querySelector(".panel-heading,.card-header,h3,h4,h5");
             if(!heading) return;
             var txt=(heading.textContent||"").toLowerCase();
-            if(txt.indexOf("addon")!==-1||txt.indexOf("extra")!==-1||txt.indexOf("configurable option")!==-1){
-                addonsPanel=panel;
+            if(txt.indexOf("addon")!==-1&&txt.indexOf("extra")!==-1||txt.indexOf("configurable option")!==-1){
+                var wrapper2=document.createElement("div");
+                wrapper2.className="broodle-upgrades-section";
+                wrapper2.appendChild(panel);
+                tab.appendChild(wrapper2);
             }
         });
-        // Also try finding by ID patterns
-        if(!addonsPanel){
-            var byId=document.getElementById("tabAddons")||document.getElementById("addons-extras")||document.querySelector("[id*=configoption],[id*=addon]");
-            if(byId){
-                addonsPanel=byId.closest(".panel,.card")||byId;
-                if(tab.contains(addonsPanel)) addonsPanel=null;
-            }
-        }
-        // Also search for panels with upgrade links or configurable options tables
-        if(!addonsPanel){
-            var allPanels=document.querySelectorAll(".panel,.card");
-            allPanels.forEach(function(p){
-                if(tab.contains(p)||addonsPanel) return;
-                var links=p.querySelectorAll("a[href*=\"upgrade\"],a[href*=\"configoptions\"]");
-                if(links.length>0) addonsPanel=p;
-            });
-        }
-        if(!addonsPanel) return;
-        // Wrap in our styled container
-        var wrapper=document.createElement("div");
-        wrapper.className="broodle-upgrades-section";
-        wrapper.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Available Upgrades</h4>";
-        // Move the panel content into our wrapper
-        wrapper.appendChild(addonsPanel);
-        tab.appendChild(wrapper);
     }
 
     function broodleInit(){
         // Hide default WHMCS Quick Create Email Account section
         hideDefaultEmailSection();
-        // Enhance Billing Overview tab
+        // Enhance Billing Overview tab (grid, nameservers, addons)
         enhanceBillingOverview();
 
-        var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
-        if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
-        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
-        var tabContent=panel?panel.querySelector(".tab-content"):null;
-
-        // Nameservers → tab
-        var nsSrc=document.getElementById("broodle-ns-source");
-        if(nsSrc){
-            var nsHtml=nsSrc.innerHTML;nsSrc.parentNode.removeChild(nsSrc);
-            if(!document.getElementById("broodleNsInfo")){
-                if(tabNav&&tabContent){
-                    var li=document.createElement("li");
-                    li.innerHTML="<a href=\"#broodleNsInfo\" data-toggle=\"tab\"><i class=\"fas fa-globe\"></i> Nameservers</a>";
-                    tabNav.appendChild(li);
-                    var p=document.createElement("div");
-                    p.className="panel-body tab-pane";p.id="broodleNsInfo";p.innerHTML=nsHtml;
-                    tabContent.appendChild(p);bindCopy(p);
-                }else{
-                    var to=document.getElementById("tabOverview");
-                    if(to&&to.parentNode){var p2=document.createElement("div");p2.id="broodleNsInfo";p2.className="tab-pane fade";p2.innerHTML=nsHtml;to.parentNode.appendChild(p2);bindCopy(p2);}
+        // Find the INNER tab nav (inside #tabOverview) for our custom tabs
+        var tabOverview=document.getElementById("tabOverview");
+        var tabNav=null;var tabContent=null;
+        if(tabOverview){
+            // Inner tabs: nav inside tabOverview
+            tabNav=tabOverview.querySelector("ul.nav.nav-tabs,.nav-tabs");
+            if(tabNav){
+                // Find the corresponding tab-content
+                var sib=tabNav.nextElementSibling;
+                while(sib){
+                    if(sib.classList&&(sib.classList.contains("tab-content")||sib.classList.contains("product-details-tab-container"))){tabContent=sib;break;}
+                    // Check for connector div (twenty-one theme has a connector between nav and content)
+                    sib=sib.nextElementSibling;
                 }
             }
         }
+        // Fallback: try the old selectors
+        if(!tabNav){
+            tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
+            if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+            if(!tabNav) tabNav=document.querySelector(".nav.nav-tabs");
+            var panel=tabNav?(tabNav.closest(".panel,.card")||tabNav.parentNode):null;
+            tabContent=panel?panel.querySelector(".tab-content"):null;
+            if(!tabContent&&tabNav){
+                var sib2=tabNav.nextElementSibling;
+                while(sib2){
+                    if(sib2.classList&&sib2.classList.contains("tab-content")){tabContent=sib2;break;}
+                    sib2=sib2.nextElementSibling;
+                }
+            }
+        }
+        if(!tabContent&&tabOverview){
+            tabContent=tabOverview.querySelector(".tab-content,.product-details-tab-container");
+        }
+
+        // Nameservers are now injected into Overview tab by enhanceBillingOverview()
 
         // Email → tab (before WordPress)
         var emSrc=document.getElementById("broodle-email-source");
@@ -836,10 +901,11 @@ function broodle_tools_shared_script()
             if(!document.getElementById("broodleEmailInfo")){
                 if(tabNav&&tabContent){
                     var eLi=document.createElement("li");
-                    eLi.innerHTML="<a href=\"#broodleEmailInfo\" data-toggle=\"tab\"><i class=\"fas fa-envelope\"></i> Email Accounts</a>";
+                    eLi.className="nav-item";
+                    eLi.innerHTML="<a href=\"#broodleEmailInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fas fa-envelope\"></i> Email Accounts</a>";
                     tabNav.appendChild(eLi);
                     var eP=document.createElement("div");
-                    eP.className="panel-body tab-pane";eP.id="broodleEmailInfo";eP.innerHTML=emHtml;
+                    eP.className="tab-pane fade";eP.id="broodleEmailInfo";eP.innerHTML=emHtml;
                     tabContent.appendChild(eP);bindCopy(eP);bindEmailActions(eP);
                 }else{
                     var to2=document.getElementById("tabOverview");
@@ -874,7 +940,8 @@ function broodle_tools_shared_script()
                     }
                     // Create our replacement tab
                     var dLi=document.createElement("li");
-                    dLi.innerHTML="<a href=\"#broodleDomainInfo\" data-toggle=\"tab\"><i class=\"fas fa-sitemap\"></i> Domains</a>";
+                    dLi.className="nav-item";
+                    dLi.innerHTML="<a href=\"#broodleDomainInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fas fa-sitemap\"></i> Domains</a>";
                     // Insert in place of default, or append
                     if(defaultDomainTab){
                         defaultDomainTab.parentNode.insertBefore(dLi,defaultDomainTab);
@@ -884,7 +951,7 @@ function broodle_tools_shared_script()
                         tabNav.appendChild(dLi);
                     }
                     var dP=document.createElement("div");
-                    dP.className="panel-body tab-pane";dP.id="broodleDomainInfo";dP.innerHTML=dmHtml;
+                    dP.className="tab-pane fade";dP.id="broodleDomainInfo";dP.innerHTML=dmHtml;
                     tabContent.appendChild(dP);bindDomainActions(dP);
                 }else{
                     var to3=document.getElementById("tabOverview");
@@ -1173,12 +1240,13 @@ function broodle_tools_shared_script()
 
         if(tabNav){
             var li=document.createElement("li");
-            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
+            li.className="nav-item";
+            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
             tabNav.appendChild(li);
             var tabContent=panel?panel.querySelector(".tab-content"):null;
             if(tabContent){
                 var tp=document.createElement("div");
-                tp.className="panel-body tab-pane";tp.id="broodleWpInfo";
+                tp.className="tab-pane fade";tp.id="broodleWpInfo";
                 tp.innerHTML=wpSrc.innerHTML;
                 wpSrc.parentNode.removeChild(wpSrc);
                 tabContent.appendChild(tp);
@@ -1367,8 +1435,8 @@ function broodle_tools_shared_script()
             +"<div class=\"bwp-preview-url\">"+safeUrl+"</div>"
             +"</div>"
             +"<div class=\"bwp-preview-frame-wrap\" style=\"cursor:pointer\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\">"
-            +"<img src=\""+bwpEsc(screenshotSrc)+"\" style=\"width:100%;height:100%;object-fit:cover;display:block\" onerror=\"this.style.display=\\x27none\\x27;this.nextElementSibling.style.display=\\x27block\\x27\" alt=\"Site preview\">"
-            +"<iframe class=\"bwp-preview-frame\" src=\""+safeUrl+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\" style=\"display:none\"></iframe>"
+            +"<img src=\""+bwpEsc(screenshotSrc)+"\" style=\"width:100%;height:100%;object-fit:cover;display:block\" onerror=\"this.style.display=\\x27none\\x27;this.nextElementSibling.style.display=\\x27flex\\x27\" alt=\"Site preview\">"
+            +"<div style=\"display:none;width:100%;height:100%;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4ff 0%,#e0e8f9 100%)\"><svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"#0a5ed3\" opacity=\".25\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zM3.443 12c0-1.178.25-2.296.69-3.313l3.8 10.411A8.57 8.57 0 0 1 3.443 12zm8.557 8.557c-.82 0-1.613-.12-2.363-.34l2.51-7.29 2.57 7.04c.017.04.037.078.058.115a8.523 8.523 0 0 1-2.775.475zm1.166-12.546c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.106-2.224.106-.82 0-2.198-.106-2.198-.106-.45-.026-.503.664-.053.69 0 0 .427.052.878.078l1.305 3.575-1.833 5.498L7.34 7.01c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.107-2.224.107-.156 0-.34-.004-.535-.012A8.544 8.544 0 0 1 12 3.443c2.1 0 4.017.76 5.5 2.018-.035-.002-.069-.007-.105-.007-.82 0-1.4.715-1.4 1.48 0 .69.397 1.272.82 1.96.318.555.69 1.268.69 2.296 0 .715-.274 1.543-.635 2.7l-.833 2.78-3.015-8.97zm4.394 11.14l2.025-5.852c.378-.945.503-1.7.503-2.374 0-.244-.016-.47-.045-.684A8.544 8.544 0 0 1 20.557 12a8.545 8.545 0 0 1-2.997 6.51z\"/></svg></div>"
             +"</div>"
             +"</div>"
             +"<div class=\"bwp-quick-actions\">"
@@ -1479,10 +1547,31 @@ function broodle_tools_shared_script()
         var slug=btn.getAttribute("data-slug");
         var row=btn.closest(".bwp-item-row");
         btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Updating...";
+        if(row) row.style.background="rgba(10,94,211,.04)";
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins",slug:slug},function(r){
             if(r.success){
-                if(row){row.style.background="rgba(5,150,101,.06)";btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";}
-                setTimeout(function(){bwpLoadPlugins();},1500);
+                // Poll to verify the update actually applied
+                btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Verifying...";
+                var pollCount=0;
+                var pollMax=6;
+                function pollStatus(){
+                    pollCount++;
+                    bwpAjax({action:"wp_check_update_status",instance_id:currentWpInstance.id,type:"plugins",slug:slug},function(sr){
+                        if(sr.success&&sr.updated){
+                            if(row){row.style.background="rgba(5,150,101,.06)";}
+                            btn.innerHTML="&#10003; Updated";btn.style.color="#059669";btn.style.borderColor="#059669";
+                            setTimeout(function(){bwpLoadPlugins();},1500);
+                        } else if(pollCount<pollMax){
+                            setTimeout(pollStatus,3000);
+                        } else {
+                            // Max polls reached — show as done anyway (server may be slow)
+                            if(row){row.style.background="rgba(5,150,101,.06)";}
+                            btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";
+                            setTimeout(function(){bwpLoadPlugins();},1500);
+                        }
+                    });
+                }
+                setTimeout(pollStatus,3000);
             }else{
                 var msg=r.message||"Update failed";
                 if(row){row.style.background="rgba(239,68,68,.04)";}
@@ -1492,7 +1581,7 @@ function broodle_tools_shared_script()
                     btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Retry";
                     btn.style.color="#0a5ed3";btn.style.borderColor="#0a5ed3";
                     if(row) row.style.background="";
-                },2000);
+                },3000);
             }
         });
     };
@@ -1549,9 +1638,26 @@ function broodle_tools_shared_script()
         btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Updating...";
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"themes",slug:slug},function(r){
             if(r.success){
-                if(card){card.style.borderColor="#059669";}
-                btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";
-                setTimeout(function(){bwpLoadThemes();},1500);
+                btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Verifying...";
+                var pollCount=0;
+                var pollMax=6;
+                function pollStatus(){
+                    pollCount++;
+                    bwpAjax({action:"wp_check_update_status",instance_id:currentWpInstance.id,type:"themes",slug:slug},function(sr){
+                        if(sr.success&&sr.updated){
+                            if(card){card.style.borderColor="#059669";}
+                            btn.innerHTML="&#10003; Updated";btn.style.color="#059669";btn.style.borderColor="#059669";
+                            setTimeout(function(){bwpLoadThemes();},1500);
+                        } else if(pollCount<pollMax){
+                            setTimeout(pollStatus,3000);
+                        } else {
+                            if(card){card.style.borderColor="#059669";}
+                            btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";
+                            setTimeout(function(){bwpLoadThemes();},1500);
+                        }
+                    });
+                }
+                setTimeout(pollStatus,3000);
             }else{
                 var msg=r.message||"Update failed";
                 btn.disabled=false;btn.innerHTML="&#10007; Failed";btn.style.color="#ef4444";btn.style.borderColor="#ef4444";
@@ -1559,7 +1665,7 @@ function broodle_tools_shared_script()
                 setTimeout(function(){
                     btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Retry";
                     btn.style.color="#0a5ed3";btn.style.borderColor="#0a5ed3";
-                },2000);
+                },3000);
             }
         });
     };
@@ -1571,13 +1677,12 @@ function broodle_tools_shared_script()
 
         bwpAjax({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
             // Debug: log raw response to help troubleshoot
-            if(window.console) console.log("WP Security scan response:",JSON.stringify(r).substring(0,2000));
+            if(window.console) console.log("WP Security scan response:",JSON.stringify(r));
 
             if(r.success&&r.security){
                 var items=r.security;
                 // Backend returns array of {id, title, status}
                 if(!Array.isArray(items)){
-                    // Fallback: convert object to array
                     var arr=[];
                     for(var k in items){
                         if(items.hasOwnProperty(k)){
@@ -1586,25 +1691,42 @@ function broodle_tools_shared_script()
                                 arr.push({id:v.id||k,title:v.title||bwpMakeTitle(v.id||k),status:v.status||"unknown"});
                             } else if(typeof v==="string"){
                                 arr.push({id:k,title:bwpMakeTitle(k),status:v});
+                            } else if(typeof v==="boolean"){
+                                arr.push({id:k,title:bwpMakeTitle(k),status:v?"applied":"notApplied"});
                             }
                         }
                     }
                     items=arr;
                 }
-                // Ensure every item has a proper title (not just a number)
+                // Ensure every item has a proper title
                 items.forEach(function(item){
-                    if(!item.title||/^\d+$/.test(item.title)){
+                    if(!item.title||item.title==="Security Check"||/^\d+$/.test(item.title)||/^measure_\d+$/.test(item.title)){
                         item.title=bwpMakeTitle(item.id||"");
                     }
+                    // Normalize status
+                    var s=(item.status||"").toLowerCase();
+                    if(s==="true") item.status="applied";
+                    if(s==="false") item.status="notApplied";
+                });
+                // Filter out items with numeric-only IDs and title "Security Check"
+                items=items.filter(function(item){
+                    return item.id&&!/^measure_\d+$/.test(item.id)&&item.title!=="Security Check";
                 });
                 if(items.length===0){
-                    container.innerHTML="<div class=\"bwp-empty\"><span>No security measures data available</span></div>";
+                    var debugInfo="";
+                    if(r.debug_raw_sample){
+                        debugInfo="<p style=\"margin-top:12px;font-size:11px;color:var(--text-muted,#9ca3af);word-break:break-all\">Debug: "+bwpEsc(typeof r.debug_raw_sample==="string"?r.debug_raw_sample:JSON.stringify(r.debug_raw_sample))+"</p>";
+                    }
+                    if(r.debug_endpoint){
+                        debugInfo+="<p style=\"font-size:11px;color:var(--text-muted,#9ca3af)\">Endpoint: "+bwpEsc(r.debug_endpoint)+"</p>";
+                    }
+                    container.innerHTML="<div class=\"bwp-empty\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\".3\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg><span>No security measures data available.<br>Check browser console for API response details.</span>"+debugInfo+"</div>";
                     return;
                 }
                 var appliedCount=0,notAppliedCount=0;
                 items.forEach(function(item){
                     var s=(item.status||"unknown").toLowerCase();
-                    if(s==="applied"||s==="ok"||s==="success") appliedCount++;
+                    if(s==="applied"||s==="ok"||s==="success"||s==="true") appliedCount++;
                     else notAppliedCount++;
                 });
                 var total=appliedCount+notAppliedCount;
@@ -1620,7 +1742,7 @@ function broodle_tools_shared_script()
                     +"</div></div>";
                 items.forEach(function(item){
                     var status=(item.status||"unknown").toLowerCase();
-                    var isApplied=status==="applied"||status==="ok"||status==="success";
+                    var isApplied=status==="applied"||status==="ok"||status==="success"||status==="true";
                     var isDanger=status==="error"||status==="danger"||status==="failed";
                     var iconClass=isApplied?"ok":(isDanger?"danger":"warning");
                     var icon;
@@ -1632,7 +1754,7 @@ function broodle_tools_shared_script()
                         icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
                     }
                     var measureId=item.id||"";
-                    var statusLabel=isApplied?"Applied":(status==="notapplied"||status==="not_applied"||status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
+                    var statusLabel=isApplied?"Applied":(status==="notapplied"||status==="not_applied"||status==="notapplied"?"Not Applied":(status==="unknown"?"Unknown":status.charAt(0).toUpperCase()+status.slice(1)));
                     html+="<div class=\"bwp-security-item\">"
                         +"<div class=\"bwp-sec-icon "+iconClass+"\">"+icon+"</div>"
                         +"<div class=\"bwp-sec-info\">"
@@ -1647,7 +1769,11 @@ function broodle_tools_shared_script()
                 });
                 container.innerHTML=html;
             } else {
-                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Security scan failed.")+"</div>";
+                var errMsg=r.message||"Security scan failed.";
+                var debugHtml="";
+                if(r.debug_raw){debugHtml="<p style=\"margin-top:8px;font-size:11px;color:var(--text-muted,#9ca3af);word-break:break-all\">"+bwpEsc(r.debug_raw)+"</p>";}
+                if(r.debug_endpoint){debugHtml+="<p style=\"font-size:11px;color:var(--text-muted,#9ca3af)\">Endpoint: "+bwpEsc(r.debug_endpoint)+"</p>";}
+                container.innerHTML="<div class=\"bwp-msg error\">"+bwpEsc(errMsg)+debugHtml+"</div>";
             }
         });
     }

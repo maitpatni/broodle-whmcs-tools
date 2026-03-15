@@ -371,7 +371,7 @@ switch ($action) {
             exit;
         }
 
-        // Build the update task object
+        // Build the update task object for /v1/updater
         $task = [
             'installationId' => $instId,
             'core'           => ['update' => false, 'type' => 'minor', 'restorePoint' => true],
@@ -409,23 +409,59 @@ switch ($action) {
             }
         }
 
-        // WP Toolkit updater expects an array of tasks
-        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', [$task], 300);
+        // Try multiple endpoint formats
+        $result = null;
+        $updateSuccess = false;
+        $errMsg = 'Update failed';
 
-        // If array format fails, try single object format
-        if (!$result['success']) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $task, 300);
+        // Format 1: POST /v1/updater with array of tasks
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', [$task], 300);
+        if ($result['success']) {
+            $updateSuccess = true;
         }
 
-        $errMsg = 'Update failed';
-        if (!$result['success'] && is_array($result['data'])) {
+        // Format 2: POST /v1/updater with single task object
+        if (!$updateSuccess) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $task, 300);
+            if ($result['success']) {
+                $updateSuccess = true;
+            }
+        }
+
+        // Format 3: Try per-item update endpoint for plugins/themes
+        if (!$updateSuccess && $type === 'plugins' && !empty($slug)) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/plugins/{$slug}/update", 'POST', null, 300);
+            if ($result['success']) {
+                $updateSuccess = true;
+            }
+        }
+        if (!$updateSuccess && $type === 'themes' && !empty($slug)) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/themes/{$slug}/update", 'POST', null, 300);
+            if ($result['success']) {
+                $updateSuccess = true;
+            }
+        }
+
+        // Format 4: PATCH on the installation for core updates
+        if (!$updateSuccess && $type === 'core') {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/update", 'POST', null, 300);
+            if ($result['success']) {
+                $updateSuccess = true;
+            }
+        }
+
+        if (!$updateSuccess && is_array($result['data'] ?? null)) {
             $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? 'Update failed';
             if (is_array($errMsg)) $errMsg = json_encode($errMsg);
         }
 
         echo json_encode([
-            'success' => $result['success'],
-            'message' => $result['success'] ? ucfirst($type) . ' updated successfully' : $errMsg,
+            'success' => $updateSuccess,
+            'message' => $updateSuccess ? ucfirst($type) . ' updated successfully' : $errMsg,
+            'debug_status' => $result['status'] ?? null,
         ]);
         break;
 
@@ -437,117 +473,174 @@ switch ($action) {
             exit;
         }
 
-        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            "/v1/security-measures/checker?installationId={$instId}");
+        // Known measure titles for human-readable display
+        $titles = [
+            'blockAccessToSensitiveFiles'        => 'Block access to sensitive files',
+            'blockAccessToHtaccess'              => 'Block access to .htaccess and .htpasswd',
+            'blockAccessToXmlrpc'                => 'Block unauthorized access to xmlrpc.php',
+            'blockAuthorScans'                   => 'Block author scans',
+            'blockDirectoryBrowsing'             => 'Block directory browsing',
+            'blockPhpExecutionInWpContent'       => 'Forbid PHP execution in wp-content/uploads',
+            'blockPhpExecutionInWpIncludes'      => 'Forbid PHP execution in wp-includes',
+            'blockPhpExecutionInCacheDir'        => 'Disable PHP execution in cache directories',
+            'changeDefaultAdminUsername'          => 'Change default administrator username',
+            'changeDefaultDbPrefix'              => 'Change default database table prefix',
+            'configureSecurityKeys'              => 'Configure security keys',
+            'disableFileEditing'                 => 'Disable file editing in WordPress Dashboard',
+            'disableScriptsConcatenation'        => 'Disable scripts concatenation for admin panel',
+            'enableBotProtection'                => 'Enable bot protection',
+            'restrictAccessToFilesAndDirectories' => 'Restrict access to files and directories',
+            'turnOffPingbacks'                   => 'Turn off pingbacks',
+            'enableHotlinkProtection'            => 'Enable hotlink protection',
+            'forbidPhpExecutionInWpContent'      => 'Forbid PHP execution in wp-content/uploads',
+            'forbidPhpExecutionInWpIncludes'     => 'Forbid PHP execution in wp-includes',
+        ];
 
-        if ($result['success']) {
-            $raw = $result['data'];
+        $makeTitle = function ($id) use ($titles) {
+            if (isset($titles[$id])) return $titles[$id];
+            $words = preg_replace('/([a-z])([A-Z])/', '$1 $2', $id);
+            $words = str_replace(['_', '-'], ' ', $words);
+            return ucfirst($words);
+        };
+
+        // Try multiple endpoint patterns — the WP Toolkit API varies between versions
+        $endpoints = [
+            "/v1/security-measures/checker?installationId={$instId}",
+            "/v1/security/checker?installationId={$instId}",
+        ];
+
+        $raw = null;
+        $result = null;
+        $debugEndpoint = '';
+
+        foreach ($endpoints as $ep) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, $ep);
+            if ($result['success'] && !empty($result['data'])) {
+                $raw = $result['data'];
+                $debugEndpoint = $ep;
+                break;
+            }
+        }
+
+        // If GET didn't work, try POST with installationId in body
+        if (empty($raw)) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                '/v1/security-measures/checker', 'POST', ['installationId' => $instId]);
+            if ($result['success'] && !empty($result['data'])) {
+                $raw = $result['data'];
+                $debugEndpoint = 'POST /v1/security-measures/checker';
+            }
+        }
+
+        // Also try the installations/{id}/security endpoint
+        if (empty($raw)) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/security");
+            if ($result['success'] && !empty($result['data'])) {
+                $raw = $result['data'];
+                $debugEndpoint = "/v1/installations/{$instId}/security";
+            }
+        }
+
+        if (!empty($raw) && is_array($raw)) {
             $measures = [];
 
-            // Known measure titles for human-readable display
-            $titles = [
-                'blockAccessToSensitiveFiles'        => 'Block access to sensitive files',
-                'blockAccessToHtaccess'              => 'Block access to .htaccess and .htpasswd',
-                'blockAccessToXmlrpc'                => 'Block unauthorized access to xmlrpc.php',
-                'blockAuthorScans'                   => 'Block author scans',
-                'blockDirectoryBrowsing'             => 'Block directory browsing',
-                'blockPhpExecutionInWpContent'       => 'Forbid PHP execution in wp-content/uploads',
-                'blockPhpExecutionInWpIncludes'      => 'Forbid PHP execution in wp-includes',
-                'blockPhpExecutionInCacheDir'        => 'Disable PHP execution in cache directories',
-                'changeDefaultAdminUsername'          => 'Change default administrator username',
-                'changeDefaultDbPrefix'              => 'Change default database table prefix',
-                'configureSecurityKeys'              => 'Configure security keys',
-                'disableFileEditing'                 => 'Disable file editing in WordPress Dashboard',
-                'disableScriptsConcatenation'        => 'Disable scripts concatenation for admin panel',
-                'enableBotProtection'                => 'Enable bot protection',
-                'restrictAccessToFilesAndDirectories' => 'Restrict access to files and directories',
-                'turnOffPingbacks'                   => 'Turn off pingbacks',
-            ];
+            // Unwrap: if response is keyed by installation ID, e.g. { "5": { ... } }
+            if (isset($raw[(string)$instId])) {
+                $raw = $raw[(string)$instId];
+            } elseif (isset($raw[$instId])) {
+                $raw = $raw[$instId];
+            }
 
-            // Helper to make a title from camelCase ID
-            $makeTitle = function ($id) use ($titles) {
-                if (isset($titles[$id])) return $titles[$id];
-                // Convert camelCase to words
-                $words = preg_replace('/([a-z])([A-Z])/', '$1 $2', $id);
-                $words = str_replace(['_', '-'], ' ', $words);
-                return ucfirst($words);
-            };
+            // Unwrap: if response has a "data" wrapper
+            if (isset($raw['data']) && is_array($raw['data'])) {
+                $raw = $raw['data'];
+            }
 
-            if (is_array($raw)) {
-                foreach ($raw as $key => $val) {
-                    if (is_array($val)) {
-                        if (isset($val['id']) && isset($val['status'])) {
-                            // Indexed array item: {id: "measureName", status: "applied"}
-                            $mid = $val['id'];
+            // Unwrap: if response has a "measures" or "securityMeasures" key
+            if (isset($raw['measures']) && is_array($raw['measures'])) {
+                $raw = $raw['measures'];
+            } elseif (isset($raw['securityMeasures']) && is_array($raw['securityMeasures'])) {
+                $raw = $raw['securityMeasures'];
+            } elseif (isset($raw['results']) && is_array($raw['results'])) {
+                $raw = $raw['results'];
+            }
+
+            // Parse the measures array/object
+            foreach ($raw as $key => $val) {
+                if (is_array($val)) {
+                    // Object with id+status: {id: "measureName", status: "applied"}
+                    $mid = $val['id'] ?? $val['measureId'] ?? $val['name'] ?? (is_string($key) ? $key : null);
+                    $st = $val['status'] ?? $val['result'] ?? $val['state'] ?? $val['value'] ?? null;
+
+                    if ($mid !== null) {
+                        if (is_bool($st)) $st = $st ? 'applied' : 'notApplied';
+                        $measures[] = [
+                            'id'     => $mid,
+                            'title'  => $makeTitle($mid),
+                            'status' => (string)($st ?? 'unknown'),
+                        ];
+                    } else {
+                        // Nested object without id — key might be the measure ID
+                        if (is_string($key) && !is_numeric($key)) {
+                            if (is_bool($st)) $st = $st ? 'applied' : 'notApplied';
                             $measures[] = [
-                                'id'     => $mid,
-                                'title'  => $makeTitle($mid),
-                                'status' => $val['status'],
-                            ];
-                        } elseif (isset($val['status'])) {
-                            // Associative: key is the measure ID
-                            $measures[] = [
-                                'id'     => is_string($key) ? $key : "measure_{$key}",
-                                'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
-                                'status' => $val['status'],
-                            ];
-                        } elseif (isset($val['id'])) {
-                            // Has id but no status — try other fields
-                            $mid = $val['id'];
-                            $st = $val['result'] ?? ($val['state'] ?? ($val['value'] ?? 'unknown'));
-                            $measures[] = [
-                                'id'     => $mid,
-                                'title'  => $makeTitle($mid),
-                                'status' => is_bool($st) ? ($st ? 'applied' : 'notApplied') : (string)$st,
+                                'id'     => $key,
+                                'title'  => $makeTitle($key),
+                                'status' => (string)($st ?? 'unknown'),
                             ];
                         } else {
-                            // Unknown nested structure — try to extract
-                            $mid = is_string($key) ? $key : "measure_{$key}";
-                            // Check if it's a simple {measureName: true/false} pattern
+                            // Try to extract sub-keys as measures
                             foreach ($val as $subKey => $subVal) {
-                                if (is_string($subKey) && (is_bool($subVal) || is_string($subVal))) {
+                                if (is_string($subKey) && !is_numeric($subKey)) {
+                                    $subSt = is_bool($subVal) ? ($subVal ? 'applied' : 'notApplied') :
+                                             (is_string($subVal) ? $subVal :
+                                             (is_array($subVal) ? ($subVal['status'] ?? 'unknown') : 'unknown'));
                                     $measures[] = [
                                         'id'     => $subKey,
                                         'title'  => $makeTitle($subKey),
-                                        'status' => is_bool($subVal) ? ($subVal ? 'applied' : 'notApplied') : $subVal,
+                                        'status' => $subSt,
                                     ];
                                 }
                             }
-                            if (empty($measures) || end($measures)['id'] !== $mid) {
-                                $measures[] = [
-                                    'id'     => $mid,
-                                    'title'  => $makeTitle($mid),
-                                    'status' => 'unknown',
-                                ];
-                            }
                         }
-                    } elseif (is_string($val)) {
-                        // Simple key => status format: {"blockDirectoryBrowsing": "applied"}
-                        $measures[] = [
-                            'id'     => is_string($key) ? $key : "measure_{$key}",
-                            'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
-                            'status' => $val,
-                        ];
-                    } elseif (is_bool($val)) {
-                        // Boolean format: {"blockDirectoryBrowsing": true}
-                        $measures[] = [
-                            'id'     => is_string($key) ? $key : "measure_{$key}",
-                            'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
-                            'status' => $val ? 'applied' : 'notApplied',
-                        ];
                     }
+                } elseif (is_string($val) && is_string($key) && !is_numeric($key)) {
+                    // Simple key => status: {"blockDirectoryBrowsing": "applied"}
+                    $measures[] = [
+                        'id'     => $key,
+                        'title'  => $makeTitle($key),
+                        'status' => $val,
+                    ];
+                } elseif (is_bool($val) && is_string($key) && !is_numeric($key)) {
+                    // Boolean: {"blockDirectoryBrowsing": true}
+                    $measures[] = [
+                        'id'     => $key,
+                        'title'  => $makeTitle($key),
+                        'status' => $val ? 'applied' : 'notApplied',
+                    ];
                 }
             }
 
             echo json_encode([
                 'success'  => true,
                 'security' => $measures,
-                'debug_raw_type' => gettype($raw),
-                'debug_raw_keys' => is_array($raw) ? array_keys($raw) : null,
-                'debug_raw_sample' => is_array($raw) && !empty($raw) ? array_slice($raw, 0, 2, true) : $raw,
+                'debug_endpoint' => $debugEndpoint,
+                'debug_raw_type' => gettype($result['data'] ?? null),
+                'debug_raw_keys' => is_array($result['data'] ?? null) ? array_keys($result['data']) : null,
+                'debug_raw_sample' => is_array($result['data'] ?? null) && !empty($result['data'])
+                    ? json_encode(array_slice($result['data'], 0, 2, true))
+                    : ($result['raw'] ?? null),
             ]);
         } else {
-            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Security scan failed']);
+            $msg = $result['message'] ?? 'Security scan failed';
+            if (isset($result['status'])) $msg .= ' (HTTP ' . $result['status'] . ')';
+            echo json_encode([
+                'success' => false,
+                'message' => $msg,
+                'debug_endpoint' => $debugEndpoint,
+                'debug_raw' => $result['raw'] ?? null,
+            ]);
         }
         break;
 
@@ -561,15 +654,25 @@ switch ($action) {
             exit;
         }
 
+        // Try primary format
         $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
             '/v1/security-measures/resolver', 'POST', [
                 'installationsIds' => [$instId],
                 'securityMeasures' => [$measureId],
             ]);
 
+        // Try alternate format if first fails
+        if (!$result['success']) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                '/v1/security-measures/resolver', 'POST', [
+                    'installationId' => $instId,
+                    'securityMeasures' => [$measureId],
+                ]);
+        }
+
         echo json_encode([
             'success' => $result['success'],
-            'message' => $result['success'] ? 'Security fix applied' : ($result['data']['meta']['message'] ?? 'Failed to apply security fix'),
+            'message' => $result['success'] ? 'Security fix applied' : ($result['data']['meta']['message'] ?? $result['data']['message'] ?? 'Failed to apply security fix'),
         ]);
         break;
 
@@ -589,10 +692,53 @@ switch ($action) {
                 'securityMeasures' => [$measureId],
             ]);
 
+        // Try alternate format if first fails
+        if (!$result['success']) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                '/v1/security-measures/reverter', 'POST', [
+                    'installationId' => $instId,
+                    'securityMeasures' => [$measureId],
+                ]);
+        }
+
         echo json_encode([
             'success' => $result['success'],
             'message' => $result['success'] ? 'Security fix reverted' : 'Failed to revert security fix',
         ]);
+        break;
+
+    // ─── Check Plugin/Theme Update Status (verify after update) ──────────────
+    case 'wp_check_update_status':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        $type   = isset($_POST['type']) ? trim($_POST['type']) : '';
+        $slug   = isset($_POST['slug']) ? trim($_POST['slug']) : '';
+
+        if ($instId <= 0 || !in_array($type, ['plugins', 'themes'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        $endpoint = "/v1/installations/{$instId}/" . $type;
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, $endpoint);
+
+        if ($result['success'] && is_array($result['data'])) {
+            $stillHasUpdate = false;
+            if (!empty($slug)) {
+                foreach ($result['data'] as $item) {
+                    if (($item['slug'] ?? '') === $slug && !empty($item['availableVersion'])) {
+                        $stillHasUpdate = true;
+                        break;
+                    }
+                }
+            }
+            echo json_encode([
+                'success' => true,
+                'updated' => !$stillHasUpdate,
+                'items'   => $result['data'],
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Could not check status']);
+        }
         break;
 
     // ─── Maintenance Mode Toggle ─────────────────────────────────────────────
