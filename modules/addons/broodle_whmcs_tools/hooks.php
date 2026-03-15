@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.15\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.16\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -331,7 +331,7 @@ function broodle_tools_shared_styles()
 function broodle_tools_css_hide()
 {
     return '<style>
-.product-details-tab-container,.product-details-tab-container+.tab-content{display:none!important}
+.product-details-tab-container,.product-details-tab-container+.tab-content,ul.panel-tabs.nav.nav-tabs{display:none!important}
 .quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.module-quick-create-email,#cPanelQuickEmailPanel{display:none!important}
 #Primary_Sidebar-productdetails_addons_and_extras,#cPanelExtrasPurchasePanel,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"]{display:none!important}
 .bt-hidden-section{display:none!important}
