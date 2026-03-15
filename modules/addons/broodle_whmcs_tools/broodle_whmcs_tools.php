@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.17');
+define('BROODLE_TOOLS_VERSION', '3.10.18');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
