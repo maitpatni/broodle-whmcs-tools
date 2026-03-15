@@ -414,35 +414,35 @@ function broodle_tools_shared_script()
 .quick-create-email,.quick-create-email-section,[class*="quick-create-email"]{display:none!important}
 
 /* ─── Billing Overview Enhancement ─── */
-#tabOverview .broodle-overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:4px 0}
-#tabOverview .broodle-ov-card{background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:16px 18px;transition:border-color .15s,box-shadow .15s}
-#tabOverview .broodle-ov-card:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.06)}
-#tabOverview .broodle-ov-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 6px;line-height:1.2}
-#tabOverview .broodle-ov-value{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-word;line-height:1.4}
-#tabOverview .broodle-ov-value a{color:#0a5ed3;text-decoration:none}
-#tabOverview .broodle-ov-value a:hover{text-decoration:underline}
-#tabOverview .broodle-ov-value .label,#tabOverview .broodle-ov-value .badge{font-size:12px;padding:3px 10px;border-radius:6px;font-weight:600}
-[data-theme="dark"] #tabOverview .broodle-ov-card,.dark-mode #tabOverview .broodle-ov-card{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
-[data-theme="dark"] #tabOverview .broodle-ov-card:hover,.dark-mode #tabOverview .broodle-ov-card:hover{border-color:rgba(10,94,211,.4)}
-@media(max-width:768px){#tabOverview .broodle-overview-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){#tabOverview .broodle-overview-grid{grid-template-columns:1fr}}
+.broodle-overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:4px 0}
+.broodle-ov-card{background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:16px 18px;transition:border-color .15s,box-shadow .15s}
+.broodle-ov-card:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.06)}
+.broodle-ov-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 6px;line-height:1.2}
+.broodle-ov-value{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-word;line-height:1.4}
+.broodle-ov-value a{color:#0a5ed3;text-decoration:none}
+.broodle-ov-value a:hover{text-decoration:underline}
+.broodle-ov-value .label,.broodle-ov-value .badge{font-size:12px;padding:3px 10px;border-radius:6px;font-weight:600}
+[data-theme="dark"] .broodle-ov-card,.dark-mode .broodle-ov-card{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .broodle-ov-card:hover,.dark-mode .broodle-ov-card:hover{border-color:rgba(10,94,211,.4)}
+@media(max-width:768px){.broodle-overview-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.broodle-overview-grid{grid-template-columns:1fr}}
 
 /* ─── Addons/Upgrades in Overview ─── */
-#tabOverview .broodle-overview-section{margin-top:20px}
-#tabOverview .broodle-upgrades-section{margin-top:20px;padding:18px 20px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:12px}
-#tabOverview .broodle-upgrades-section h4{margin:0 0 14px;font-size:14px;font-weight:700;color:var(--heading-color,#111827);display:flex;align-items:center;gap:8px}
-#tabOverview .broodle-upgrades-section h4 svg{color:#0a5ed3}
-#tabOverview .broodle-upgrades-section .panel,#tabOverview .broodle-upgrades-section .card{border:none;box-shadow:none;margin:0;background:transparent}
-#tabOverview .broodle-upgrades-section .panel-heading,#tabOverview .broodle-upgrades-section .card-header{display:none}
-#tabOverview .broodle-upgrades-section .panel-body,#tabOverview .broodle-upgrades-section .card-body{padding:0}
-#tabOverview .broodle-upgrades-section > h3{display:none}
-#tabOverview .broodle-upgrades-section table{width:100%;border-collapse:separate;border-spacing:0}
-#tabOverview .broodle-upgrades-section table td,#tabOverview .broodle-upgrades-section table th{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border-color,#f3f4f6)}
-#tabOverview .broodle-upgrades-section table tr:last-child td{border-bottom:none}
-#tabOverview .broodle-upgrades-section .btn,#tabOverview .broodle-upgrades-section a.btn{font-size:12px;padding:5px 14px;border-radius:7px}
-#tabOverview .broodle-upgrades-section .alert{border-radius:8px;font-size:13px}
-[data-theme="dark"] #tabOverview .broodle-upgrades-section,.dark-mode #tabOverview .broodle-upgrades-section{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
-[data-theme="dark"] #tabOverview .broodle-overview-section,.dark-mode #tabOverview .broodle-overview-section{background:transparent}
+.broodle-overview-section{margin-top:20px}
+.broodle-upgrades-section{margin-top:20px;padding:18px 20px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:12px}
+.broodle-upgrades-section h4{margin:0 0 14px;font-size:14px;font-weight:700;color:var(--heading-color,#111827);display:flex;align-items:center;gap:8px}
+.broodle-upgrades-section h4 svg{color:#0a5ed3}
+.broodle-upgrades-section .panel,.broodle-upgrades-section .card{border:none;box-shadow:none;margin:0;background:transparent}
+.broodle-upgrades-section .panel-heading,.broodle-upgrades-section .card-header{display:none}
+.broodle-upgrades-section .panel-body,.broodle-upgrades-section .card-body{padding:0}
+.broodle-upgrades-section > h3{display:none}
+.broodle-upgrades-section table{width:100%;border-collapse:separate;border-spacing:0}
+.broodle-upgrades-section table td,.broodle-upgrades-section table th{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border-color,#f3f4f6)}
+.broodle-upgrades-section table tr:last-child td{border-bottom:none}
+.broodle-upgrades-section .btn,.broodle-upgrades-section a.btn{font-size:12px;padding:5px 14px;border-radius:7px}
+.broodle-upgrades-section .alert{border-radius:8px;font-size:13px}
+[data-theme="dark"] .broodle-upgrades-section,.dark-mode .broodle-upgrades-section{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .broodle-overview-section,.dark-mode .broodle-overview-section{background:transparent}
 
 .bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
@@ -704,44 +704,82 @@ function broodle_tools_shared_script()
     var serviceId=0;
 
     function enhanceBillingOverview(){
-        var tab=document.getElementById("tabOverview");
+        // Try multiple IDs: Lagom uses #billingInfo, twenty-one uses #tabOverview
+        var tab=document.getElementById("billingInfo")||document.getElementById("tabOverview");
         if(!tab) return;
 
-        // ── Rename the tab link from "Billing Overview" / "Overview" to just "Overview" ──
-        // Find the link that points to #tabOverview in any nav
-        var allLinks=document.querySelectorAll("a[href=\\x27#tabOverview\\x27],a[data-target=\\x27#tabOverview\\x27],a[data-bs-target=\\x27#tabOverview\\x27]");
-        allLinks.forEach(function(a){
+        // Determine which ID matched for link selectors
+        var tabId=tab.id;
+
+        // ── Rename the tab link to "Overview" ──
+        var allLinks=document.querySelectorAll("a[href=\\x27#"+tabId+"\\x27],a[data-toggle=\\x27tab\\x27][href=\\x27#"+tabId+"\\x27],a[data-target=\\x27#"+tabId+"\\x27],a[data-bs-target=\\x27#"+tabId+"\\x27]");
+        if(!allLinks.length){
+            // Fallback: find by text content
+            document.querySelectorAll("ul.panel-tabs a, ul.nav-tabs a").forEach(function(a){
+                var txt=(a.textContent||"").toLowerCase().trim();
+                if(txt.indexOf("billing")!==-1&&txt.indexOf("overview")!==-1) allLinks=[a];
+            });
+        }
+        if(allLinks.forEach) allLinks.forEach(function(a){
             var icon=a.querySelector("i,svg");
             if(icon){a.textContent="";a.appendChild(icon);a.appendChild(document.createTextNode(" Overview"));}
             else{a.textContent="Overview";}
         });
 
         // ── Parse billing details ──
-        // twenty-one theme: .col-md-6.text-center with <h4>Label</h4> followed by text
-        // Lagom theme: may use .col-sm-5 + .col-sm-7 rows
-        // six theme: similar to twenty-one
         var pairs=[];
 
-        // Strategy 1: h4 + text siblings in the right column
-        var rightCol=tab.querySelector(".col-md-6.text-center");
-        if(rightCol){
-            var h4s=rightCol.querySelectorAll("h4");
-            h4s.forEach(function(h4){
-                var label=h4.textContent.trim().replace(/:$/,"");
-                // Value is the next sibling text/element until next h4
-                var val="";var sib=h4.nextSibling;
-                while(sib&&!(sib.nodeType===1&&sib.tagName==="H4")){
-                    if(sib.nodeType===3) val+=sib.textContent.trim();
-                    else if(sib.nodeType===1) val+=sib.outerHTML;
-                    sib=sib.nextSibling;
+        // Strategy 1 (Lagom): .col-sm-6.col-md-3.m-b-2x with .text-faded.text-small label
+        var lagomCols=tab.querySelectorAll(".col-sm-6.col-md-3.m-b-2x, .col-sm-6.col-md-3");
+        lagomCols.forEach(function(col){
+            var labelEl=col.querySelector(".text-faded.text-small, .text-faded");
+            if(!labelEl) return;
+            var label=labelEl.textContent.trim().replace(/:$/,"");
+            // Value is the next sibling div or remaining content
+            var val="";
+            var sib=labelEl.nextElementSibling;
+            if(sib){val=sib.innerHTML.trim();}
+            else{
+                // Clone and remove label to get remaining content
+                var clone=col.cloneNode(true);
+                var lbl2=clone.querySelector(".text-faded.text-small, .text-faded");
+                if(lbl2) lbl2.remove();
+                val=clone.innerHTML.trim();
+            }
+            if(label&&val) pairs.push({label:label,value:val,el:col});
+        });
+        // Hide the original row(s) containing these columns
+        if(pairs.length){
+            var hiddenRows={};
+            pairs.forEach(function(p){
+                if(p.el){
+                    var row=p.el.closest(".row");
+                    if(row&&!hiddenRows[row]){row.style.display="none";hiddenRows[row]=true;}
                 }
-                val=val.trim();
-                if(label&&val) pairs.push({label:label,value:val});
             });
-            if(pairs.length) rightCol.style.display="none";
         }
 
-        // Strategy 2: Bootstrap .row with col-sm-5 + col-sm-7 (Lagom/six)
+        // Strategy 2: h4 + text siblings (twenty-one theme)
+        if(!pairs.length){
+            var rightCol=tab.querySelector(".col-md-6.text-center");
+            if(rightCol){
+                var h4s=rightCol.querySelectorAll("h4");
+                h4s.forEach(function(h4){
+                    var label=h4.textContent.trim().replace(/:$/,"");
+                    var val="";var sib=h4.nextSibling;
+                    while(sib&&!(sib.nodeType===1&&sib.tagName==="H4")){
+                        if(sib.nodeType===3) val+=sib.textContent.trim();
+                        else if(sib.nodeType===1) val+=sib.outerHTML;
+                        sib=sib.nextSibling;
+                    }
+                    val=val.trim();
+                    if(label&&val) pairs.push({label:label,value:val});
+                });
+                if(pairs.length) rightCol.style.display="none";
+            }
+        }
+
+        // Strategy 3: Bootstrap .row with col-sm-5 + col-sm-7
         if(!pairs.length){
             var rows=tab.querySelectorAll(".row");
             rows.forEach(function(r){
@@ -751,12 +789,10 @@ function broodle_tools_shared_script()
                     pairs.push({label:lbl.textContent.trim().replace(/:$/,""),value:val.innerHTML.trim(),el:r});
                 }
             });
-            if(pairs.length){
-                pairs.forEach(function(p){if(p.el&&p.el.parentNode)p.el.style.display="none";});
-            }
+            if(pairs.length) pairs.forEach(function(p){if(p.el)p.el.style.display="none";});
         }
 
-        // Strategy 3: definition list
+        // Strategy 4: definition list
         if(!pairs.length){
             var dts=tab.querySelectorAll("dt");
             dts.forEach(function(dt){
@@ -775,13 +811,10 @@ function broodle_tools_shared_script()
                 card.innerHTML="<div class=\"broodle-ov-label\">"+escHtml(p.label)+"</div><div class=\"broodle-ov-value\">"+p.value+"</div>";
                 grid.appendChild(card);
             });
-            // Insert after the product status card or at top
-            var productCard=tab.querySelector(".card,.product-details");
-            if(productCard&&productCard.parentNode===tab){
-                productCard.parentNode.insertBefore(grid,productCard.nextSibling);
-            }else{
-                tab.appendChild(grid);
-            }
+            // Insert at top of tab content (before any remaining visible content)
+            var firstChild=tab.firstChild;
+            if(firstChild) tab.insertBefore(grid,firstChild);
+            else tab.appendChild(grid);
         }
 
         // ── Move Nameservers into Overview tab ──
@@ -804,7 +837,7 @@ function broodle_tools_shared_script()
     }
 
     function moveAddonsSection(tab){
-        // WHMCS twenty-one theme: #tabAddons is a sibling tab pane
+        // Strategy 1: WHMCS twenty-one theme has #tabAddons as a sibling tab pane
         var addonsTab=document.getElementById("tabAddons");
         if(addonsTab){
             var hasContent=addonsTab.querySelector(".card,.row,.alert,.col-10");
@@ -812,13 +845,11 @@ function broodle_tools_shared_script()
                 var wrapper=document.createElement("div");
                 wrapper.className="broodle-upgrades-section";
                 wrapper.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Addons &amp; Available Upgrades</h4>";
-                // Move all children from addonsTab into wrapper
                 while(addonsTab.firstChild) wrapper.appendChild(addonsTab.firstChild);
                 tab.appendChild(wrapper);
-                // Hide the Addons tab link
                 var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs,.nav.nav-tabs");
                 if(tabNav){
-                    var tabLinks=tabNav.querySelectorAll("li,.nav-item");
+                    var tabLinks=tabNav.querySelectorAll("li");
                     tabLinks.forEach(function(li){
                         var a=li.querySelector("a");
                         if(a){
@@ -834,20 +865,63 @@ function broodle_tools_shared_script()
             }
         }
 
-        // Also look for standalone panels outside tabs with addon/extra/configurable content
-        var allPanels=document.querySelectorAll(".panel,.card,.section,.module-section");
-        allPanels.forEach(function(panel){
-            if(tab.contains(panel)) return;
-            var heading=panel.querySelector(".panel-heading,.card-header,h3,h4,h5");
-            if(!heading) return;
-            var txt=(heading.textContent||"").toLowerCase();
-            if(txt.indexOf("addon")!==-1&&txt.indexOf("extra")!==-1||txt.indexOf("configurable option")!==-1){
-                var wrapper2=document.createElement("div");
-                wrapper2.className="broodle-upgrades-section";
-                wrapper2.appendChild(panel);
-                tab.appendChild(wrapper2);
+        // Strategy 2 (Lagom): Look for panels/sections with "Addons" or "Extras" or "Configurable" in headings
+        // Lagom may render addons as a panel outside the tab structure
+        if(!addonsTab){
+            var allPanels=document.querySelectorAll(".panel,.card,.section,.module-section,.product-details-tab-container > div");
+            allPanels.forEach(function(panel){
+                if(tab.contains(panel)) return;
+                // Skip our own broodle elements
+                if(panel.id&&panel.id.indexOf("broodle")!==-1) return;
+                if(panel.id&&panel.id.indexOf("bdm")!==-1) return;
+                if(panel.id&&panel.id.indexOf("bem")!==-1) return;
+                if(panel.id&&panel.id.indexOf("bwp")!==-1) return;
+                var heading=panel.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title");
+                if(!heading) return;
+                var txt=(heading.textContent||"").toLowerCase();
+                if(txt.indexOf("addon")!==-1||txt.indexOf("extra")!==-1||txt.indexOf("configurable option")!==-1||txt.indexOf("available upgrade")!==-1){
+                    var wrapper2=document.createElement("div");
+                    wrapper2.className="broodle-upgrades-section";
+                    wrapper2.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Addons &amp; Available Upgrades</h4>";
+                    // Move the panel content into wrapper
+                    var panelBody=panel.querySelector(".panel-body,.card-body");
+                    if(panelBody){
+                        wrapper2.appendChild(panelBody.cloneNode(true));
+                    }else{
+                        wrapper2.appendChild(panel.cloneNode(true));
+                    }
+                    tab.appendChild(wrapper2);
+                    panel.style.display="none";
+                }
+            });
+        }
+
+        // Strategy 3: Look for the Addons tab link in Lagom nav and move its pane content
+        if(!addonsTab){
+            var tabNav2=document.querySelector("ul.panel-tabs.nav.nav-tabs,.nav.nav-tabs");
+            if(tabNav2){
+                var tabLinks2=tabNav2.querySelectorAll("li");
+                tabLinks2.forEach(function(li){
+                    var a=li.querySelector("a");
+                    if(!a) return;
+                    var txt=(a.textContent||"").toLowerCase().trim();
+                    var href=a.getAttribute("href")||"";
+                    if(txt.indexOf("addon")!==-1||txt.indexOf("extra")!==-1){
+                        var paneId=href.replace("#","");
+                        var pane=paneId?document.getElementById(paneId):null;
+                        if(pane&&pane.innerHTML.trim()){
+                            var wrapper3=document.createElement("div");
+                            wrapper3.className="broodle-upgrades-section";
+                            wrapper3.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Addons &amp; Available Upgrades</h4>";
+                            while(pane.firstChild) wrapper3.appendChild(pane.firstChild);
+                            tab.appendChild(wrapper3);
+                            li.style.display="none";
+                            pane.style.display="none";
+                        }
+                    }
+                });
             }
-        });
+        }
     }
 
     function broodleInit(){
@@ -856,39 +930,87 @@ function broodle_tools_shared_script()
         // Enhance Billing Overview tab (grid, nameservers, addons)
         enhanceBillingOverview();
 
-        // Find the INNER tab nav (inside #tabOverview) for our custom tabs
-        var tabOverview=document.getElementById("tabOverview");
+        // Find the tab nav for our custom tabs
+        // Lagom: ul.panel-tabs.nav.nav-tabs with plain <li> elements
+        // Twenty-one: ul.nav.nav-tabs with .nav-item elements
         var tabNav=null;var tabContent=null;
-        if(tabOverview){
-            // Inner tabs: nav inside tabOverview
-            tabNav=tabOverview.querySelector("ul.nav.nav-tabs,.nav-tabs");
-            if(tabNav){
-                // Find the corresponding tab-content
+
+        // Try Lagom first: ul.panel-tabs.nav.nav-tabs
+        tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
+        if(tabNav){
+            var panel=tabNav.closest(".panel,.card")||tabNav.parentNode;
+            tabContent=panel?panel.querySelector(".tab-content"):null;
+            if(!tabContent){
                 var sib=tabNav.nextElementSibling;
                 while(sib){
-                    if(sib.classList&&(sib.classList.contains("tab-content")||sib.classList.contains("product-details-tab-container"))){tabContent=sib;break;}
-                    // Check for connector div (twenty-one theme has a connector between nav and content)
+                    if(sib.classList&&sib.classList.contains("tab-content")){tabContent=sib;break;}
                     sib=sib.nextElementSibling;
                 }
             }
         }
-        // Fallback: try the old selectors
+
+        // Fallback: try inside #billingInfo or #tabOverview
         if(!tabNav){
-            tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
-            if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
-            if(!tabNav) tabNav=document.querySelector(".nav.nav-tabs");
-            var panel=tabNav?(tabNav.closest(".panel,.card")||tabNav.parentNode):null;
-            tabContent=panel?panel.querySelector(".tab-content"):null;
-            if(!tabContent&&tabNav){
-                var sib2=tabNav.nextElementSibling;
-                while(sib2){
-                    if(sib2.classList&&sib2.classList.contains("tab-content")){tabContent=sib2;break;}
-                    sib2=sib2.nextElementSibling;
+            var overviewTab=document.getElementById("billingInfo")||document.getElementById("tabOverview");
+            if(overviewTab){
+                tabNav=overviewTab.querySelector("ul.nav.nav-tabs,.nav-tabs");
+                if(tabNav){
+                    var sib2=tabNav.nextElementSibling;
+                    while(sib2){
+                        if(sib2.classList&&(sib2.classList.contains("tab-content")||sib2.classList.contains("product-details-tab-container"))){tabContent=sib2;break;}
+                        sib2=sib2.nextElementSibling;
+                    }
                 }
             }
         }
-        if(!tabContent&&tabOverview){
-            tabContent=tabOverview.querySelector(".tab-content,.product-details-tab-container");
+
+        // Last fallback
+        if(!tabNav){
+            tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+            if(!tabNav) tabNav=document.querySelector(".nav.nav-tabs");
+            var panel2=tabNav?(tabNav.closest(".panel,.card")||tabNav.parentNode):null;
+            tabContent=panel2?panel2.querySelector(".tab-content"):null;
+            if(!tabContent&&tabNav){
+                var sib3=tabNav.nextElementSibling;
+                while(sib3){
+                    if(sib3.classList&&sib3.classList.contains("tab-content")){tabContent=sib3;break;}
+                    sib3=sib3.nextElementSibling;
+                }
+            }
+        }
+
+        // Detect theme: Lagom uses plain <li>, twenty-one uses .nav-item
+        var isLagom=false;
+        if(tabNav){
+            var firstLi=tabNav.querySelector("li");
+            if(firstLi&&!firstLi.classList.contains("nav-item")) isLagom=true;
+        }
+
+        // Helper to create a tab <li> compatible with the detected theme
+        function createTabLi(href,iconHtml,label){
+            var li=document.createElement("li");
+            var a=document.createElement("a");
+            a.setAttribute("href","#"+href);
+            a.setAttribute("data-toggle","tab");
+            if(!isLagom){
+                li.className="nav-item";
+                a.className="nav-link";
+            }
+            a.innerHTML=iconHtml+" "+label;
+            li.appendChild(a);
+            return li;
+        }
+
+        // Helper to create a tab pane compatible with the detected theme
+        function createTabPane(id){
+            var pane=document.createElement("div");
+            pane.id=id;
+            if(isLagom){
+                pane.className="panel-body tab-pane";
+            }else{
+                pane.className="tab-pane fade";
+            }
+            return pane;
         }
 
         // Nameservers are now injected into Overview tab by enhanceBillingOverview()
@@ -900,16 +1022,14 @@ function broodle_tools_shared_script()
             var emHtml=emSrc.innerHTML;emSrc.parentNode.removeChild(emSrc);
             if(!document.getElementById("broodleEmailInfo")){
                 if(tabNav&&tabContent){
-                    var eLi=document.createElement("li");
-                    eLi.className="nav-item";
-                    eLi.innerHTML="<a href=\"#broodleEmailInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fas fa-envelope\"></i> Email Accounts</a>";
+                    var eLi=createTabLi("broodleEmailInfo","<i class=\"fas fa-envelope\"></i>","Email Accounts");
                     tabNav.appendChild(eLi);
-                    var eP=document.createElement("div");
-                    eP.className="tab-pane fade";eP.id="broodleEmailInfo";eP.innerHTML=emHtml;
+                    var eP=createTabPane("broodleEmailInfo");
+                    eP.innerHTML=emHtml;
                     tabContent.appendChild(eP);bindCopy(eP);bindEmailActions(eP);
                 }else{
-                    var to2=document.getElementById("tabOverview");
-                    if(to2&&to2.parentNode){var eP2=document.createElement("div");eP2.id="broodleEmailInfo";eP2.className="tab-pane fade";eP2.innerHTML=emHtml;to2.parentNode.appendChild(eP2);bindCopy(eP2);bindEmailActions(eP2);}
+                    var overviewTab2=document.getElementById("billingInfo")||document.getElementById("tabOverview");
+                    if(overviewTab2&&overviewTab2.parentNode){var eP2=document.createElement("div");eP2.id="broodleEmailInfo";eP2.className=isLagom?"panel-body tab-pane":"tab-pane fade";eP2.innerHTML=emHtml;overviewTab2.parentNode.appendChild(eP2);bindCopy(eP2);bindEmailActions(eP2);}
                 }
             }
         }
@@ -930,7 +1050,7 @@ function broodle_tools_shared_script()
                         if(a){
                             var href=a.getAttribute("href")||"";
                             var txt=(a.textContent||"").toLowerCase().trim();
-                            if(href==="#tabDomains"||txt==="domains"||txt.indexOf("domain")!==-1){
+                            if(href==="#domainInfo"||txt.indexOf("domain")!==-1){
                                 defaultDomainTab=tabLinks[i];
                                 var paneId=href.replace("#","");
                                 if(paneId) defaultDomainPane=tabContent.querySelector("#"+paneId);
@@ -939,9 +1059,7 @@ function broodle_tools_shared_script()
                         }
                     }
                     // Create our replacement tab
-                    var dLi=document.createElement("li");
-                    dLi.className="nav-item";
-                    dLi.innerHTML="<a href=\"#broodleDomainInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fas fa-sitemap\"></i> Domains</a>";
+                    var dLi=createTabLi("broodleDomainInfo","<i class=\"fas fa-sitemap\"></i>","Domains");
                     // Insert in place of default, or append
                     if(defaultDomainTab){
                         defaultDomainTab.parentNode.insertBefore(dLi,defaultDomainTab);
@@ -950,16 +1068,15 @@ function broodle_tools_shared_script()
                     }else{
                         tabNav.appendChild(dLi);
                     }
-                    var dP=document.createElement("div");
-                    dP.className="tab-pane fade";dP.id="broodleDomainInfo";dP.innerHTML=dmHtml;
+                    var dP=createTabPane("broodleDomainInfo");
+                    dP.innerHTML=dmHtml;
                     tabContent.appendChild(dP);bindDomainActions(dP);
                 }else{
-                    var to3=document.getElementById("tabOverview");
-                    if(to3&&to3.parentNode){var dP2=document.createElement("div");dP2.id="broodleDomainInfo";dP2.className="tab-pane fade";dP2.innerHTML=dmHtml;to3.parentNode.appendChild(dP2);bindDomainActions(dP2);}
+                    var overviewTab3=document.getElementById("billingInfo")||document.getElementById("tabOverview");
+                    if(overviewTab3&&overviewTab3.parentNode){var dP2=document.createElement("div");dP2.id="broodleDomainInfo";dP2.className=isLagom?"panel-body tab-pane":"tab-pane fade";dP2.innerHTML=dmHtml;overviewTab3.parentNode.appendChild(dP2);bindDomainActions(dP2);}
                 }
             }
-        }
-
+        }           if(href==="#tabDomains"||txt==="domains"||txt.indexOf("domain")!==-1){
         // Modal handlers
         document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){var m=this.closest(".bem-overlay");if(m)m.style.display="none";});});
         document.querySelectorAll(".bem-overlay").forEach(function(o){o.addEventListener("click",function(e){if(e.target===o)o.style.display="none";});});
@@ -1234,19 +1351,44 @@ function broodle_tools_shared_script()
         if(!wpSrc) return;
         wpServiceId=wpSrc.getAttribute("data-service-id")||0;
 
+        // Use the same tab nav detection as broodleInit
         var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
         if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
-        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
+        if(!tabNav) tabNav=document.querySelector(".nav.nav-tabs");
+        var panel=tabNav?(tabNav.closest(".panel,.card")||tabNav.parentNode):null;
+
+        // Detect Lagom theme
+        var isLagomWp=false;
+        if(tabNav){
+            var firstLi=tabNav.querySelector("li");
+            if(firstLi&&!firstLi.classList.contains("nav-item")) isLagomWp=true;
+        }
 
         if(tabNav){
             var li=document.createElement("li");
-            li.className="nav-item";
-            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\" class=\"nav-link\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
+            var a=document.createElement("a");
+            a.setAttribute("href","#broodleWpInfo");
+            a.setAttribute("data-toggle","tab");
+            if(!isLagomWp){
+                li.className="nav-item";
+                a.className="nav-link";
+            }
+            a.innerHTML="<i class=\"fab fa-wordpress\"></i> WordPress Manager";
+            li.appendChild(a);
             tabNav.appendChild(li);
+
             var tabContent=panel?panel.querySelector(".tab-content"):null;
+            if(!tabContent){
+                var sib=tabNav.nextElementSibling;
+                while(sib){
+                    if(sib.classList&&sib.classList.contains("tab-content")){tabContent=sib;break;}
+                    sib=sib.nextElementSibling;
+                }
+            }
             if(tabContent){
                 var tp=document.createElement("div");
-                tp.className="tab-pane fade";tp.id="broodleWpInfo";
+                tp.id="broodleWpInfo";
+                tp.className=isLagomWp?"panel-body tab-pane":"tab-pane fade";
                 tp.innerHTML=wpSrc.innerHTML;
                 wpSrc.parentNode.removeChild(wpSrc);
                 tabContent.appendChild(tp);
