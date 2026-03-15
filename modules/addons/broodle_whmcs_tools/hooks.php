@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.14\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.15\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -331,11 +331,9 @@ function broodle_tools_shared_styles()
 function broodle_tools_css_hide()
 {
     return '<style>
-.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.quick-shortcut-container,.quick-shortcut,.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.sidebar-shortcuts,.sidebar-quick-create{display:none!important}
-.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"],.panel-body .quick-shortcut,.panel-body .quick-shortcuts{display:none!important}
-.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"],.sidebar-right .quick-shortcut{display:none!important}
-#Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
-#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel{display:none!important}
+.product-details-tab-container,.product-details-tab-container+.tab-content{display:none!important}
+.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.module-quick-create-email,#cPanelQuickEmailPanel{display:none!important}
+#Primary_Sidebar-productdetails_addons_and_extras,#cPanelExtrasPurchasePanel,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"]{display:none!important}
 .bt-hidden-section{display:none!important}
 </style>';
 }
