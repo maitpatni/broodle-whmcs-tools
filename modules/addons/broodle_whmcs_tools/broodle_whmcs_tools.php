@@ -8,7 +8,7 @@
  * @author     Broodle
  * @copyright  2026 Broodle
  * @link       https://broodle.host
- * @version    1.0.0
+ * @version    3.5.0
  */
 
 if (!defined('WHMCS')) {
@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.3.0');
+define('BROODLE_TOOLS_VERSION', '3.5.0');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -128,10 +128,14 @@ function broodle_whmcs_tools_output($vars)
     // Handle update check
     if ($action === 'check_update') {
         $updateInfo = broodle_tools_check_for_update();
-        if ($updateInfo['available']) {
+        if (!empty($updateInfo['error'])) {
+            echo '<div class="errorbox"><strong>Update check failed:</strong> '
+                . htmlspecialchars($updateInfo['error']) . '</div>';
+        } elseif ($updateInfo['available']) {
+            $source = !empty($updateInfo['asset_url']) ? 'release asset' : 'source archive';
             echo '<div class="infobox"><strong>Update Available!</strong> Version '
                 . htmlspecialchars($updateInfo['latest_version'])
-                . ' is available. You are running ' . BROODLE_TOOLS_VERSION . '.'
+                . ' is available (via ' . $source . '). You are running ' . BROODLE_TOOLS_VERSION . '.'
                 . ' <a href="' . $vars['modulelink'] . '&action=apply_update" class="btn btn-success btn-sm">Apply Update</a></div>';
         } else {
             echo '<div class="successbox"><strong>You are running the latest version (' . BROODLE_TOOLS_VERSION . ').</strong></div>';
@@ -345,7 +349,7 @@ function broodle_tools_render_admin($vars, $settings)
  */
 function broodle_tools_check_for_update()
 {
-    $result = ['available' => false, 'latest_version' => BROODLE_TOOLS_VERSION, 'download_url' => ''];
+    $result = ['available' => false, 'latest_version' => BROODLE_TOOLS_VERSION, 'download_url' => '', 'asset_url' => ''];
 
     try {
         $url = 'https://api.github.com/repos/' . BROODLE_TOOLS_GITHUB_REPO . '/releases/latest';
@@ -363,6 +367,7 @@ function broodle_tools_check_for_update()
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($httpCode === 200 && $response) {
@@ -372,12 +377,31 @@ function broodle_tools_check_for_update()
                 if (version_compare($latestVersion, BROODLE_TOOLS_VERSION, '>')) {
                     $result['available'] = true;
                     $result['latest_version'] = $latestVersion;
-                    $result['download_url'] = $data['zipball_url'] ?? '';
+
+                    // Prefer the uploaded release asset (proper zip with correct structure)
+                    $assetUrl = '';
+                    if (!empty($data['assets']) && is_array($data['assets'])) {
+                        foreach ($data['assets'] as $asset) {
+                            if (
+                                isset($asset['browser_download_url']) &&
+                                preg_match('/\.zip$/i', $asset['browser_download_url'])
+                            ) {
+                                $assetUrl = $asset['browser_download_url'];
+                                break;
+                            }
+                        }
+                    }
+
+                    // Use release asset if available, otherwise fall back to zipball
+                    $result['download_url'] = $assetUrl ?: ($data['zipball_url'] ?? '');
+                    $result['asset_url'] = $assetUrl; // track which type we're using
                 }
             }
+        } else {
+            $result['error'] = "GitHub API returned HTTP {$httpCode}" . ($curlError ? ": {$curlError}" : '');
         }
     } catch (\Exception $e) {
-        // Silently fail — user can retry
+        $result['error'] = $e->getMessage();
     }
 
     return $result;
@@ -399,50 +423,73 @@ function broodle_tools_apply_update()
             return ['success' => false, 'message' => 'Could not determine download URL.'];
         }
 
+        // Download the zip
         $tmpFile = tempnam(sys_get_temp_dir(), 'broodle_update_');
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $updateInfo['download_url'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 120,
             CURLOPT_HTTPHEADER     => [
                 'User-Agent: BroodleWHMCSTools/' . BROODLE_TOOLS_VERSION,
-                'Accept: application/vnd.github.v3+json',
             ],
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
 
         $zipData = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($httpCode !== 200 || !$zipData) {
-            return ['success' => false, 'message' => 'Failed to download update package.'];
+            @unlink($tmpFile);
+            return ['success' => false, 'message' => "Failed to download update (HTTP {$httpCode})" . ($curlError ? ": {$curlError}" : '')];
         }
 
         file_put_contents($tmpFile, $zipData);
 
         $zip = new \ZipArchive();
-        if ($zip->open($tmpFile) !== true) {
-            unlink($tmpFile);
-            return ['success' => false, 'message' => 'Failed to open update package.'];
+        $openResult = $zip->open($tmpFile);
+        if ($openResult !== true) {
+            @unlink($tmpFile);
+            return ['success' => false, 'message' => 'Failed to open update package (ZipArchive error: ' . $openResult . ').'];
         }
 
-        // Find the module directory inside the zip
-        $extractDir = sys_get_temp_dir() . '/broodle_update_' . time();
+        $extractDir = sys_get_temp_dir() . '/broodle_update_' . uniqid();
         $zip->extractTo($extractDir);
         $zip->close();
-        unlink($tmpFile);
+        @unlink($tmpFile);
 
-        // GitHub zips have a top-level directory — find the module files inside
-        $dirs = glob($extractDir . '/*', GLOB_ONLYDIR);
-        $sourceDir = !empty($dirs) ? $dirs[0] : $extractDir;
+        // Find the module source directory inside the extracted content
+        // Strategy 1: Release asset zip — has modules/addons/broodle_whmcs_tools/ at root or inside a top-level dir
+        // Strategy 2: GitHub zipball — has {user}-{repo}-{hash}/modules/addons/broodle_whmcs_tools/
+        $moduleSrc = null;
 
-        // Look for the addon module path inside the extracted content
-        $moduleSrc = $sourceDir . '/modules/addons/broodle_whmcs_tools';
-        if (!is_dir($moduleSrc)) {
-            $moduleSrc = $sourceDir;
+        // Check direct path first (release asset structure)
+        if (is_dir($extractDir . '/modules/addons/broodle_whmcs_tools')) {
+            $moduleSrc = $extractDir . '/modules/addons/broodle_whmcs_tools';
+        } else {
+            // Check inside top-level directory (GitHub zipball structure)
+            $topDirs = glob($extractDir . '/*', GLOB_ONLYDIR);
+            foreach ($topDirs as $topDir) {
+                if (is_dir($topDir . '/modules/addons/broodle_whmcs_tools')) {
+                    $moduleSrc = $topDir . '/modules/addons/broodle_whmcs_tools';
+                    break;
+                }
+            }
+        }
+
+        if (!$moduleSrc || !is_dir($moduleSrc)) {
+            broodle_tools_delete_directory($extractDir);
+            return ['success' => false, 'message' => 'Update package does not contain the expected module structure (modules/addons/broodle_whmcs_tools/).'];
+        }
+
+        // Verify the source has the main module file
+        if (!file_exists($moduleSrc . '/broodle_whmcs_tools.php')) {
+            broodle_tools_delete_directory($extractDir);
+            return ['success' => false, 'message' => 'Update package is missing the main module file.'];
         }
 
         $destDir = BROODLE_TOOLS_MODULE_DIR;
