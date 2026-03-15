@@ -989,6 +989,7 @@ function init(){
 }
 
 function hideDefaultTabs(){
+    // Hide default WHMCS tab navigation
     var selectors=["ul.panel-tabs.nav.nav-tabs",".product-details-tab-container",".section-body > ul.nav.nav-tabs",".panel > ul.nav.nav-tabs"];
     selectors.forEach(function(sel){
         document.querySelectorAll(sel).forEach(function(el){
@@ -998,8 +999,19 @@ function hideDefaultTabs(){
         });
     });
     ["billingInfo","tabOverview","domainInfo","tabAddons"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
+    // Hide the panel containing the default tabs
     var panelTabs=document.querySelector("ul.panel-tabs");
     if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
+    // Hide the cPanel overview content (product-details, usage stats, shortcuts, etc.)
+    // We replace all of this with our custom tabbed UI
+    var overviewPane=document.getElementById("Overview");
+    if(overviewPane){
+        // Hide all direct children of #Overview except our bt-wrap
+        var children=overviewPane.children;
+        for(var i=0;i<children.length;i++){
+            if(children[i].id!=="bt-wrap") children[i].style.display="none";
+        }
+    }
     // Hide Quick Create Email section
     document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut],#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
     // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
@@ -1026,12 +1038,25 @@ function hideDefaultTabs(){
 }
 
 function buildTabs(){
-    var target=document.querySelector(".panel");
-    if(!target) target=document.querySelector(".section-body");
-    if(!target) return;
-    var hiddenPanel=document.querySelector("ul.panel-tabs");
-    var insertAfter=hiddenPanel?hiddenPanel.closest(".panel"):null;
-    if(!insertAfter) insertAfter=target;
+    // Find the best insertion point:
+    // 1. The #Overview pane (Lagom2 with cPanel overview.tpl)
+    // 2. The .tab-content.margin-bottom container
+    // 3. Fallback to first .panel or .section-body
+    var overviewPane=document.getElementById("Overview");
+    var tabContent=document.querySelector(".tab-content.margin-bottom");
+    var insertTarget=null;var insertMode="after";
+    if(overviewPane){
+        // Insert our tabs as the first child of #Overview, before the cPanel overview content
+        insertTarget=overviewPane;insertMode="prepend";
+    }else if(tabContent){
+        insertTarget=tabContent;insertMode="after";
+    }else{
+        var hiddenPanel=document.querySelector("ul.panel-tabs");
+        insertTarget=hiddenPanel?hiddenPanel.closest(".panel"):null;
+        if(!insertTarget) insertTarget=document.querySelector(".panel")||document.querySelector(".section-body");
+        insertMode="after";
+    }
+    if(!insertTarget) return;
 
     var wrap=document.createElement("div");
     wrap.className="bt-wrap";wrap.id="bt-wrap";
@@ -1080,8 +1105,14 @@ function buildTabs(){
     });
 
     wrap.appendChild(nav);wrap.appendChild(panes);
-    if(insertAfter&&insertAfter.parentNode) insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
-    else document.querySelector(".main-content,.content-padded,.section-body,.container").appendChild(wrap);
+    if(insertMode==="prepend"&&insertTarget){
+        insertTarget.insertBefore(wrap,insertTarget.firstChild);
+    }else if(insertTarget&&insertTarget.parentNode){
+        insertTarget.parentNode.insertBefore(wrap,insertTarget.nextSibling);
+    }else{
+        var fallback=document.querySelector(".main-content,.content-padded,.section-body,.container");
+        if(fallback) fallback.appendChild(wrap);
+    }
 
     buildOverviewPane();
     if(C.domainEnabled) buildDomainsPane();
