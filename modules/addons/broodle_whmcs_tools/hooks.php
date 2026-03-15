@@ -261,40 +261,26 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $cpData = $serviceId ? broodle_tools_get_cpanel_service($serviceId) : null;
 
     $debug  = '<div style="padding:15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;font-family:monospace;font-size:13px;">';
-    $debug .= '<strong>🔧 Broodle Debug v3.10.2</strong><br>';
-    $debug .= 'vars keys: ' . htmlspecialchars(implode(', ', array_keys($vars))) . '<br>';
-    $debug .= 'vars[serviceid]: ' . htmlspecialchars($vars['serviceid'] ?? 'NOT SET') . '<br>';
-    $debug .= 'vars[id]: ' . htmlspecialchars($vars['id'] ?? 'NOT SET') . '<br>';
-    $debug .= '$_GET[id]: ' . htmlspecialchars($_GET['id'] ?? 'NOT SET') . '<br>';
-    $debug .= 'Resolved serviceId: ' . ($serviceId ?: 'NONE') . '<br>';
-    $debug .= 'cpData found: ' . ($cpData ? 'YES (server=' . ($cpData['server']->hostname ?? '?') . ')' : 'NO') . '<br>';
-
-    try {
-        $settingsExist = \WHMCS\Database\Capsule::schema()->hasTable('mod_broodle_tools_settings');
-        $debug .= 'Settings table: ' . ($settingsExist ? 'EXISTS' : 'MISSING') . '<br>';
-    } catch (\Exception $e) {
-        $debug .= 'Settings table check error: ' . htmlspecialchars($e->getMessage()) . '<br>';
-    }
-
+    $debug .= '<strong>🔧 Broodle Debug v3.10.3</strong><br>';
+    $debug .= 'serviceId: ' . ($serviceId ?: 'NONE') . '<br>';
+    $debug .= 'cpData: ' . ($cpData ? 'YES' : 'NO') . '<br>';
     $debug .= '</div>';
 
-    // Now try the real output
     $data = broodle_tools_gather_data($vars);
     if (!$data) {
-        return $debug . '<div style="padding:15px;margin:10px 0;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;font-family:monospace;font-size:13px;"><strong>❌ gather_data returned false</strong> — hook output stopped here</div>';
+        return $debug . '<div style="padding:15px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;">gather_data FAILED</div>';
     }
 
-    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+    // TEST 1: Just CSS hide rules (small output)
+    $test1 = broodle_tools_css_hide();
 
-    // Build complete output: CSS + config + modals + JS
-    $output  = $debug;
-    $output .= broodle_tools_shared_styles();
-    $output .= '<script>window.__btConfig=' . $jsData . ';</script>';
-    $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
-    $output .= broodle_tools_modals();
-    $output .= broodle_tools_wp_detail_modal();
-    $output .= broodle_tools_shared_script();
-    return $output;
+    // TEST 2: A visible marker after CSS
+    $test2 = '<div style="padding:15px;margin:10px 0;background:#d1fae5;border:2px solid #059669;border-radius:8px;font-family:monospace;font-size:13px;"><strong>✅ TEST: gather_data OK, CSS injected, this is after styles</strong></div>';
+
+    // TEST 3: Tiny inline script
+    $test3 = '<script>console.log("BT_HOOK_FIRED", ' . json_encode($data['serviceId']) . ');</script>';
+
+    return $debug . $test1 . $test2 . $test3;
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */
