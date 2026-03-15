@@ -439,10 +439,12 @@ function broodle_tools_css_cards()
 .bt-addon-tip-btn{width:18px;height:18px;border-radius:50%;border:none;background:transparent;color:var(--text-muted,#c0c5cc);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .12s;padding:0}
 .bt-addon-tip-btn:hover{color:#0a5ed3}
 .bt-addon-tip-btn.loading{opacity:.4}
-.bt-addon-tooltip{position:fixed;width:300px;padding:10px 13px;background:#1f2937;color:#f3f4f6;font-size:12px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:9999;word-wrap:break-word;opacity:0;visibility:hidden;transition:opacity .15s,visibility .15s;pointer-events:none}
-.bt-addon-tooltip.visible{opacity:1;visibility:visible}
+.bt-addon-tooltip{position:fixed;width:340px;max-width:90vw;max-height:200px;overflow-y:auto;overflow-x:hidden;padding:12px 15px;background:#1f2937;color:#f3f4f6;font-size:12px;line-height:1.55;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:99999;word-wrap:break-word;opacity:0;visibility:hidden;transition:opacity .12s,visibility .12s;pointer-events:none}
+.bt-addon-tooltip.visible{opacity:1;visibility:visible;pointer-events:auto}
+.bt-addon-tooltip::-webkit-scrollbar{display:none}
+.bt-addon-tooltip{scrollbar-width:none}
 .bt-addon-tooltip::after{display:none}
-@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:240px}}
+@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr)}.bt-addon-wrap{padding:0 30px 6px}.bt-addon-tooltip{width:280px}}
 /* SSL Pane */
 .bt-ssl-row .bt-row-info{flex-wrap:wrap}
 .bt-ssl-meta{display:flex;align-items:center;gap:12px;flex-shrink:0;font-size:11px;color:var(--text-muted,#6b7280)}
@@ -462,7 +464,7 @@ function broodle_tools_css_cards()
 function broodle_tools_css_modals()
 {
     return '<style>
-.bt-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;animation:btFadeIn .2s}
+.bt-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;animation:btFadeIn .2s}
 @keyframes btFadeIn{from{opacity:0}to{opacity:1}}
 .bt-modal{background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:btSlideUp .25s}
 .bt-modal-sm{max-width:380px}
@@ -1198,23 +1200,33 @@ function buildOverviewPane(){
         // Tooltip + pricing: fetch on hover/click
         var tipCache={};
         var activeTip=null;
+        var tipHideTimer=null;
         function showTip(anchor,tip){
+            if(tipHideTimer){clearTimeout(tipHideTimer);tipHideTimer=null;}
             if(activeTip&&activeTip!==tip) activeTip.classList.remove("visible");
             activeTip=tip;
             // Move to body if not already there
             if(tip.parentNode!==document.body) document.body.appendChild(tip);
             tip.classList.add("visible");
-            // Position after visible so we can measure
-            var r=anchor.getBoundingClientRect();
-            var tw=tip.offsetWidth||300;var th=tip.offsetHeight||60;
-            var left=r.left+r.width/2-tw/2;
-            if(left<8) left=8;
-            if(left+tw>window.innerWidth-8) left=window.innerWidth-tw-8;
-            var top=r.top-th-8;
-            if(top<8) top=r.bottom+8;
-            tip.style.left=left+"px";tip.style.top=top+"px";
+            // Position: always above the anchor, fallback below if no room
+            requestAnimationFrame(function(){
+                var r=anchor.getBoundingClientRect();
+                var tw=tip.offsetWidth||340;var th=tip.offsetHeight||60;
+                var left=r.left+r.width/2-tw/2;
+                if(left<8) left=8;
+                if(left+tw>window.innerWidth-8) left=window.innerWidth-tw-8;
+                var top=r.top-th-8;
+                if(top<8) top=r.bottom+8;
+                tip.style.left=left+"px";tip.style.top=top+"px";
+            });
         }
-        function hideTip(tip){tip.classList.remove("visible");activeTip=null;}
+        function hideTip(tip){
+            tipHideTimer=setTimeout(function(){
+                if(tip) tip.classList.remove("visible");
+                if(activeTip===tip) activeTip=null;
+                tipHideTimer=null;
+            },120);
+        }
         pane.querySelectorAll(".bt-addon-tip-wrap").forEach(function(wrap){
             var btn=wrap.querySelector(".bt-addon-tip-btn");
             var tip=wrap.querySelector(".bt-addon-tooltip");
@@ -1234,9 +1246,10 @@ function buildOverviewPane(){
             }
             wrap.addEventListener("mouseenter",function(){loadTip();showTip(btn,tip);});
             wrap.addEventListener("mouseleave",function(){hideTip(tip);});
-            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();if(tip.classList.contains("visible")){hideTip(tip);}else{showTip(btn,tip);}});
+            if(tip){tip.addEventListener("mouseenter",function(){if(tipHideTimer){clearTimeout(tipHideTimer);tipHideTimer=null;}});tip.addEventListener("mouseleave",function(){hideTip(tip);});}
+            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();if(tip.classList.contains("visible")){tip.classList.remove("visible");activeTip=null;}else{showTip(btn,tip);}});
         });
-        document.addEventListener("click",function(e){if(activeTip&&!e.target.closest(".bt-addon-tip-wrap")){hideTip(activeTip);}});
+        document.addEventListener("click",function(e){if(activeTip&&!e.target.closest(".bt-addon-tip-wrap")&&!e.target.closest(".bt-addon-tooltip")){if(tipHideTimer){clearTimeout(tipHideTimer);tipHideTimer=null;}activeTip.classList.remove("visible");activeTip=null;}});
         // Prefetch pricing for visible page
         var firstPageItems=pane.querySelectorAll(".bt-addon-page:first-child .bt-addon-tip-btn[data-aid]");
         firstPageItems.forEach(function(btn){

@@ -8,7 +8,7 @@
  * @author     Broodle
  * @copyright  2026 Broodle
  * @link       https://broodle.host
- * @version    3.5.2
+ * @version    3.6.1
  */
 
 if (!defined('WHMCS')) {
@@ -59,6 +59,7 @@ function broodle_whmcs_tools_activate()
             'tweak_domain_management' => '1',
             'tweak_database_management' => '1',
             'tweak_ssl_management'  => '1',
+            'tweak_dns_management'  => '1',
             'auto_update_enabled'   => '0',
         ];
 
@@ -112,6 +113,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_domain_management',
             'tweak_database_management',
             'tweak_ssl_management',
+            'tweak_dns_management',
             'auto_update_enabled',
         ];
 
@@ -177,6 +179,7 @@ function broodle_tools_render_admin($vars, $settings)
     $domainMgmtEnabled = !empty($settings['tweak_domain_management']) && $settings['tweak_domain_management'] === '1';
     $dbMgmtEnabled = !empty($settings['tweak_database_management']) && $settings['tweak_database_management'] === '1';
     $sslMgmtEnabled = !empty($settings['tweak_ssl_management']) && $settings['tweak_ssl_management'] === '1';
+    $dnsMgmtEnabled = !empty($settings['tweak_dns_management']) && $settings['tweak_dns_management'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -318,6 +321,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_ssl_management" value="1" ' . ($sslMgmtEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>DNS Manager</h4>
+                            <p>Show a DNS Manager tab on cPanel product details with full DNS zone management, bulk editing, and record creation.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_dns_management" value="1" ' . ($dnsMgmtEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>
