@@ -304,14 +304,12 @@ function broodle_tools_shared_styles()
 function broodle_tools_css_hide()
 {
     return '<style>
-.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section{display:none!important}
-.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"]{display:none!important}
-.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"]{display:none!important}
+.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.quick-shortcut-container,.quick-shortcut,.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.sidebar-shortcuts,.sidebar-quick-create{display:none!important}
+.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"],.panel-body .quick-shortcut,.panel-body .quick-shortcuts{display:none!important}
+.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"],.sidebar-right .quick-shortcut{display:none!important}
 #Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
 #cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel{display:none!important}
 .bt-hidden-section{display:none!important}
-[data-bt-hidden="1"]{display:none!important}
-.service-details-blocks,.product-details-blocks,.product-info-blocks,[class*="product-details-block"],[class*="service-detail-block"]{display:none!important}
 </style>';
 }
 
@@ -968,30 +966,13 @@ function init(){
     var dataEl=$("bt-data");
     if(!dataEl) return;
     try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
-    // Check if the content area is ready; if not, retry with a short delay (handles dynamic/lazy-loaded WHMCS templates)
-    var contentArea=document.querySelector("#Overview")||document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".panel")||document.querySelector(".container");
-    if(!contentArea){
-        if(!init._retries) init._retries=0;
-        if(init._retries<10){init._retries++;setTimeout(init,150);return;}
-    }
     hideDefaultTabs();
-    enhanceSidebarActions();
     buildTabs();
     bindModals();
 }
 
 function hideDefaultTabs(){
-    // Lagom2: hide the inner billing/domain/config panel (panel-nav + panel-product-details)
-    document.querySelectorAll(".panel-product-details").forEach(function(panel){
-        panel.setAttribute("data-bt-hidden","1");panel.style.display="none";
-    });
-    // Lagom2: hide panel-nav containing nav-tabs (billing overview, domain info, etc.)
-    document.querySelectorAll(".panel-nav").forEach(function(pn){
-        var panel=pn.closest(".panel");
-        if(panel){panel.setAttribute("data-bt-hidden","1");panel.style.display="none";}
-    });
-    // Generic: hide various nav-tabs patterns across WHMCS/theme versions
-    var selectors=["ul.panel-tabs.nav.nav-tabs",".product-details-tab-container",".section-body > ul.nav.nav-tabs",".panel > ul.nav.nav-tabs",".section-body > .panel > .panel-nav"];
+    var selectors=["ul.panel-tabs.nav.nav-tabs",".product-details-tab-container",".section-body > ul.nav.nav-tabs",".panel > ul.nav.nav-tabs"];
     selectors.forEach(function(sel){
         document.querySelectorAll(sel).forEach(function(el){
             el.style.display="none";
@@ -1001,14 +982,11 @@ function hideDefaultTabs(){
     });
     ["billingInfo","tabOverview","domainInfo","tabAddons"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
     var panelTabs=document.querySelector("ul.panel-tabs");
-    if(panelTabs){var panel=panelTabs.closest(".panel");if(panel){panel.style.display="none";panel.setAttribute("data-bt-hidden","1");}}
-    // Lagom2: hide the product-details clearfix section (product icon/name/domain)
-    // We keep it visible — it shows the product name and domain
-    // Hide Quick Create Email section (but NOT Quick Shortcuts / server actions)
-    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
+    if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
+    // Hide Quick Create Email section
+    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut],#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
     // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
-    // Keep Quick Shortcuts visible — only hide Quick Create Email and Addons & Extras
-    document.querySelectorAll(".section:not(.section-hook-output)").forEach(function(sec){
+    document.querySelectorAll(".section").forEach(function(sec){
         var title=sec.querySelector(".section-title,h2,h3");
         if(!title) return;
         var t=(title.textContent||"").toLowerCase().trim();
@@ -1017,92 +995,26 @@ function hideDefaultTabs(){
             sec.setAttribute("data-bt-hidden","1");
         }
     });
-    // Hide Addons & Extras panels (we move content to overview) — but NOT panel-product-details (already handled)
-    document.querySelectorAll(".panel:not(.panel-product-details),.card,.sidebar-box,.sidebar-panel").forEach(function(p){
-        if(p.getAttribute("data-bt-hidden")==="1") return;
+    // Hide Addons & Extras panels (we move content to overview)
+    document.querySelectorAll(".panel,.card,.sidebar-box,.sidebar-panel").forEach(function(p){
         var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title,.sidebar-header,.sidebar-title");
         if(!h) return;
         var t=(h.textContent||"").toLowerCase();
-        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1){
+        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1||t.indexOf("shortcut")!==-1){
             p.setAttribute("data-bt-hidden","1");p.style.display="none";
         }
-    });
-    // Hide default WHMCS blocks-based product details (WHMCS 8.8+ / Lagom 2.x+)
-    document.querySelectorAll(".service-details-blocks,.product-details-blocks,.product-info-blocks,[class*=product-details-block],[class*=service-detail-block]").forEach(function(el){
-        el.setAttribute("data-bt-hidden","1");el.style.display="none";
-    });
-    // Hide default tab-based sections in newer WHMCS (nav-tabs inside content area)
-    document.querySelectorAll(".content-padded > .nav-tabs,.content-area > .nav-tabs,.main-content > .nav-tabs").forEach(function(el){
-        el.style.display="none";
-        var sib=el.nextElementSibling;
-        if(sib&&sib.classList&&sib.classList.contains("tab-content")) sib.style.display="none";
     });
     // Also hide by sidebar menu item IDs
     ["Primary_Sidebar-productdetails_addons_and_extras"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
 }
 
-function enhanceSidebarActions(){
-    // Official cPanel icon (orange gear/dashboard)
-    var cpanelIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg></div>';
-    // Webmail envelope icon (blue)
-    var webmailIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>';
-    // Password lock icon (purple)
-    var passwordIcon='<div class="bt-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>';
-
-    var panel=document.querySelector(".panel-actions");
-    if(!panel) return;
-
-    panel.querySelectorAll(".list-group-tab-nav .list-group-item").forEach(function(item){
-        var id=item.getAttribute("data-identifier")||item.id||"";
-        var text=item.textContent.trim().replace(/\s+/g," ");
-        var icon="";var subtitle="";
-
-        if(id==="cpanel"||text.toLowerCase().indexOf("cpanel")!==-1){
-            icon=cpanelIcon;subtitle="Server Control Panel";
-        } else if(id==="webmail"||text.toLowerCase().indexOf("webmail")!==-1){
-            icon=webmailIcon;subtitle="Email Client";
-        } else if(id.indexOf("Change_Password")!==-1||text.toLowerCase().indexOf("change password")!==-1){
-            icon=passwordIcon;subtitle="Update Account Password";
-        }
-
-        if(icon){
-            // Clean the text (remove spinner and old icon)
-            var label=text.replace(/Log in to /i,"").replace(/Login to /i,"").trim();
-            if(label.toLowerCase()==="cpanel") label="cPanel";
-            item.innerHTML=icon+'<div class="bt-action-label"><strong>'+label+'</strong><span>'+subtitle+'</span></div>';
-        }
-    });
-}
-
 function buildTabs(){
-    // Find the main content area — try Lagom2 first (#Overview pane), then other WHMCS/theme versions
-    var overviewPane=document.querySelector("#Overview");
-    var contentArea=overviewPane||document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".container-fluid > .row > .col-md-9,.container-fluid > .row > .col-lg-9")||document.querySelector(".panel:not([data-bt-hidden])")||document.querySelector(".container");
-    if(!contentArea) return;
-
-    // Find the Quick Shortcuts section (cPanel server module actions)
-    var quickShortcutsSection=null;
-    document.querySelectorAll(".section").forEach(function(sec){
-        if(quickShortcutsSection) return;
-        var title=sec.querySelector(".section-title,h2,h3");
-        if(!title) return;
-        var t=(title.textContent||"").toLowerCase().trim();
-        if(t.indexOf("quick shortcut")!==-1||t.indexOf("actions")!==-1||t.indexOf("server actions")!==-1){
-            quickShortcutsSection=sec;
-        }
-    });
-    // Also check panels with shortcut-related headings
-    if(!quickShortcutsSection){
-        document.querySelectorAll(".panel,.card").forEach(function(p){
-            if(quickShortcutsSection) return;
-            var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title");
-            if(!h) return;
-            var t=(h.textContent||"").toLowerCase();
-            if(t.indexOf("quick shortcut")!==-1||t.indexOf("shortcut")!==-1||t.indexOf("actions")!==-1){
-                quickShortcutsSection=p;
-            }
-        });
-    }
+    var target=document.querySelector(".panel");
+    if(!target) target=document.querySelector(".section-body");
+    if(!target) return;
+    var hiddenPanel=document.querySelector("ul.panel-tabs");
+    var insertAfter=hiddenPanel?hiddenPanel.closest(".panel"):null;
+    if(!insertAfter) insertAfter=target;
 
     var wrap=document.createElement("div");
     wrap.className="bt-wrap";wrap.id="bt-wrap";
@@ -1151,87 +1063,8 @@ function buildTabs(){
     });
 
     wrap.appendChild(nav);wrap.appendChild(panes);
-    // Insert our tabs — try multiple strategies for different WHMCS/theme versions
-    var inserted=false;
-    // Strategy 0 (Lagom2): Insert inside #Overview pane, after the hook-output sections and before the hidden panel
-    if(!inserted&&overviewPane){
-        // Find the last section-hook-output div (our hook output is rendered there)
-        var hookSections=overviewPane.querySelectorAll(".section-hook-output");
-        if(hookSections.length){
-            var lastHook=hookSections[hookSections.length-1];
-            if(lastHook.nextSibling){lastHook.parentNode.insertBefore(wrap,lastHook.nextSibling);}
-            else{lastHook.parentNode.appendChild(wrap);}
-            inserted=true;
-        }
-        // Fallback: insert after product-details div
-        if(!inserted){
-            var prodDetails=overviewPane.querySelector(".product-details");
-            if(prodDetails){
-                if(prodDetails.nextSibling){prodDetails.parentNode.insertBefore(wrap,prodDetails.nextSibling);}
-                else{prodDetails.parentNode.appendChild(wrap);}
-                inserted=true;
-            }
-        }
-        // Fallback: insert after module-client-area
-        if(!inserted){
-            var moduleArea=overviewPane.querySelector(".module-client-area");
-            var modulePanel=moduleArea?moduleArea.closest(".panel"):null;
-            if(modulePanel){
-                if(modulePanel.nextSibling){modulePanel.parentNode.insertBefore(wrap,modulePanel.nextSibling);}
-                else{modulePanel.parentNode.appendChild(wrap);}
-                inserted=true;
-            }
-        }
-        // Last Lagom2 fallback: append to #Overview
-        if(!inserted){
-            overviewPane.appendChild(wrap);
-            inserted=true;
-        }
-    }
-    // Strategy 1: Insert before Quick Shortcuts section
-    if(!inserted&&quickShortcutsSection&&quickShortcutsSection.parentNode){
-        quickShortcutsSection.parentNode.insertBefore(wrap,quickShortcutsSection);
-        inserted=true;
-    }
-    // Strategy 2: Insert after the hidden panel (old WHMCS structure)
-    if(!inserted){
-        var hiddenPanel=document.querySelector("[data-bt-hidden]");
-        if(hiddenPanel&&hiddenPanel.parentNode){
-            hiddenPanel.parentNode.insertBefore(wrap,hiddenPanel.nextSibling);
-            inserted=true;
-        }
-    }
-    // Strategy 3: Insert after hidden panel-tabs panel
-    if(!inserted){
-        var panelTabs=document.querySelector("ul.panel-tabs");
-        var insertAfter=panelTabs?panelTabs.closest(".panel"):null;
-        if(insertAfter&&insertAfter.parentNode){
-            insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
-            inserted=true;
-        }
-    }
-    // Strategy 4: Insert at the top of the content area (works for all WHMCS/theme versions)
-    if(!inserted&&contentArea){
-        // Find the first visible child that is not our data div
-        var firstVisible=null;
-        for(var ci=0;ci<contentArea.children.length;ci++){
-            var ch=contentArea.children[ci];
-            if(ch.id==="bt-data"||ch.id==="bt-wrap") continue;
-            if(ch.style&&ch.style.display==="none") continue;
-            if(ch.getAttribute&&ch.getAttribute("data-bt-hidden")==="1") continue;
-            firstVisible=ch;break;
-        }
-        if(firstVisible) contentArea.insertBefore(wrap,firstVisible);
-        else contentArea.insertBefore(wrap,contentArea.firstChild);
-        inserted=true;
-    }
-    // Strategy 5: Last resort — append to body near bt-data
-    if(!inserted){
-        var dataEl2=$("bt-data");
-        if(dataEl2&&dataEl2.parentNode){
-            dataEl2.parentNode.insertBefore(wrap,dataEl2.nextSibling);
-        }
-    }
+    if(insertAfter&&insertAfter.parentNode) insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
+    else document.querySelector(".main-content,.content-padded,.section-body,.container").appendChild(wrap);
 
     buildOverviewPane();
     if(C.domainEnabled) buildDomainsPane();
