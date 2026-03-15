@@ -395,8 +395,8 @@ function broodle_tools_css_cards()
 .bt-btn-add:hover{background:#0950b3}
 .bt-btn-outline{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
 .bt-btn-outline:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}
-.bt-accordion{margin-top:20px;border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--card-bg,#fff)}
-.bt-accordion-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .12s}
+.bt-accordion{margin-top:20px;border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:visible;background:var(--card-bg,#fff)}
+.bt-accordion-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .12s;border-radius:12px}
 .bt-accordion-head:hover{background:var(--input-bg,#f9fafb)}
 .bt-accordion-icon{width:36px;height:36px;border-radius:10px;background:#0a5ed3;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .bt-accordion-info{flex:1;min-width:0}
@@ -404,8 +404,8 @@ function broodle_tools_css_cards()
 .bt-accordion-info p{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
 .bt-accordion-arrow{width:20px;height:20px;color:var(--text-muted,#9ca3af);transition:transform .25s ease;flex-shrink:0}
 .bt-accordion.open .bt-accordion-arrow{transform:rotate(180deg)}
-.bt-accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.bt-accordion.open .bt-accordion-body{max-height:800px}
+.bt-accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease,overflow 0s .3s}
+.bt-accordion.open .bt-accordion-body{max-height:800px;overflow:visible;transition:max-height .3s ease,overflow 0s 0s}
 .bt-addons-section{margin-top:20px}
 .bt-addon-wrap{position:relative;padding:0 36px 6px}
 .bt-addon-scroll{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0;cursor:grab;user-select:none}
