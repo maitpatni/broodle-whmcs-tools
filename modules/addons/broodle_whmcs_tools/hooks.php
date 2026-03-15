@@ -569,28 +569,31 @@ function broodle_tools_shared_script()
 .bwp-detail-body{flex:1;overflow-y:auto;padding:0}
 .bwp-tab-content{display:none;padding:24px}
 .bwp-tab-content.active{display:block}
-.bwp-preview-wrap{margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:#f9fafb;position:relative}
-.bwp-preview-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--input-bg,#f3f4f6);border-bottom:1px solid var(--border-color,#e5e7eb)}
+.bwp-preview-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:#f9fafb;position:relative;flex-shrink:0;width:340px}
+.bwp-preview-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--input-bg,#f3f4f6);border-bottom:1px solid var(--border-color,#e5e7eb)}
 .bwp-preview-dots{display:flex;gap:5px}
-.bwp-preview-dots span{width:10px;height:10px;border-radius:50%}
+.bwp-preview-dots span{width:8px;height:8px;border-radius:50%}
 .bwp-preview-dots span:nth-child(1){background:#ef4444}
 .bwp-preview-dots span:nth-child(2){background:#f59e0b}
 .bwp-preview-dots span:nth-child(3){background:#22c55e}
-.bwp-preview-url{flex:1;font-size:11px;color:var(--text-muted,#6b7280);background:var(--card-bg,#fff);padding:4px 10px;border-radius:5px;border:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SFMono-Regular",Consolas,monospace}
-.bwp-preview-frame{width:100%;height:280px;border:none;background:#fff}
-.bwp-preview-overlay{position:absolute;inset:0;top:34px;cursor:pointer;z-index:1}
-.bwp-preview-overlay:hover::after{content:"Click to visit site";position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600}
-.bwp-site-header{display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--input-bg,#f9fafb);border-radius:12px;border:1px solid var(--border-color,#f3f4f6);margin-bottom:20px}
-.bwp-site-header-icon{width:48px;height:48px;border-radius:12px;background:#21759b;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bwp-preview-url{flex:1;font-size:10px;color:var(--text-muted,#6b7280);background:var(--card-bg,#fff);padding:3px 8px;border-radius:4px;border:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SFMono-Regular",Consolas,monospace}
+.bwp-preview-frame{width:1280px;height:800px;border:none;background:#fff;transform:scale(.265);transform-origin:top left}
+.bwp-preview-frame-wrap{width:100%;height:212px;overflow:hidden;position:relative}
+.bwp-preview-overlay{position:absolute;inset:0;top:28px;cursor:pointer;z-index:1}
+.bwp-preview-overlay:hover::after{content:"Click to visit site";position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600}
+.bwp-overview-hero{display:flex;gap:20px;margin-bottom:20px;align-items:flex-start}
+.bwp-overview-right{flex:1;min-width:0}
+.bwp-site-header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--input-bg,#f9fafb);border-radius:10px;border:1px solid var(--border-color,#f3f4f6);margin-bottom:12px}
+.bwp-site-header-icon{width:40px;height:40px;border-radius:10px;background:#21759b;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .bwp-site-header-info{flex:1;min-width:0}
-.bwp-site-header-info h4{margin:0;font-size:16px;font-weight:700;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bwp-site-header-info p{margin:3px 0 0;font-size:12px;color:var(--text-muted,#6b7280);display:flex;gap:10px;flex-wrap:wrap}
+.bwp-site-header-info h4{margin:0;font-size:14px;font-weight:700;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bwp-site-header-info p{margin:2px 0 0;font-size:11px;color:var(--text-muted,#6b7280);display:flex;gap:8px;flex-wrap:wrap}
 .bwp-site-header-info p span{display:inline-flex;align-items:center;gap:3px}
-.bwp-overview-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
-.bwp-stat{padding:14px 16px;background:var(--input-bg,#f9fafb);border-radius:10px;border:1px solid var(--border-color,#f3f4f6)}
-.bwp-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 4px}
-.bwp-stat-value{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-all}
-.bwp-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.bwp-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.bwp-stat{padding:10px 12px;background:var(--input-bg,#f9fafb);border-radius:8px;border:1px solid var(--border-color,#f3f4f6)}
+.bwp-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 2px}
+.bwp-stat-value{font-size:13px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-all}
+.bwp-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bwp-item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color,#f3f4f6)}
 .bwp-item-row:last-child{border-bottom:none}
 .bwp-item-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
@@ -628,8 +631,41 @@ function broodle_tools_shared_script()
 .bwp-msg.success{background:rgba(5,150,101,.08);color:#059669}
 .bwp-msg.error{background:rgba(239,68,68,.08);color:#ef4444}
 .bwp-msg.info{background:rgba(10,94,211,.08);color:#0a5ed3}
-@media(max-width:700px){.bwp-overview-grid{grid-template-columns:1fr 1fr}.bwp-detail-panel{max-width:100%;max-height:100vh;border-radius:0}.bwp-preview-frame{height:200px}}
-@media(max-width:500px){.bwp-overview-grid{grid-template-columns:1fr}.bwp-site-actions{flex-direction:column}}
+@media(max-width:700px){.bwp-overview-grid{grid-template-columns:1fr 1fr}.bwp-detail-panel{max-width:100%;max-height:100vh;border-radius:0}.bwp-preview-frame-wrap{height:160px}.bwp-overview-hero{flex-direction:column}.bwp-preview-wrap{width:100%}}
+@media(max-width:500px){.bwp-overview-grid{grid-template-columns:1fr}.bwp-site-actions{flex-direction:column}.bwp-theme-grid{grid-template-columns:1fr}.bwp-overview-hero{flex-direction:column}.bwp-preview-wrap{width:100%}}
+
+/* Plugin icon images */
+.bwp-item-icon-img{width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;position:relative}
+.bwp-item-icon-img img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.bwp-item-icon-img .bwp-item-icon{width:40px;height:40px;border-radius:10px}
+
+/* Tab summary bar */
+.bwp-tab-summary{display:flex;gap:16px;padding:12px 16px;background:var(--input-bg,#f9fafb);border-radius:10px;margin-bottom:16px;border:1px solid var(--border-color,#f3f4f6)}
+.bwp-tab-stat{font-size:13px;color:var(--text-muted,#6b7280);display:flex;align-items:center;gap:5px}
+.bwp-tab-stat-num{font-weight:700;font-size:15px}
+
+/* Theme grid cards */
+.bwp-theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.bwp-theme-card{border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--card-bg,#fff);transition:box-shadow .2s,border-color .2s}
+.bwp-theme-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:var(--border-color,#d1d5db)}
+.bwp-theme-active{border-color:#21759b;box-shadow:0 0 0 2px rgba(33,117,155,.15)}
+.bwp-theme-screenshot{position:relative;width:100%;padding-top:66%;background:var(--input-bg,#f3f4f6);overflow:hidden}
+.bwp-theme-screenshot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bwp-theme-placeholder{position:absolute;inset:0;align-items:center;justify-content:center;background:var(--input-bg,#f3f4f6)}
+.bwp-theme-active-badge{position:absolute;top:8px;right:8px;background:#21759b;color:#fff;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.bwp-theme-info{padding:12px 14px}
+.bwp-theme-name{font-size:13px;font-weight:600;color:var(--heading-color,#111827);margin:0 0 4px}
+.bwp-theme-ver{font-size:11px;color:var(--text-muted,#6b7280);margin:0 0 8px}
+.bwp-theme-actions{display:flex;gap:6px}
+
+/* Security summary */
+.bwp-sec-summary{margin-bottom:20px;padding:16px;background:var(--input-bg,#f9fafb);border-radius:12px;border:1px solid var(--border-color,#f3f4f6)}
+.bwp-sec-summary-bar{height:8px;background:var(--border-color,#e5e7eb);border-radius:4px;overflow:hidden;margin-bottom:10px}
+.bwp-sec-summary-fill{height:100%;background:linear-gradient(90deg,#059669,#22c55e);border-radius:4px;transition:width .5s}
+.bwp-sec-summary-text{display:flex;gap:16px;font-size:13px}
+.bwp-sec-summary-text span{display:flex;align-items:center;gap:4px}
+
+@media(max-width:700px){.bwp-theme-grid{grid-template-columns:1fr 1fr}}
 </style>
 
 <script>
@@ -1043,7 +1079,7 @@ function broodle_tools_shared_script()
                     list.innerHTML=html;
 
                     list.querySelectorAll(".bwp-login-btn").forEach(function(btn){
-                        btn.addEventListener("click",function(e){e.stopPropagation();bwpAutoLogin(parseInt(this.getAttribute("data-id")));});
+                        btn.addEventListener("click",function(e){e.stopPropagation();bwpAutoLogin(parseInt(this.getAttribute("data-id")),this);});
                     });
                     list.querySelectorAll(".bwp-manage-btn").forEach(function(btn){
                         btn.addEventListener("click",function(e){e.stopPropagation();bwpOpenDetail(parseInt(this.getAttribute("data-id")));});
@@ -1071,8 +1107,10 @@ function broodle_tools_shared_script()
         setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML="<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21.21 15.89A10 10 0 1 1 8 2.83\"/><path d=\"M22 12A10 10 0 0 0 12 2v10z\"/></svg> Refresh";}},2000);
     }
 
-    function bwpAutoLogin(instId){
+    function bwpAutoLogin(instId,btn){
+        if(btn){var origHtml=btn.innerHTML;btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Logging in...";}
         bwpAjax({action:"wp_autologin",instance_id:instId},function(r){
+            if(btn){btn.disabled=false;btn.innerHTML=origHtml;}
             if(r.success&&r.login_url){window.open(r.login_url,"_blank");}
             else{alert(r.message||"Could not create login session");}
         });
@@ -1097,15 +1135,17 @@ function broodle_tools_shared_script()
         var ov=document.getElementById("bwpTabOverview");
         var siteUrl=inst.site_url||("http://"+inst.domain);
         var safeUrl=bwpEsc(siteUrl);
-        var updateInfo=inst.availableUpdate?"<div class=\"bwp-msg info\">WordPress "+bwpEsc(inst.availableUpdate)+" is available. <button class=\"bwp-item-btn update\" onclick=\"bwpUpdateCore()\">Update Core</button></div>":"";
+        var updateInfo=inst.availableUpdate?"<div class=\"bwp-msg info\">WordPress "+bwpEsc(inst.availableUpdate)+" is available. <button class=\"bwp-item-btn update\" onclick=\"bwpUpdateCore(event)\">Update Core</button></div>":"";
 
-        // Website preview
+        // Website preview (scaled desktop view)
         var preview="<div class=\"bwp-preview-wrap\">"
             +"<div class=\"bwp-preview-bar\">"
             +"<div class=\"bwp-preview-dots\"><span></span><span></span><span></span></div>"
             +"<div class=\"bwp-preview-url\">"+safeUrl+"</div>"
             +"</div>"
+            +"<div class=\"bwp-preview-frame-wrap\">"
             +"<iframe class=\"bwp-preview-frame\" src=\""+safeUrl+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\"></iframe>"
+            +"</div>"
             +"<div class=\"bwp-preview-overlay\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\"></div>"
             +"</div>";
 
@@ -1120,32 +1160,41 @@ function broodle_tools_shared_script()
             +"<p><span>WP "+bwpEsc(inst.version)+"</span><span>"+bwpEsc(inst.path||"/")+"</span><span>"+statusBadge+"</span><span>"+sslBadge+"</span>"+infectedBadge+"</p>"
             +"</div></div>";
 
-        ov.innerHTML=preview+header+updateInfo
+        ov.innerHTML="<div class=\"bwp-overview-hero\">"+preview
+            +"<div class=\"bwp-overview-right\">"
+            +header+updateInfo
             +"<div class=\"bwp-overview-grid\">"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Site URL</p><p class=\"bwp-stat-value\"><a href=\""+safeUrl+"\" target=\"_blank\" style=\"color:#21759b;text-decoration:none\">"+safeUrl+"</a></p></div>"
             +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.version)+(inst.availableUpdate?" &rarr; "+bwpEsc(inst.availableUpdate):"")+"</p></div>"
             +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Install Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.path)+"</p></div>"
             +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Owner</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.owner)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">SSL Certificate</p><p class=\"bwp-stat-value\">"+(inst.ssl?"&#128274; Enabled":"Disabled")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">SSL</p><p class=\"bwp-stat-value\">"+(inst.ssl?"&#128274; Enabled":"Disabled")+"</p></div>"
             +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Status</p><p class=\"bwp-stat-value\">"+(inst.alive?"&#9989; Online":"&#10060; Offline")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">PHP</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.phpVersion||"N/A")+"</p></div>"
             +"</div>"
             +"<div class=\"bwp-quick-actions\">"
-            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg> WP Admin Login</button>"
+            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin(event)\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg> WP Admin Login</button>"
             +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg> Visit Site</button>"
-            +"</div>";
+            +"</div></div></div>";
 
         document.getElementById("bwpTabPlugins").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
         document.getElementById("bwpTabThemes").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
         document.getElementById("bwpTabSecurity").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
     }
 
-    window.bwpDoLogin=function(){if(currentWpInstance) bwpAutoLogin(currentWpInstance.id);};
-
-    window.bwpUpdateCore=function(){
+    window.bwpDoLogin=function(e){
         if(!currentWpInstance) return;
+        var btn=e&&e.target?e.target.closest(".bwp-action-btn"):null;
+        bwpAutoLogin(currentWpInstance.id,btn);
+    };
+
+    window.bwpUpdateCore=function(e){
+        if(!currentWpInstance) return;
+        var btn=e&&e.target?e.target.closest(".bwp-item-btn"):null;
+        if(btn){btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Updating...";}
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"core"},function(r){
-            alert(r.message||(r.success?"Core updated":"Update failed"));
-            if(r.success) bwpLoadInstances();
+            if(btn){btn.disabled=false;btn.textContent="Update Core";}
+            if(r.success){bwpLoadInstances();bwpOpenDetail(currentWpInstance.id);}
+            else{alert(r.message||"Update failed");}
         });
     };
 
@@ -1157,22 +1206,33 @@ function broodle_tools_shared_script()
         bwpAjax({action:"wp_list_plugins",instance_id:currentWpInstance.id},function(r){
             if(r.success&&r.plugins){
                 if(r.plugins.length===0){container.innerHTML="<div class=\"bwp-empty\"><span>No plugins found</span></div>";return;}
-                var html="";
+                var activeCount=0,inactiveCount=0,updateCount=0;
                 r.plugins.forEach(function(p){
-                    var isActive=p.active===true||p.active==="true";
+                    if(p.active===true||p.active==="true"||p.active===1||p.active==="1") activeCount++; else inactiveCount++;
+                    if(p.availableVersion) updateCount++;
+                });
+                var html="<div class=\"bwp-tab-summary\">"
+                    +"<span class=\"bwp-tab-stat\"><span class=\"bwp-tab-stat-num\" style=\"color:#059669\">"+activeCount+"</span> Active</span>"
+                    +"<span class=\"bwp-tab-stat\"><span class=\"bwp-tab-stat-num\" style=\"color:#6b7280\">"+inactiveCount+"</span> Inactive</span>"
+                    +(updateCount?"<span class=\"bwp-tab-stat\"><span class=\"bwp-tab-stat-num\" style=\"color:#0a5ed3\">"+updateCount+"</span> Updates</span>":"")
+                    +"</div>";
+                r.plugins.forEach(function(p){
+                    var isActive=p.active===true||p.active==="true"||p.active===1||p.active==="1";
                     var statusClass=isActive?"active":"inactive";
                     var hasUpdate=!!p.availableVersion;
+                    var iconUrl="https://ps.w.org/"+encodeURIComponent(p.slug)+"/assets/icon-128x128.png";
                     html+="<div class=\"bwp-item-row\">"
-                        +"<div class=\"bwp-item-icon plugin\">&#128268;</div>"
+                        +"<div class=\"bwp-item-icon-img\"><img src=\""+bwpEsc(iconUrl)+"\" onerror=\"this.style.display=\\x27none\\x27;this.nextElementSibling.style.display=\\x27flex\\x27\" alt=\"\"><div class=\"bwp-item-icon plugin\" style=\"display:none\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"/></svg></div></div>"
                         +"<div class=\"bwp-item-info\">"
-                        +"<p class=\"bwp-item-name\">"+bwpEsc(p.title||p.slug)+" <span class=\"bwp-status-badge "+statusClass+"\">"+(isActive?"Active":"Inactive")+"</span>"
-                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
+                        +"<p class=\"bwp-item-name\">"+bwpEsc(p.title||p.slug)+"</p>"
+                        +"<p class=\"bwp-item-detail\">"
+                        +"<span class=\"bwp-status-badge "+statusClass+"\">"+(isActive?"Active":"Inactive")+"</span>"
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">v"+bwpEsc(p.version)+" &rarr; "+bwpEsc(p.availableVersion)+"</span>":"<span style=\"color:var(--text-muted,#6b7280)\"> v"+bwpEsc(p.version)+"</span>")
                         +"</p>"
-                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(p.version)+(hasUpdate?" &rarr; "+bwpEsc(p.availableVersion):"")+" &middot; "+bwpEsc(p.slug)+"</p>"
                         +"</div>"
                         +"<div class=\"bwp-item-actions\">"
                         +"<button class=\"bwp-item-btn "+(isActive?"active":"inactive")+"-state\" data-slug=\""+bwpEsc(p.slug)+"\" data-activate=\""+(isActive?"0":"1")+"\" onclick=\"bwpTogglePlugin(this)\">"+(isActive?"Deactivate":"Activate")+"</button>"
-                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(p.slug)+"\" onclick=\"bwpUpdatePlugin(this)\">Update</button>":"")
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(p.slug)+"\" onclick=\"bwpUpdatePlugin(this)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update</button>":"")
                         +"</div></div>";
                 });
                 container.innerHTML=html;
@@ -1185,17 +1245,18 @@ function broodle_tools_shared_script()
     window.bwpTogglePlugin=function(btn){
         if(!currentWpInstance) return;
         var slug=btn.getAttribute("data-slug"),activate=btn.getAttribute("data-activate");
-        btn.disabled=true;btn.textContent="...";
+        var origText=btn.textContent;
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div>";
         bwpAjax({action:"wp_toggle_plugin",instance_id:currentWpInstance.id,slug:slug,activate:activate},function(r){
-            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent=activate==="1"?"Activate":"Deactivate";}
+            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent=origText;}
         });
     };
     window.bwpUpdatePlugin=function(btn){
         if(!currentWpInstance) return;
         var slug=btn.getAttribute("data-slug");
-        btn.disabled=true;btn.textContent="Updating...";
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Updating...";
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins",slug:slug},function(r){
-            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Update";}
+            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update";}
         });
     };
 
@@ -1207,23 +1268,28 @@ function broodle_tools_shared_script()
         bwpAjax({action:"wp_list_themes",instance_id:currentWpInstance.id},function(r){
             if(r.success&&r.themes){
                 if(r.themes.length===0){container.innerHTML="<div class=\"bwp-empty\"><span>No themes found</span></div>";return;}
-                var html="";
+                var html="<div class=\"bwp-theme-grid\">";
                 r.themes.forEach(function(t){
-                    var isActive=t.active===true||t.active==="true";
+                    var isActive=t.active===true||t.active==="true"||t.active===1||t.active==="1";
                     var hasUpdate=!!t.availableVersion;
-                    html+="<div class=\"bwp-item-row\">"
-                        +"<div class=\"bwp-item-icon theme\">&#127912;</div>"
-                        +"<div class=\"bwp-item-info\">"
-                        +"<p class=\"bwp-item-name\">"+bwpEsc(t.title||t.slug)+" <span class=\"bwp-status-badge "+(isActive?"active":"inactive")+"\">"+(isActive?"Active":"Inactive")+"</span>"
-                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
-                        +"</p>"
-                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(t.version)+(hasUpdate?" &rarr; "+bwpEsc(t.availableVersion):"")+" &middot; "+bwpEsc(t.slug)+"</p>"
+                    var screenshotUrl=t.screenshot||("https://i0.wp.com/themes.svn.wordpress.org/"+encodeURIComponent(t.slug)+"/"+encodeURIComponent(t.version)+"/screenshot.png?w=400");
+                    html+="<div class=\"bwp-theme-card"+(isActive?" bwp-theme-active":"")+"\">"
+                        +"<div class=\"bwp-theme-screenshot\">"
+                        +"<img src=\""+bwpEsc(screenshotUrl)+"\" onerror=\"this.style.display=\\x27none\\x27;this.nextElementSibling.style.display=\\x27flex\\x27\" alt=\""+bwpEsc(t.title||t.slug)+"\">"
+                        +"<div class=\"bwp-theme-placeholder\" style=\"display:none\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\".3\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg></div>"
+                        +(isActive?"<div class=\"bwp-theme-active-badge\">Active Theme</div>":"")
                         +"</div>"
-                        +"<div class=\"bwp-item-actions\">"
+                        +"<div class=\"bwp-theme-info\">"
+                        +"<p class=\"bwp-theme-name\">"+bwpEsc(t.title||t.slug)+"</p>"
+                        +"<p class=\"bwp-theme-ver\">v"+bwpEsc(t.version)
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">&rarr; "+bwpEsc(t.availableVersion)+"</span>":"")
+                        +"</p>"
+                        +"<div class=\"bwp-theme-actions\">"
                         +(!isActive?"<button class=\"bwp-item-btn active-state\" data-slug=\""+bwpEsc(t.slug)+"\" onclick=\"bwpActivateTheme(this)\">Activate</button>":"")
-                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(t.slug)+"\" onclick=\"bwpUpdateTheme(this)\">Update</button>":"")
-                        +"</div></div>";
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(t.slug)+"\" onclick=\"bwpUpdateTheme(this)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update</button>":"")
+                        +"</div></div></div>";
                 });
+                html+="</div>";
                 container.innerHTML=html;
             } else {
                 container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load themes.")+"</div>";
@@ -1234,7 +1300,7 @@ function broodle_tools_shared_script()
     window.bwpActivateTheme=function(btn){
         if(!currentWpInstance) return;
         var slug=btn.getAttribute("data-slug");
-        btn.disabled=true;btn.textContent="...";
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div>";
         bwpAjax({action:"wp_toggle_theme",instance_id:currentWpInstance.id,slug:slug},function(r){
             if(r.success){bwpLoadThemes();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Activate";}
         });
@@ -1242,9 +1308,9 @@ function broodle_tools_shared_script()
     window.bwpUpdateTheme=function(btn){
         if(!currentWpInstance) return;
         var slug=btn.getAttribute("data-slug");
-        btn.disabled=true;btn.textContent="Updating...";
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Updating...";
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"themes",slug:slug},function(r){
-            if(r.success){bwpLoadThemes();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Update";}
+            if(r.success){bwpLoadThemes();}else{alert(r.message||"Failed");btn.disabled=false;btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update";}
         });
     };
 
@@ -1255,30 +1321,68 @@ function broodle_tools_shared_script()
 
         bwpAjax({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
             if(r.success&&r.security){
-                if(!Array.isArray(r.security)||r.security.length===0){
+                // Normalize: if object with keys, convert to array
+                var items=r.security;
+                if(!Array.isArray(items)){
+                    var arr=[];
+                    for(var k in items){
+                        if(items.hasOwnProperty(k)){
+                            var v=items[k];
+                            if(typeof v==="object"&&v!==null){
+                                v.id=v.id||k;
+                                v.title=v.title||k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," ").replace(/^./,function(m){return m.toUpperCase();});
+                                arr.push(v);
+                            } else if(typeof v==="string"){
+                                arr.push({id:k,status:v,title:k.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," ").replace(/^./,function(m){return m.toUpperCase();}),description:""});
+                            }
+                        }
+                    }
+                    items=arr;
+                }
+                if(items.length===0){
                     container.innerHTML="<div class=\"bwp-empty\"><span>No security measures data available</span></div>";
                     return;
                 }
-                var html="";
-                r.security.forEach(function(item){
+                var appliedCount=0,notAppliedCount=0;
+                items.forEach(function(item){
+                    var s=item.status||"unknown";
+                    if(s==="applied"||s==="ok"||s==="success") appliedCount++;
+                    else notAppliedCount++;
+                });
+                var html="<div class=\"bwp-sec-summary\">"
+                    +"<div class=\"bwp-sec-summary-bar\">"
+                    +"<div class=\"bwp-sec-summary-fill\" style=\"width:"+Math.round(appliedCount/(appliedCount+notAppliedCount)*100)+"%\"></div>"
+                    +"</div>"
+                    +"<div class=\"bwp-sec-summary-text\">"
+                    +"<span style=\"color:#059669\"><strong>"+appliedCount+"</strong> Applied</span>"
+                    +"<span style=\"color:#d97706\"><strong>"+notAppliedCount+"</strong> Not Applied</span>"
+                    +"<span style=\"color:var(--text-muted,#6b7280)\"><strong>"+items.length+"</strong> Total</span>"
+                    +"</div></div>";
+                items.forEach(function(item){
                     var status=item.status||"unknown";
                     var iconClass="warning";
-                    var icon="&#9888;";
-                    if(status==="applied"||status==="ok"||status==="success"){iconClass="ok";icon="&#10003;";}
-                    else if(status==="error"||status==="danger"||status==="failed"){iconClass="danger";icon="&#10007;";}
+                    var icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
+                    if(status==="applied"||status==="ok"||status==="success"){
+                        iconClass="ok";
+                        icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></svg>";
+                    } else if(status==="error"||status==="danger"||status==="failed"){
+                        iconClass="danger";
+                        icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"/><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"/></svg>";
+                    }
                     var measureId=item.id||item.measureId||"";
-                    var canApply=status!=="applied"&&status!=="ok"&&measureId;
-                    var canRevert=status==="applied"&&measureId;
+                    var canApply=status!=="applied"&&status!=="ok"&&status!=="success"&&measureId;
+                    var canRevert=(status==="applied"||status==="ok"||status==="success")&&measureId;
+                    var statusLabel=status==="applied"?"Applied":(status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
                     html+="<div class=\"bwp-security-item\">"
                         +"<div class=\"bwp-sec-icon "+iconClass+"\">"+icon+"</div>"
                         +"<div class=\"bwp-sec-info\">"
-                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||item.id||"Security Check")+"</p>"
-                        +"<p class=\"bwp-sec-detail\">"+bwpEsc(item.description||item.detail||"")+"</p>"
+                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||"Security Check")+"</p>"
+                        +(item.description?"<p class=\"bwp-sec-detail\">"+bwpEsc(item.description)+"</p>":"")
                         +"</div>"
                         +"<div class=\"bwp-item-actions\">"
-                        +(canApply?"<button class=\"bwp-item-btn update\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityApply(this)\">Apply Fix</button>":"")
-                        +(canRevert?"<button class=\"bwp-item-btn\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityRevert(this)\">Revert</button>":"")
-                        +"<span class=\"bwp-sec-value "+iconClass+"\">"+bwpEsc(status)+"</span>"
+                        +(canApply?"<button class=\"bwp-item-btn update\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityApply(this)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> Apply</button>":"")
+                        +(canRevert?"<button class=\"bwp-item-btn inactive-state\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityRevert(this)\">Revert</button>":"")
+                        +"<span class=\"bwp-sec-value "+iconClass+"\">"+bwpEsc(statusLabel)+"</span>"
                         +"</div></div>";
                 });
                 container.innerHTML=html;
@@ -1291,15 +1395,15 @@ function broodle_tools_shared_script()
     window.bwpSecurityApply=function(btn){
         if(!currentWpInstance) return;
         var measureId=btn.getAttribute("data-measure");
-        btn.disabled=true;btn.textContent="Applying...";
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Applying...";
         bwpAjax({action:"wp_security_apply",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
-            if(r.success){bwpLoadSecurity();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Apply Fix";}
+            if(r.success){bwpLoadSecurity();}else{alert(r.message||"Failed");btn.disabled=false;btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg> Apply";}
         });
     };
     window.bwpSecurityRevert=function(btn){
         if(!currentWpInstance) return;
         var measureId=btn.getAttribute("data-measure");
-        btn.disabled=true;btn.textContent="Reverting...";
+        btn.disabled=true;btn.innerHTML="<div class=\"bwp-spinner\" style=\"width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle\"></div> Reverting...";
         bwpAjax({action:"wp_security_revert",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
             if(r.success){bwpLoadSecurity();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Revert";}
         });

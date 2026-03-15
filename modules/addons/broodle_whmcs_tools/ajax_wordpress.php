@@ -429,7 +429,51 @@ switch ($action) {
             "/v1/security-measures/checker?installationId={$instId}");
 
         if ($result['success'] && is_array($result['data'])) {
-            echo json_encode(['success' => true, 'security' => $result['data']]);
+            // WP Toolkit returns { "measureId": { "status": "..." }, ... } — normalize to array
+            $raw = $result['data'];
+            $measures = [];
+            // Known measure titles for human-readable display
+            $titles = [
+                'blockAccessToSensitiveFiles'       => 'Block access to sensitive files',
+                'blockAccessToHtaccess'             => 'Block access to .htaccess and .htpasswd',
+                'blockAccessToXmlrpc'               => 'Block unauthorized access to xmlrpc.php',
+                'blockAuthorScans'                  => 'Block author scans',
+                'blockDirectoryBrowsing'            => 'Block directory browsing',
+                'blockPhpExecutionInWpContent'      => 'Forbid execution of PHP scripts in wp-content/uploads',
+                'blockPhpExecutionInWpIncludes'     => 'Forbid execution of PHP scripts in wp-includes',
+                'blockPhpExecutionInCacheDir'       => 'Disable PHP execution in cache directories',
+                'changeDefaultAdminUsername'         => 'Change default administrator username',
+                'changeDefaultDbPrefix'             => 'Change default database table prefix',
+                'configureSecurityKeys'             => 'Configure security keys',
+                'disableFileEditing'                => 'Disable file editing in WordPress Dashboard',
+                'disableScriptsConcatenation'       => 'Disable scripts concatenation for admin panel',
+                'enableBotProtection'               => 'Enable bot protection',
+                'restrictAccessToFilesAndDirectories'=> 'Restrict access to files and directories',
+                'turnOffPingbacks'                  => 'Turn off pingbacks',
+            ];
+            foreach ($raw as $key => $val) {
+                if (is_array($val)) {
+                    $measures[] = [
+                        'id'          => $key,
+                        'title'       => $titles[$key] ?? ucwords(str_replace(['-', '_'], ' ', preg_replace('/([a-z])([A-Z])/', '$1 $2', $key))),
+                        'status'      => $val['status'] ?? 'unknown',
+                        'description' => $val['description'] ?? $val['detail'] ?? '',
+                    ];
+                } elseif (is_string($val)) {
+                    // Simple "measureId" => "status" format
+                    $measures[] = [
+                        'id'     => $key,
+                        'title'  => $titles[$key] ?? ucwords(str_replace(['-', '_'], ' ', preg_replace('/([a-z])([A-Z])/', '$1 $2', $key))),
+                        'status' => $val,
+                        'description' => '',
+                    ];
+                }
+            }
+            // If it was already an indexed array, pass through
+            if (empty($measures) && isset($raw[0])) {
+                $measures = $raw;
+            }
+            echo json_encode(['success' => true, 'security' => $measures]);
         } else {
             echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Security scan failed']);
         }
