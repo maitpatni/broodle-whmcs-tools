@@ -371,7 +371,8 @@ switch ($action) {
             exit;
         }
 
-        $postData = [
+        // Build the update task object
+        $task = [
             'installationId' => $instId,
             'core'           => ['update' => false, 'type' => 'minor', 'restorePoint' => true],
             'plugins'        => [],
@@ -379,12 +380,11 @@ switch ($action) {
         ];
 
         if ($type === 'core') {
-            $postData['core']['update'] = true;
+            $task['core']['update'] = true;
         } elseif ($type === 'plugins') {
             if (!empty($slug)) {
-                $postData['plugins'] = [$slug];
+                $task['plugins'] = [$slug];
             } else {
-                // Update all plugins with available updates
                 $pluginsResp = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, "/v1/installations/{$instId}/plugins");
                 $slugs = [];
                 if (is_array($pluginsResp['data'] ?? null)) {
@@ -392,11 +392,11 @@ switch ($action) {
                         if (!empty($pl['availableVersion'])) $slugs[] = $pl['slug'];
                     }
                 }
-                $postData['plugins'] = $slugs;
+                $task['plugins'] = $slugs;
             }
         } elseif ($type === 'themes') {
             if (!empty($slug)) {
-                $postData['themes'] = [$slug];
+                $task['themes'] = [$slug];
             } else {
                 $themesResp = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, "/v1/installations/{$instId}/themes");
                 $slugs = [];
@@ -405,15 +405,27 @@ switch ($action) {
                         if (!empty($th['availableVersion'])) $slugs[] = $th['slug'];
                     }
                 }
-                $postData['themes'] = $slugs;
+                $task['themes'] = $slugs;
             }
         }
 
-        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $postData, 300);
+        // WP Toolkit updater expects an array of tasks
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', [$task], 300);
+
+        // If array format fails, try single object format
+        if (!$result['success']) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $task, 300);
+        }
+
+        $errMsg = 'Update failed';
+        if (!$result['success'] && is_array($result['data'])) {
+            $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? 'Update failed';
+            if (is_array($errMsg)) $errMsg = json_encode($errMsg);
+        }
 
         echo json_encode([
             'success' => $result['success'],
-            'message' => $result['success'] ? ucfirst($type) . ' updated successfully' : ($result['data']['meta']['message'] ?? $result['data']['message'] ?? 'Update failed'),
+            'message' => $result['success'] ? ucfirst($type) . ' updated successfully' : $errMsg,
         ]);
         break;
 

@@ -592,9 +592,7 @@ function broodle_tools_shared_script()
 .bwp-preview-dots span:nth-child(3){background:#22c55e}
 .bwp-preview-url{flex:1;font-size:9px;color:var(--text-muted,#6b7280);background:var(--card-bg,#fff);padding:2px 7px;border-radius:4px;border:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SFMono-Regular",Consolas,monospace}
 .bwp-preview-frame{width:1280px;height:800px;border:none;background:#fff;transform:scale(.234);transform-origin:top left}
-.bwp-preview-frame-wrap{width:100%;height:187px;overflow:hidden;position:relative}
-.bwp-preview-overlay{position:absolute;inset:0;top:24px;cursor:pointer;z-index:1}
-.bwp-preview-overlay:hover::after{content:"Click to visit";position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.bwp-preview-frame-wrap{width:100%;height:187px;overflow:hidden;position:relative;background:var(--input-bg,#f3f4f6)}
 .bwp-preview-col{flex-shrink:0;width:300px;display:flex;flex-direction:column;gap:8px}
 .bwp-overview-hero{display:flex;gap:18px;align-items:flex-start}
 .bwp-overview-right{flex:1;min-width:0}
@@ -1243,6 +1241,31 @@ function broodle_tools_shared_script()
         return false;
     }
 
+    /* Convert camelCase measure ID to human-readable title */
+    function bwpMakeTitle(id){
+        if(!id||/^\d+$/.test(id)) return "Security Check";
+        var titles={
+            blockAccessToSensitiveFiles:"Block access to sensitive files",
+            blockAccessToHtaccess:"Block access to .htaccess and .htpasswd",
+            blockAccessToXmlrpc:"Block unauthorized access to xmlrpc.php",
+            blockAuthorScans:"Block author scans",
+            blockDirectoryBrowsing:"Block directory browsing",
+            blockPhpExecutionInWpContent:"Forbid PHP execution in wp-content/uploads",
+            blockPhpExecutionInWpIncludes:"Forbid PHP execution in wp-includes",
+            blockPhpExecutionInCacheDir:"Disable PHP execution in cache directories",
+            changeDefaultAdminUsername:"Change default administrator username",
+            changeDefaultDbPrefix:"Change default database table prefix",
+            configureSecurityKeys:"Configure security keys",
+            disableFileEditing:"Disable file editing in WordPress Dashboard",
+            disableScriptsConcatenation:"Disable scripts concatenation for admin panel",
+            enableBotProtection:"Enable bot protection",
+            restrictAccessToFilesAndDirectories:"Restrict access to files and directories",
+            turnOffPingbacks:"Turn off pingbacks"
+        };
+        if(titles[id]) return titles[id];
+        return id.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," ").replace(/^./,function(m){return m.toUpperCase();});
+    }
+
     function bwpRefresh(){
         var btn=document.getElementById("bwpScanBtn");
         if(btn){btn.disabled=true;btn.innerHTML="Loading...";}
@@ -1404,8 +1427,18 @@ function broodle_tools_shared_script()
         bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins",slug:slug},function(r){
             if(r.success){
                 if(row){row.style.background="rgba(5,150,101,.06)";btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";}
-                setTimeout(function(){bwpLoadPlugins();},1200);
-            }else{alert(r.message||"Failed");btn.disabled=false;btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update";}
+                setTimeout(function(){bwpLoadPlugins();},1500);
+            }else{
+                var msg=r.message||"Update failed";
+                if(row){row.style.background="rgba(239,68,68,.04)";}
+                btn.disabled=false;btn.innerHTML="&#10007; Failed";btn.style.color="#ef4444";btn.style.borderColor="#ef4444";
+                btn.title=msg;
+                setTimeout(function(){
+                    btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Retry";
+                    btn.style.color="#0a5ed3";btn.style.borderColor="#0a5ed3";
+                    if(row) row.style.background="";
+                },2000);
+            }
         });
     };
 
@@ -1463,8 +1496,16 @@ function broodle_tools_shared_script()
             if(r.success){
                 if(card){card.style.borderColor="#059669";}
                 btn.innerHTML="&#10003; Done";btn.style.color="#059669";btn.style.borderColor="#059669";
-                setTimeout(function(){bwpLoadThemes();},1200);
-            }else{alert(r.message||"Failed");btn.disabled=false;btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Update";}
+                setTimeout(function(){bwpLoadThemes();},1500);
+            }else{
+                var msg=r.message||"Update failed";
+                btn.disabled=false;btn.innerHTML="&#10007; Failed";btn.style.color="#ef4444";btn.style.borderColor="#ef4444";
+                btn.title=msg;
+                setTimeout(function(){
+                    btn.innerHTML="<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:middle\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Retry";
+                    btn.style.color="#0a5ed3";btn.style.borderColor="#0a5ed3";
+                },2000);
+            }
         });
     };
 
@@ -1474,9 +1515,12 @@ function broodle_tools_shared_script()
         container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
 
         bwpAjax({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
+            // Debug: log raw response to help troubleshoot
+            if(window.console) console.log("WP Security scan response:",JSON.stringify(r).substring(0,2000));
+
             if(r.success&&r.security){
                 var items=r.security;
-                // Backend already returns a clean array of {id, title, status}
+                // Backend returns array of {id, title, status}
                 if(!Array.isArray(items)){
                     // Fallback: convert object to array
                     var arr=[];
@@ -1484,14 +1528,20 @@ function broodle_tools_shared_script()
                         if(items.hasOwnProperty(k)){
                             var v=items[k];
                             if(typeof v==="object"&&v!==null){
-                                arr.push({id:v.id||k,title:v.title||k,status:v.status||"unknown"});
+                                arr.push({id:v.id||k,title:v.title||bwpMakeTitle(v.id||k),status:v.status||"unknown"});
                             } else if(typeof v==="string"){
-                                arr.push({id:k,title:k,status:v});
+                                arr.push({id:k,title:bwpMakeTitle(k),status:v});
                             }
                         }
                     }
                     items=arr;
                 }
+                // Ensure every item has a proper title (not just a number)
+                items.forEach(function(item){
+                    if(!item.title||/^\d+$/.test(item.title)){
+                        item.title=bwpMakeTitle(item.id||"");
+                    }
+                });
                 if(items.length===0){
                     container.innerHTML="<div class=\"bwp-empty\"><span>No security measures data available</span></div>";
                     return;
@@ -1502,7 +1552,8 @@ function broodle_tools_shared_script()
                     if(s==="applied"||s==="ok"||s==="success") appliedCount++;
                     else notAppliedCount++;
                 });
-                var pct=Math.round(appliedCount/(appliedCount+notAppliedCount)*100);
+                var total=appliedCount+notAppliedCount;
+                var pct=total>0?Math.round(appliedCount/total*100):0;
                 var html="<div class=\"bwp-sec-summary\">"
                     +"<div class=\"bwp-sec-summary-bar\">"
                     +"<div class=\"bwp-sec-summary-fill\" style=\"width:"+pct+"%\"></div>"
@@ -1526,11 +1577,11 @@ function broodle_tools_shared_script()
                         icon="<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>";
                     }
                     var measureId=item.id||"";
-                    var statusLabel=isApplied?"Applied":(status==="notapplied"||status==="not applied"||status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
+                    var statusLabel=isApplied?"Applied":(status==="notapplied"||status==="not_applied"||status==="notApplied"?"Not Applied":status.charAt(0).toUpperCase()+status.slice(1));
                     html+="<div class=\"bwp-security-item\">"
                         +"<div class=\"bwp-sec-icon "+iconClass+"\">"+icon+"</div>"
                         +"<div class=\"bwp-sec-info\">"
-                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||measureId||"Security Check")+"</p>"
+                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title)+"</p>"
                         +"<p class=\"bwp-sec-detail\">"+bwpEsc(statusLabel)+"</p>"
                         +"</div>"
                         +"<div class=\"bwp-item-actions\">"
