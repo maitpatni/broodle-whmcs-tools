@@ -213,57 +213,84 @@ function broodle_tools_get_domains_detailed($serviceId)
 /* ─── Main Output Hook ────────────────────────────────────── */
 
 /*
- * Use ClientAreaFooterOutput instead of ClientAreaProductDetailsOutput.
- * The latter renders inside {foreach $hookOutput} which can be silently
- * discarded when another hook on the same point (e.g. MarketConnect)
- * throws an error.  ClientAreaFooterOutput renders via {$footeroutput}
- * in the footer template — unconditionally on every page.
+ * Dual-hook approach for maximum compatibility:
+ *
+ * 1. ClientAreaHeadOutput  → injects CSS styles into <head> via {$headoutput}
+ *    (line 12 of header.tpl — always rendered, unconditionally)
+ *
+ * 2. ClientAreaFooterOutput → injects HTML modals, data div, and JS
+ *    via {$footeroutput} (line 269 of default footer.tpl)
+ *
+ * Both hooks check the page is clientareaproductdetails before outputting.
+ * If the footer hook fails for any reason, the head hook still provides
+ * styles so the page doesn't look broken.
  */
-add_hook('ClientAreaFooterOutput', 1, function ($vars) {
-    // Only run on the product details page
+
+function broodle_tools_is_product_details_page($vars)
+{
     $filename = $vars['filename'] ?? ($vars['templatefile'] ?? '');
-    if ($filename !== 'clientareaproductdetails') {
-        // Fallback: check the request URI
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if (strpos($uri, 'clientarea.php') === false || empty($_GET['action']) || $_GET['action'] !== 'productdetails') {
-            return '';
-        }
-    }
+    if ($filename === 'clientareaproductdetails') return true;
+    // Fallback: check the request URI (handles friendly URLs too)
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (strpos($uri, 'clientarea.php') !== false && !empty($_GET['action']) && $_GET['action'] === 'productdetails') return true;
+    // Friendly URL pattern: /clientarea/services/{type}/{id}/
+    if (preg_match('#/clientarea/services/.+/\d+#', $uri)) return true;
+    return false;
+}
+
+function broodle_tools_gather_data($vars)
+{
+    static $cache = null;
+    if ($cache !== null) return $cache;
 
     broodle_tools_ensure_defaults();
     $serviceId = broodle_tools_get_service_id($vars);
-    if (!$serviceId) return '';
+    if (!$serviceId) { $cache = false; return false; }
     $cpData = broodle_tools_get_cpanel_service($serviceId);
-    if (!$cpData) return '';
+    if (!$cpData) { $cache = false; return false; }
 
-    // Gather all data
     $nsData = broodle_tools_ns_enabled() ? broodle_tools_get_ns_for_service($serviceId) : ['ns' => [], 'ip' => ''];
     $emails = broodle_tools_email_enabled() ? broodle_tools_get_emails($serviceId) : [];
     $domains = broodle_tools_domain_enabled() ? broodle_tools_get_domains_detailed($serviceId) : null;
-    $wpEnabled = broodle_tools_wp_enabled();
-    $dbEnabled = broodle_tools_db_enabled();
-    $sslEnabled = broodle_tools_ssl_enabled();
-    $dnsEnabled = broodle_tools_dns_enabled();
 
-    // JSON data for JS
-    $jsData = json_encode([
+    $cache = [
         'serviceId' => $serviceId,
         'ns' => $nsData,
         'emails' => $emails,
         'domains' => $domains,
-        'wpEnabled' => $wpEnabled,
-        'dbEnabled' => $dbEnabled,
-        'sslEnabled' => $sslEnabled,
-        'dnsEnabled' => $dnsEnabled,
+        'wpEnabled' => broodle_tools_wp_enabled(),
+        'dbEnabled' => broodle_tools_db_enabled(),
+        'sslEnabled' => broodle_tools_ssl_enabled(),
+        'dnsEnabled' => broodle_tools_dns_enabled(),
         'nsEnabled' => broodle_tools_ns_enabled(),
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
-    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+    ];
+    return $cache;
+}
 
+/* Hook 1: Inject CSS + config data into <head> */
+add_hook('ClientAreaHeadOutput', 1, function ($vars) {
+    if (!broodle_tools_is_product_details_page($vars)) return '';
+    $data = broodle_tools_gather_data($vars);
+    if (!$data) return '';
+
+    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $output = '<script>window.__btConfig=' . $jsData . ';</script>';
+    $output .= broodle_tools_shared_styles();
+    return $output;
+});
+
+/* Hook 2: Inject HTML modals + JS into footer */
+add_hook('ClientAreaFooterOutput', 1, function ($vars) {
+    if (!broodle_tools_is_product_details_page($vars)) return '';
+    $data = broodle_tools_gather_data($vars);
+    if (!$data) return '';
+
+    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
     $output = '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
     $output .= broodle_tools_modals();
     $output .= broodle_tools_wp_detail_modal();
-    $output .= broodle_tools_shared_styles();
     $output .= broodle_tools_shared_script();
     return $output;
 });
@@ -981,11 +1008,36 @@ function btUpgradeIcon(name){
 /* ─── Init ─── */
 function init(){
     var dataEl=$("bt-data");
-    if(!dataEl) return;
-    try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
+    if(dataEl){
+        try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
+    }else if(window.__btConfig){
+        C=window.__btConfig;
+    }else{
+        return;
+    }
+    // Inject modals dynamically if they weren't rendered by the footer hook
+    if(!$("bemCreateModal")&&C.serviceId){
+        var modalsHtml=buildModalsHtml();
+        var tmp=document.createElement("div");
+        tmp.innerHTML=modalsHtml;
+        while(tmp.firstChild) document.body.appendChild(tmp.firstChild);
+    }
     hideDefaultTabs();
     buildTabs();
     bindModals();
+}
+
+function buildModalsHtml(){
+    return '<div class="bt-overlay" id="bemCreateModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Create Email Account</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Email Address</label><div class="bt-input-group"><input type="text" id="bemNewUser" placeholder="username" autocomplete="off"><span class="bt-at">@</span><select id="bemNewDomain"><option>Loading...</option></select></div></div><div class="bt-field"><label>Password</label><div class="bt-pass-wrap"><input type="password" id="bemNewPass" placeholder="Strong password" autocomplete="new-password"><button type="button" class="bt-pass-toggle" data-toggle-pass="bemNewPass">&#128065;</button></div></div><div class="bt-field"><label>Quota (MB)</label><input type="number" id="bemNewQuota" value="250" min="1"></div><div class="bt-msg" id="bemCreateMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bemCreateSubmit">Create Account</button></div></div></div>'
+    +'<div class="bt-overlay" id="bemPassModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Change Password</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Email</label><input type="text" id="bemPassEmail" readonly></div><div class="bt-field"><label>New Password</label><div class="bt-pass-wrap"><input type="password" id="bemPassNew" placeholder="New password" autocomplete="new-password"><button type="button" class="bt-pass-toggle" data-toggle-pass="bemPassNew">&#128065;</button></div></div><div class="bt-msg" id="bemPassMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bemPassSubmit">Update Password</button></div></div></div>'
+    +'<div class="bt-overlay" id="bemDelModal" style="display:none"><div class="bt-modal bt-modal-sm"><div class="bt-modal-head"><h5>Delete Email Account</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body" style="text-align:center"><p style="margin:0 0 4px;font-size:14px">Are you sure you want to delete</p><p style="margin:0;font-size:15px;font-weight:600;color:#ef4444" id="bemDelEmail"></p><div class="bt-msg" id="bemDelMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-danger" id="bemDelSubmit">Delete</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdmAddonModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Add Addon Domain</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Domain Name</label><input type="text" id="bdmAddonDomain" placeholder="example.com" autocomplete="off"></div><div class="bt-field"><label>Document Root</label><div class="bt-docroot-wrap"><span class="bt-docroot-prefix">/home/user/</span><input type="text" id="bdmAddonDocroot" placeholder="example.com"></div></div><div class="bt-msg" id="bdmAddonMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdmAddonSubmit">Add Domain</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdmSubModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Add Subdomain</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Subdomain</label><div class="bt-input-group"><input type="text" id="bdmSubName" placeholder="blog" autocomplete="off"><span class="bt-at">.</span><select id="bdmSubParent"><option>Loading...</option></select></div></div><div class="bt-field"><label>Document Root</label><div class="bt-docroot-wrap"><span class="bt-docroot-prefix">/home/user/</span><input type="text" id="bdmSubDocroot" placeholder="blog.example.com"></div></div><div class="bt-msg" id="bdmSubMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdmSubSubmit">Add Subdomain</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdmDelModal" style="display:none"><div class="bt-modal bt-modal-sm"><div class="bt-modal-head"><h5>Delete Domain</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body" style="text-align:center"><p style="margin:0 0 4px;font-size:14px">Are you sure you want to delete</p><p style="margin:0;font-size:15px;font-weight:600;color:#ef4444" id="bdmDelDomain"></p><div class="bt-msg" id="bdmDelMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-danger" id="bdmDelSubmit">Delete</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdbCreateModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Create Database</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Database Name</label><div class="bt-input-group"><span class="bt-prefix" id="bdbPrefix">user_</span><input type="text" id="bdbNewName" placeholder="mydb" autocomplete="off"></div></div><div class="bt-msg" id="bdbCreateMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdbCreateSubmit">Create Database</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdbUserModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Create Database User</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Username</label><div class="bt-input-group"><span class="bt-prefix" id="bdbUserPrefix">user_</span><input type="text" id="bdbNewUser" placeholder="dbuser" autocomplete="off"></div></div><div class="bt-field"><label>Password</label><div class="bt-pass-wrap"><input type="password" id="bdbUserPass" placeholder="Strong password" autocomplete="new-password"><button type="button" class="bt-pass-toggle" data-toggle-pass="bdbUserPass">&#128065;</button></div></div><div class="bt-msg" id="bdbUserMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdbUserSubmit">Create User</button></div></div></div>'
+    +'<div class="bt-overlay" id="bdbAssignModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Assign User to Database</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Database</label><select id="bdbAssignDb" class="bt-select"></select></div><div class="bt-field"><label>User</label><select id="bdbAssignUser" class="bt-select"></select></div><div class="bt-field"><label>Privileges</label><label class="bt-checkbox"><input type="checkbox" id="bdbAssignAll" checked> All Privileges</label></div><div class="bt-msg" id="bdbAssignMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdbAssignSubmit">Assign Privileges</button></div></div></div>'
+    +'<div class="bt-overlay" id="bwpDetailOverlay" style="display:none"><div class="bwp-detail-panel"><div class="bwp-detail-head"><h5 id="bwpDetailTitle">Site Details</h5><button type="button" class="bt-modal-close" id="bwpDetailClose">&times;</button></div><div class="bwp-detail-tabs"><button type="button" class="bwp-tab active" data-tab="overview">Overview</button><button type="button" class="bwp-tab" data-tab="plugins">Plugins</button><button type="button" class="bwp-tab" data-tab="themes">Themes</button><button type="button" class="bwp-tab" data-tab="security">Security</button></div><div class="bwp-detail-body" id="bwpDetailBody"><div class="bwp-tab-content active" id="bwpTabOverview"></div><div class="bwp-tab-content" id="bwpTabPlugins"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading plugins...</span></div></div><div class="bwp-tab-content" id="bwpTabThemes"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading themes...</span></div></div><div class="bwp-tab-content" id="bwpTabSecurity"><div class="bt-loading"><div class="bt-spinner"></div><span>Running security scan...</span></div></div></div></div></div>';
 }
 
 function hideDefaultTabs(){
