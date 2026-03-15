@@ -416,7 +416,17 @@ function broodle_tools_css_cards()
 .bt-addon-nav.prev{left:-6px}
 .bt-addon-nav.next{right:-6px}
 .bt-addon-nav.hidden{opacity:0;pointer-events:none}
-@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr}}
+.bt-addon-info-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .12s;position:relative}
+.bt-addon-info-btn:hover{border-color:#0a5ed3;color:#0a5ed3}
+.bt-addon-info-btn.loading{opacity:.5;pointer-events:none}
+.bt-addon-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:260px;padding:10px 12px;background:var(--heading-color,#1f2937);color:#f3f4f6;font-size:11px;line-height:1.5;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:100;display:none;pointer-events:none;word-wrap:break-word}
+.bt-addon-tooltip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--heading-color,#1f2937)}
+.bt-addon-info-btn:hover .bt-addon-tooltip,.bt-addon-info-btn.show-tip .bt-addon-tooltip{display:block}
+.bt-addon-tooltip.right{left:auto;right:0;transform:none}
+.bt-addon-tooltip.right::after{left:auto;right:12px;transform:none}
+.bt-addon-tooltip.left{left:0;right:auto;transform:none}
+.bt-addon-tooltip.left::after{left:12px;right:auto;transform:none}
+@media(max-width:600px){.bt-addon-page{grid-template-columns:1fr}.bt-addon-tooltip{width:200px}}
 </style>';
 }
 
@@ -576,6 +586,9 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-addon-item:hover,.dark-mode .bt-addon-item:hover{background:var(--input-bg,#111827)}
 [data-theme="dark"] .bt-addon-btn,.dark-mode .bt-addon-btn{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bt-addon-nav,.dark-mode .bt-addon-nav{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-addon-info-btn,.dark-mode .bt-addon-info-btn{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-addon-tooltip,.dark-mode .bt-addon-tooltip{background:#111827;color:#e5e7eb}
+[data-theme="dark"] .bt-addon-tooltip::after,.dark-mode .bt-addon-tooltip::after{border-top-color:#111827}
 [data-theme="dark"] .bt-btn-outline,.dark-mode .bt-btn-outline{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bwp-detail-panel,.dark-mode .bwp-detail-panel{background:var(--card-bg,#1f2937)}
 </style>';
@@ -874,7 +887,7 @@ function buildOverviewPane(){
                 }else{
                     btnHtml="<form method=\"post\" action=\"cart.php?a=add\" style=\"margin:0\"><input type=\"hidden\" name=\"token\" value=\""+esc(item.token)+"\"><input type=\"hidden\" name=\"serviceid\" value=\""+esc(item.svcId)+"\"><input type=\"hidden\" name=\"aid\" value=\""+esc(item.aid)+"\"><button type=\"submit\" class=\"bt-addon-btn\">Get</button></form>";
                 }
-                html+="<div class=\"bt-addon-item\"><div class=\"bt-addon-icon "+iconCls+"\">"+icon+"</div><span class=\"bt-addon-name\" title=\""+esc(item.name)+"\">"+esc(item.name)+"</span>"+btnHtml+"</div>";
+                html+="<div class=\"bt-addon-item\"><div class=\"bt-addon-icon "+iconCls+"\">"+icon+"</div><span class=\"bt-addon-name\" title=\""+esc(item.name)+"\">"+esc(item.name)+"</span><button type=\"button\" class=\"bt-addon-info-btn\" data-aid=\""+(item.aid||"")+"\" data-tip=\"\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"/></svg><div class=\"bt-addon-tooltip\">Loading...</div></button>"+btnHtml+"</div>";
             });
             html+="</div>";
         });
@@ -907,6 +920,26 @@ function buildOverviewPane(){
         var next=$("btAddonNext");if(next) next.addEventListener("click",function(){goToPage(curPage+1);});
         var dots=$("btAddonDots");
         if(dots) dots.querySelectorAll(".bt-addon-dot").forEach(function(d){d.addEventListener("click",function(){goToPage(parseInt(this.getAttribute("data-page")));});});
+        // Tooltip: fetch description on hover/click
+        var tipCache={};
+        pane.querySelectorAll(".bt-addon-info-btn[data-aid]").forEach(function(btn){
+            function loadTip(){
+                var aid=btn.getAttribute("data-aid");
+                var tip=btn.querySelector(".bt-addon-tooltip");
+                if(!aid||!tip) return;
+                if(tipCache[aid]){tip.textContent=tipCache[aid];return;}
+                btn.classList.add("loading");
+                post({action:"get_addon_description",addon_id:aid},function(r){
+                    btn.classList.remove("loading");
+                    var desc=(r.success&&r.description)?r.description:"No description available";
+                    tipCache[aid]=desc;tip.textContent=desc;
+                });
+            }
+            btn.addEventListener("mouseenter",loadTip);
+            btn.addEventListener("click",function(e){e.stopPropagation();loadTip();btn.classList.toggle("show-tip");});
+        });
+        // Close tooltips on outside click
+        document.addEventListener("click",function(){pane.querySelectorAll(".bt-addon-info-btn.show-tip").forEach(function(b){b.classList.remove("show-tip");});});
     }
 }
 

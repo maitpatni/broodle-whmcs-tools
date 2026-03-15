@@ -44,6 +44,23 @@ if (!$service || (int) $service->userid !== $clientId) {
 $domainActions = ['get_parent_domains', 'add_addon_domain', 'add_subdomain', 'delete_domain'];
 $dbActions = ['list_databases', 'create_database', 'create_db_user', 'delete_database', 'delete_db_user', 'assign_db_user', 'get_phpmyadmin_url'];
 
+// Handle addon description lookup (no cPanel needed)
+if ($action === 'get_addon_description') {
+    $addonId = isset($_POST['addon_id']) ? (int) $_POST['addon_id'] : 0;
+    if (!$addonId) {
+        echo json_encode(['success' => false, 'message' => 'Missing addon ID']);
+        exit;
+    }
+    $addon = Capsule::table('tbladdons')->where('id', $addonId)->first();
+    if (!$addon) {
+        echo json_encode(['success' => false, 'message' => 'Addon not found']);
+        exit;
+    }
+    $desc = strip_tags($addon->description ?? '');
+    echo json_encode(['success' => true, 'description' => $desc]);
+    exit;
+}
+
 if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_domain_management';
 } elseif (in_array($action, $dbActions)) {
