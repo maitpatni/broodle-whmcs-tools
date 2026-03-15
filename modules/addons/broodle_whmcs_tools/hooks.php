@@ -277,7 +277,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     $output .= broodle_tools_wp_detail_modal();
 
     // 4. Bootstrap: img onerror loads external JS file
-    $jsUrl = 'modules/addons/broodle_whmcs_tools/bt_client.js?v=' . BROODLE_TOOLS_VERSION;
+    $jsUrl = 'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.7';
     $boot = 'var s=document.createElement("script");s.src="' . $jsUrl . '";document.head.appendChild(s);';
     $output .= '<img src="data:image/gif," onerror=\'' . $boot . '\' style="display:none!important">';
 
