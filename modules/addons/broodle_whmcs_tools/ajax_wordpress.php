@@ -409,7 +409,7 @@ switch ($action) {
             }
         }
 
-        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', [$postData], 300);
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $postData, 300);
 
         echo json_encode([
             'success' => $result['success'],
@@ -464,10 +464,8 @@ switch ($action) {
             if (is_array($raw)) {
                 foreach ($raw as $key => $val) {
                     if (is_array($val)) {
-                        // Could be { "id": "measureName", "status": "applied" } (indexed array)
-                        // or { "measureName": { "status": "applied" } } (associative)
                         if (isset($val['id']) && isset($val['status'])) {
-                            // Indexed array item with id+status
+                            // Indexed array item: {id: "measureName", status: "applied"}
                             $mid = $val['id'];
                             $measures[] = [
                                 'id'     => $mid,
@@ -477,30 +475,65 @@ switch ($action) {
                         } elseif (isset($val['status'])) {
                             // Associative: key is the measure ID
                             $measures[] = [
-                                'id'     => $key,
-                                'title'  => $makeTitle($key),
+                                'id'     => is_string($key) ? $key : "measure_{$key}",
+                                'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
                                 'status' => $val['status'],
                             ];
-                        } else {
-                            // Unknown structure, try to extract something useful
+                        } elseif (isset($val['id'])) {
+                            // Has id but no status — try other fields
+                            $mid = $val['id'];
+                            $st = $val['result'] ?? ($val['state'] ?? ($val['value'] ?? 'unknown'));
                             $measures[] = [
-                                'id'     => is_string($key) ? $key : ($val['id'] ?? "measure_{$key}"),
-                                'title'  => $makeTitle(is_string($key) ? $key : ($val['id'] ?? "measure_{$key}")),
-                                'status' => $val['status'] ?? 'unknown',
+                                'id'     => $mid,
+                                'title'  => $makeTitle($mid),
+                                'status' => is_bool($st) ? ($st ? 'applied' : 'notApplied') : (string)$st,
                             ];
+                        } else {
+                            // Unknown nested structure — try to extract
+                            $mid = is_string($key) ? $key : "measure_{$key}";
+                            // Check if it's a simple {measureName: true/false} pattern
+                            foreach ($val as $subKey => $subVal) {
+                                if (is_string($subKey) && (is_bool($subVal) || is_string($subVal))) {
+                                    $measures[] = [
+                                        'id'     => $subKey,
+                                        'title'  => $makeTitle($subKey),
+                                        'status' => is_bool($subVal) ? ($subVal ? 'applied' : 'notApplied') : $subVal,
+                                    ];
+                                }
+                            }
+                            if (empty($measures) || end($measures)['id'] !== $mid) {
+                                $measures[] = [
+                                    'id'     => $mid,
+                                    'title'  => $makeTitle($mid),
+                                    'status' => 'unknown',
+                                ];
+                            }
                         }
                     } elseif (is_string($val)) {
-                        // Simple key => status format
+                        // Simple key => status format: {"blockDirectoryBrowsing": "applied"}
                         $measures[] = [
-                            'id'     => $key,
-                            'title'  => $makeTitle($key),
+                            'id'     => is_string($key) ? $key : "measure_{$key}",
+                            'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
                             'status' => $val,
+                        ];
+                    } elseif (is_bool($val)) {
+                        // Boolean format: {"blockDirectoryBrowsing": true}
+                        $measures[] = [
+                            'id'     => is_string($key) ? $key : "measure_{$key}",
+                            'title'  => $makeTitle(is_string($key) ? $key : "measure_{$key}"),
+                            'status' => $val ? 'applied' : 'notApplied',
                         ];
                     }
                 }
             }
 
-            echo json_encode(['success' => true, 'security' => $measures]);
+            echo json_encode([
+                'success'  => true,
+                'security' => $measures,
+                'debug_raw_type' => gettype($raw),
+                'debug_raw_keys' => is_array($raw) ? array_keys($raw) : null,
+                'debug_raw_sample' => is_array($raw) && !empty($raw) ? array_slice($raw, 0, 2, true) : $raw,
+            ]);
         } else {
             echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Security scan failed']);
         }

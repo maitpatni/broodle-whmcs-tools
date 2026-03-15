@@ -413,6 +413,20 @@ function broodle_tools_shared_script()
 /* Hide default WHMCS Quick Create Email Account section */
 .quick-create-email,.quick-create-email-section,[class*="quick-create-email"]{display:none!important}
 
+/* ─── Billing Overview Enhancement ─── */
+#tabOverview .broodle-overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:4px 0}
+#tabOverview .broodle-ov-card{background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:16px 18px;transition:border-color .15s,box-shadow .15s}
+#tabOverview .broodle-ov-card:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.06)}
+#tabOverview .broodle-ov-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 6px;line-height:1.2}
+#tabOverview .broodle-ov-value{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-word;line-height:1.4}
+#tabOverview .broodle-ov-value a{color:#0a5ed3;text-decoration:none}
+#tabOverview .broodle-ov-value a:hover{text-decoration:underline}
+#tabOverview .broodle-ov-value .label,#tabOverview .broodle-ov-value .badge{font-size:12px;padding:3px 10px;border-radius:6px;font-weight:600}
+[data-theme="dark"] #tabOverview .broodle-ov-card,.dark-mode #tabOverview .broodle-ov-card{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+[data-theme="dark"] #tabOverview .broodle-ov-card:hover,.dark-mode #tabOverview .broodle-ov-card:hover{border-color:rgba(10,94,211,.4)}
+@media(max-width:768px){#tabOverview .broodle-overview-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){#tabOverview .broodle-overview-grid{grid-template-columns:1fr}}
+
 .bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
 .bns-card-head-left{display:flex;align-items:center;gap:12px}
@@ -527,15 +541,15 @@ function broodle_tools_shared_script()
 .bwp-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bwp-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
 .bwp-card-head-left{display:flex;align-items:center;gap:12px}
-.bwp-icon-circle{width:38px;height:38px;background:#21759b;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.bwp-icon-circle{width:38px;height:38px;background:#0a5ed3;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .bwp-card-head h5{margin:0;font-size:15px;font-weight:600;color:var(--heading-color,#111827)}
 .bwp-subtitle{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
 .bwp-head-actions{display:flex;gap:8px}
 .bwp-scan-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
-.bwp-scan-btn:hover{border-color:#21759b;color:#21759b;background:rgba(33,117,155,.04)}
+.bwp-scan-btn:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}
 .bwp-body{padding:0}
 .bwp-loading{padding:40px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
-.bwp-spinner{width:28px;height:28px;border:3px solid var(--border-color,#e5e7eb);border-top-color:#21759b;border-radius:50%;animation:bwpSpin .7s linear infinite}
+.bwp-spinner{width:28px;height:28px;border:3px solid var(--border-color,#e5e7eb);border-top-color:#0a5ed3;border-radius:50%;animation:bwpSpin .7s linear infinite}
 @keyframes bwpSpin{to{transform:rotate(360deg)}}
 .bwp-empty{padding:40px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .bwp-empty svg{opacity:.3}
@@ -543,19 +557,16 @@ function broodle_tools_shared_script()
 .bwp-site{display:flex;align-items:center;gap:14px;padding:14px;border-radius:9px;transition:background .15s;cursor:pointer}
 .bwp-site:hover{background:var(--input-bg,#f9fafb)}
 .bwp-site+.bwp-site{border-top:1px solid var(--border-color,#f3f4f6)}
-.bwp-site-icon{width:40px;height:40px;border-radius:10px;background:rgba(33,117,155,.08);color:#21759b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.bwp-site-thumb{width:64px;height:44px;border-radius:8px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:#f9fafb;flex-shrink:0;position:relative}
-.bwp-site-thumb-inner{width:1280px;height:800px;transform:scale(.05);transform-origin:top left;pointer-events:none}
-.bwp-site-thumb-inner iframe{width:1280px;height:800px;border:none;pointer-events:none}
+.bwp-site-icon{width:40px;height:40px;border-radius:10px;background:rgba(10,94,211,.08);color:#0a5ed3;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .bwp-site-info{flex:1;min-width:0}
 .bwp-site-domain{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bwp-site-meta{font-size:12px;color:var(--text-muted,#6b7280);margin:2px 0 0;display:flex;gap:12px;flex-wrap:wrap}
 .bwp-site-meta span{display:inline-flex;align-items:center;gap:4px}
 .bwp-site-actions{display:flex;gap:6px;flex-shrink:0}
 .bwp-action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s;white-space:nowrap;color:var(--heading-color,#374151)}
-.bwp-action-btn:hover{border-color:#21759b;color:#21759b}
-.bwp-action-btn.primary{background:#21759b;color:#fff;border-color:#21759b}
-.bwp-action-btn.primary:hover{background:#1a5f7e}
+.bwp-action-btn:hover{border-color:#0a5ed3;color:#0a5ed3}
+.bwp-action-btn.primary{background:#0a5ed3;color:#fff;border-color:#0a5ed3}
+.bwp-action-btn.primary:hover{background:#0950b3}
 .bwp-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:24px;animation:bwpFadeIn .2s;backdrop-filter:blur(4px)}
 @keyframes bwpFadeIn{from{opacity:0}to{opacity:1}}
 .bwp-detail-panel{width:100%;max-width:900px;max-height:90vh;background:var(--card-bg,#fff);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.05);animation:bwpPopIn .3s cubic-bezier(.34,1.56,.64,1)}
@@ -568,7 +579,7 @@ function broodle_tools_shared_script()
 .bwp-detail-tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border-color,#f3f4f6);background:var(--card-bg,#fff);flex-shrink:0;overflow-x:auto}
 .bwp-tab{padding:10px 14px;font-size:12px;font-weight:600;color:var(--text-muted,#6b7280);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .bwp-tab:hover{color:var(--heading-color,#111827)}
-.bwp-tab.active{color:#21759b;border-bottom-color:#21759b}
+.bwp-tab.active{color:#0a5ed3;border-bottom-color:#0a5ed3}
 .bwp-detail-body{flex:1;overflow-y:auto;padding:0}
 .bwp-tab-content{display:none;padding:18px 20px}
 .bwp-tab-content.active{display:block}
@@ -588,7 +599,7 @@ function broodle_tools_shared_script()
 .bwp-overview-hero{display:flex;gap:18px;align-items:flex-start}
 .bwp-overview-right{flex:1;min-width:0}
 .bwp-site-header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--input-bg,#f9fafb);border-radius:10px;border:1px solid var(--border-color,#f3f4f6);margin-bottom:12px}
-.bwp-site-header-icon{width:40px;height:40px;border-radius:10px;background:#21759b;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bwp-site-header-icon{width:40px;height:40px;border-radius:10px;background:#0a5ed3;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .bwp-site-header-info{flex:1;min-width:0}
 .bwp-site-header-info h4{margin:0;font-size:14px;font-weight:700;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bwp-site-header-info p{margin:2px 0 0;font-size:11px;color:var(--text-muted,#6b7280);display:flex;gap:8px;flex-wrap:wrap}
@@ -608,7 +619,7 @@ function broodle_tools_shared_script()
 .bwp-item-detail{font-size:10px;color:var(--text-muted,#6b7280);margin:2px 0 0}
 .bwp-item-actions{display:flex;gap:4px;flex-shrink:0}
 .bwp-item-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s}
-.bwp-item-btn:hover{border-color:#21759b;color:#21759b}
+.bwp-item-btn:hover{border-color:#0a5ed3;color:#0a5ed3}
 .bwp-item-btn.active-state{color:#059669;border-color:#059669}
 .bwp-item-btn.inactive-state{color:#d97706;border-color:#d97706}
 .bwp-item-btn.update{color:#0a5ed3;border-color:#0a5ed3}
@@ -652,11 +663,11 @@ function broodle_tools_shared_script()
 .bwp-theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 .bwp-theme-card{border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--card-bg,#fff);transition:box-shadow .2s,border-color .2s}
 .bwp-theme-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:var(--border-color,#d1d5db)}
-.bwp-theme-active{border-color:#21759b;box-shadow:0 0 0 2px rgba(33,117,155,.15)}
+.bwp-theme-active{border-color:#0a5ed3;box-shadow:0 0 0 2px rgba(10,94,211,.15)}
 .bwp-theme-screenshot{position:relative;width:100%;padding-top:66%;background:var(--input-bg,#f3f4f6);overflow:hidden}
 .bwp-theme-screenshot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .bwp-theme-placeholder{position:absolute;inset:0;align-items:center;justify-content:center;background:var(--input-bg,#f3f4f6)}
-.bwp-theme-active-badge{position:absolute;top:8px;right:8px;background:#21759b;color:#fff;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.bwp-theme-active-badge{position:absolute;top:8px;right:8px;background:#0a5ed3;color:#fff;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 .bwp-theme-info{padding:12px 14px}
 .bwp-theme-name{font-size:13px;font-weight:600;color:var(--heading-color,#111827);margin:0 0 4px}
 .bwp-theme-ver{font-size:11px;color:var(--text-muted,#6b7280);margin:0 0 8px}
@@ -678,9 +689,67 @@ function broodle_tools_shared_script()
     var ajaxUrl="modules/addons/broodle_whmcs_tools/ajax.php";
     var serviceId=0;
 
+    function enhanceBillingOverview(){
+        var tab=document.getElementById("tabOverview");
+        if(!tab) return;
+        // Lagom theme: rows are .row > .col-sm-5 (label) + .col-sm-7 (value)
+        // Also handle: .detail-row, dl/dt/dd, table rows
+        var pairs=[];
+        // Strategy 1: Bootstrap .row with col-sm-5 + col-sm-7
+        var rows=tab.querySelectorAll(".row");
+        rows.forEach(function(r){
+            var lbl=r.querySelector(".col-sm-5,.col-md-5,.col-xs-5,.col-lg-5");
+            var val=r.querySelector(".col-sm-7,.col-md-7,.col-xs-7,.col-lg-7");
+            if(lbl&&val){pairs.push({label:lbl.textContent.trim().replace(/:$/,""),value:val.innerHTML.trim(),el:r});}
+        });
+        // Strategy 2: definition list
+        if(!pairs.length){
+            var dts=tab.querySelectorAll("dt");
+            dts.forEach(function(dt){
+                var dd=dt.nextElementSibling;
+                if(dd&&dd.tagName==="DD"){pairs.push({label:dt.textContent.trim().replace(/:$/,""),value:dd.innerHTML.trim(),el:dt});}
+            });
+        }
+        // Strategy 3: table rows
+        if(!pairs.length){
+            var trs=tab.querySelectorAll("table tr");
+            trs.forEach(function(tr){
+                var cells=tr.querySelectorAll("td,th");
+                if(cells.length>=2){pairs.push({label:cells[0].textContent.trim().replace(/:$/,""),value:cells[1].innerHTML.trim(),el:tr});}
+            });
+        }
+        if(!pairs.length) return;
+        // Build grid
+        var grid=document.createElement("div");
+        grid.className="broodle-overview-grid";
+        pairs.forEach(function(p){
+            if(!p.label&&!p.value) return;
+            var card=document.createElement("div");
+            card.className="broodle-ov-card";
+            card.innerHTML="<div class=\"broodle-ov-label\">"+escHtml(p.label)+"</div><div class=\"broodle-ov-value\">"+p.value+"</div>";
+            grid.appendChild(card);
+        });
+        // Replace original content — find the container holding the rows
+        var parent=pairs[0].el.parentNode;
+        // Remove all original detail rows
+        var seen=new Set();
+        pairs.forEach(function(p){
+            if(p.el&&p.el.parentNode){
+                // For dt/dd pairs, also remove the dd
+                if(p.el.tagName==="DT"){var dd=p.el.nextElementSibling;if(dd&&dd.tagName==="DD")dd.remove();}
+                p.el.remove();
+            }
+        });
+        // Insert grid at top of tab
+        if(tab.firstChild) tab.insertBefore(grid,tab.firstChild);
+        else tab.appendChild(grid);
+    }
+
     function broodleInit(){
         // Hide default WHMCS Quick Create Email Account section
         hideDefaultEmailSection();
+        // Enhance Billing Overview tab
+        enhanceBillingOverview();
 
         var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
         if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
@@ -1128,7 +1197,7 @@ function broodle_tools_shared_script()
                         var siteUrl=inst.site_url||("http://"+inst.domain);
 
                         html+="<div class=\"bwp-site\" data-id=\""+inst.id+"\">"
-                            +"<div class=\"bwp-site-thumb\"><div class=\"bwp-site-thumb-inner\"><iframe src=\""+bwpEsc(siteUrl)+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\" scrolling=\"no\" tabindex=\"-1\"></iframe></div></div>"
+                            +"<div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zM3.443 12c0-1.178.25-2.296.69-3.313l3.8 10.411A8.57 8.57 0 0 1 3.443 12zm8.557 8.557c-.82 0-1.613-.12-2.363-.34l2.51-7.29 2.57 7.04c.017.04.037.078.058.115a8.523 8.523 0 0 1-2.775.475zm1.166-12.546c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.106-2.224.106-.82 0-2.198-.106-2.198-.106-.45-.026-.503.664-.053.69 0 0 .427.052.878.078l1.305 3.575-1.833 5.498L7.34 7.01c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.107-2.224.107-.156 0-.34-.004-.535-.012A8.544 8.544 0 0 1 12 3.443c2.1 0 4.017.76 5.5 2.018-.035-.002-.069-.007-.105-.007-.82 0-1.4.715-1.4 1.48 0 .69.397 1.272.82 1.96.318.555.69 1.268.69 2.296 0 .715-.274 1.543-.635 2.7l-.833 2.78-3.015-8.97zm4.394 11.14l2.025-5.852c.378-.945.503-1.7.503-2.374 0-.244-.016-.47-.045-.684A8.544 8.544 0 0 1 20.557 12a8.545 8.545 0 0 1-2.997 6.51z\"/></svg></div>"
                             +"<div class=\"bwp-site-info\">"
                             +"<p class=\"bwp-site-domain\">"+bwpEsc(inst.displayTitle||inst.site_url||inst.domain)+" "+sslBadge+"</p>"
                             +"<div class=\"bwp-site-meta\">"
@@ -1211,17 +1280,18 @@ function broodle_tools_shared_script()
         var safeUrl=bwpEsc(siteUrl);
         var updateInfo=inst.availableUpdate?"<div class=\"bwp-msg info\">WordPress "+bwpEsc(inst.availableUpdate)+" is available. <button class=\"bwp-item-btn update\" onclick=\"bwpUpdateCore(event)\">Update Core</button></div>":"";
 
-        // Website preview (scaled desktop view) + buttons below
+        // Website preview (static screenshot with fallback) + buttons below
+        var screenshotSrc="https://image.thum.io/get/width/600/crop/375/"+encodeURIComponent(siteUrl);
         var preview="<div class=\"bwp-preview-col\">"
             +"<div class=\"bwp-preview-wrap\">"
             +"<div class=\"bwp-preview-bar\">"
             +"<div class=\"bwp-preview-dots\"><span></span><span></span><span></span></div>"
             +"<div class=\"bwp-preview-url\">"+safeUrl+"</div>"
             +"</div>"
-            +"<div class=\"bwp-preview-frame-wrap\">"
-            +"<iframe class=\"bwp-preview-frame\" src=\""+safeUrl+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\"></iframe>"
+            +"<div class=\"bwp-preview-frame-wrap\" style=\"cursor:pointer\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\">"
+            +"<img src=\""+bwpEsc(screenshotSrc)+"\" style=\"width:100%;height:100%;object-fit:cover;display:block\" onerror=\"this.style.display=\\x27none\\x27;this.nextElementSibling.style.display=\\x27block\\x27\" alt=\"Site preview\">"
+            +"<iframe class=\"bwp-preview-frame\" src=\""+safeUrl+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\" style=\"display:none\"></iframe>"
             +"</div>"
-            +"<div class=\"bwp-preview-overlay\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\"></div>"
             +"</div>"
             +"<div class=\"bwp-quick-actions\">"
             +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin(event)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg> WP Admin</button>"
