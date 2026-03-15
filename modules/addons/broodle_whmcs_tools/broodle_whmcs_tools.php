@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.9.0');
+define('BROODLE_TOOLS_VERSION', '3.9.1');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -492,11 +492,15 @@ function broodle_tools_apply_update()
         // Find the module source directory inside the extracted content
         // Strategy 1: Release asset zip — has modules/addons/broodle_whmcs_tools/ at root or inside a top-level dir
         // Strategy 2: GitHub zipball — has {user}-{repo}-{hash}/modules/addons/broodle_whmcs_tools/
+        // Strategy 3: Windows-created zip may use backslashes — normalize paths
         $moduleSrc = null;
+        $moduleRelPath = 'modules' . DIRECTORY_SEPARATOR . 'addons' . DIRECTORY_SEPARATOR . 'broodle_whmcs_tools';
 
-        // Check direct path first (release asset structure)
+        // Check direct path first (release asset structure) — try both separators
         if (is_dir($extractDir . '/modules/addons/broodle_whmcs_tools')) {
             $moduleSrc = $extractDir . '/modules/addons/broodle_whmcs_tools';
+        } elseif (is_dir($extractDir . DIRECTORY_SEPARATOR . $moduleRelPath)) {
+            $moduleSrc = $extractDir . DIRECTORY_SEPARATOR . $moduleRelPath;
         } else {
             // Check inside top-level directory (GitHub zipball structure)
             $topDirs = glob($extractDir . '/*', GLOB_ONLYDIR);
@@ -504,6 +508,20 @@ function broodle_tools_apply_update()
                 if (is_dir($topDir . '/modules/addons/broodle_whmcs_tools')) {
                     $moduleSrc = $topDir . '/modules/addons/broodle_whmcs_tools';
                     break;
+                }
+                if (is_dir($topDir . DIRECTORY_SEPARATOR . $moduleRelPath)) {
+                    $moduleSrc = $topDir . DIRECTORY_SEPARATOR . $moduleRelPath;
+                    break;
+                }
+            }
+            // Strategy 3: Recursive search for broodle_whmcs_tools.php as last resort
+            if (!$moduleSrc) {
+                $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($extractDir, \RecursiveDirectoryIterator::SKIP_DOTS));
+                foreach ($it as $file) {
+                    if ($file->getFilename() === 'broodle_whmcs_tools.php') {
+                        $moduleSrc = $file->getPath();
+                        break;
+                    }
                 }
             }
         }

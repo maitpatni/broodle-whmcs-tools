@@ -245,7 +245,20 @@ Located in `broodle_tools_render_admin()`. Features:
 1. Update `BROODLE_TOOLS_VERSION` constant in `broodle_whmcs_tools.php`
 2. Update the `@version` docblock tag in `broodle_whmcs_tools.php`
 3. Commit all changes with a descriptive message
-4. Create the release zip: `Compress-Archive -Path "modules" -DestinationPath "broodle-whmcs-tools-v{X.Y.Z}.zip" -Force`
+4. Create the release zip with forward slashes (critical for Linux/cPanel compatibility):
+   ```powershell
+   Add-Type -AssemblyName System.IO.Compression.FileSystem
+   $zipPath = [System.IO.Path]::GetFullPath("broodle-whmcs-tools-v{X.Y.Z}.zip")
+   $basePath = [System.IO.Path]::GetFullPath(".")
+   Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+   $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+   Get-ChildItem -Path "modules" -Recurse -File | ForEach-Object {
+       $rel = $_.FullName.Substring($basePath.Length + 1).Replace('\', '/')
+       [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $rel) | Out-Null
+   }
+   $zip.Dispose()
+   ```
+   **IMPORTANT**: Do NOT use `Compress-Archive` — it creates zips with backslash path separators that fail on Linux/cPanel servers.
 5. Create and push a git tag: `git tag -a v{X.Y.Z} -m "v{X.Y.Z} - description" ; git push origin main ; git push origin v{X.Y.Z}`
 6. Create a GitHub release with the zip attached (via `gh release create` or GitHub web UI)
 7. **IMPORTANT**: Always do ALL of these steps after every fix or feature — never skip the tag, zip, or release.
