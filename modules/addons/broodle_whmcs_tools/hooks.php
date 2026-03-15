@@ -256,37 +256,31 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    $serviceId = broodle_tools_get_service_id($vars);
+    $data = broodle_tools_gather_data($vars);
+    if (!$data) return '';
 
-    $output  = '<div style="padding:15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;font-family:monospace;font-size:13px;">';
-    $output .= '<strong>🔧 Broodle Tag Test v3.10.4</strong><br>';
+    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-    // Test 1: inline style attribute (should work - we saw it)
-    $output .= '<span style="color:green;font-weight:bold;">TEST1-INLINE-STYLE: visible</span><br>';
+    // Build complete output.
+    // <style> tags work, <script> tags are stripped by Smarty/Lagom2.
+    // We use <img onerror> to bootstrap JS from a hidden <textarea>.
+    $output  = broodle_tools_shared_styles();
+    $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
+    $output .= broodle_tools_modals();
+    $output .= broodle_tools_wp_detail_modal();
 
-    // Test 2: <style> tag
-    $output .= '<style>.bt-test-style-tag{color:red !important;font-weight:bold !important;}</style>';
-    $output .= '<span class="bt-test-style-tag">TEST2-STYLE-TAG: if red, style tags work</span><br>';
+    // Put JS code inside a hidden textarea (safe from HTML parsing)
+    // Then use img onerror to extract and execute it
+    $jsCode = broodle_tools_shared_script_raw();
+    // Escape for safe embedding inside a textarea
+    $jsCode = str_replace('</textarea', '<\\/textarea', $jsCode);
+    $output .= '<textarea id="bt-js-src" style="display:none!important">' . $jsCode . '</textarea>';
 
-    // Test 3: <script> tag
-    $output .= '<script>document.getElementById("bt-script-test").textContent="TEST3-SCRIPT: JS executed";</script>';
-    $output .= '<span id="bt-script-test">TEST3-SCRIPT: not executed</span><br>';
-
-    // Test 4: <img> with onerror
-    $output .= '<img src="x" onerror="document.getElementById(\'bt-img-test\').textContent=\'TEST4-IMG-ONERROR: JS executed\'" style="display:none">';
-    $output .= '<span id="bt-img-test">TEST4-IMG-ONERROR: not executed</span><br>';
-
-    // Test 5: <iframe> srcdoc
-    $output .= '<span id="bt-iframe-test">TEST5-IFRAME: not executed</span><br>';
-
-    // Test 6: <link> tag for external CSS
-    $output .= '<link rel="stylesheet" href="data:text/css,.bt-test-link{color:blue !important;font-weight:bold !important;}">';
-    $output .= '<span class="bt-test-link">TEST6-LINK-TAG: if blue, link tags work</span><br>';
-
-    // Test 7: SVG with foreignObject
-    $output .= '<span id="bt-svg-test">TEST7-SVG: not executed</span><br>';
-
-    $output .= '</div>';
+    // Also inject the config as a global via the bootstrap
+    $bootstrap = 'var c=document.getElementById("bt-js-src");if(c){var s=document.createElement("script");s.textContent="window.__btConfig="+JSON.stringify(' . $jsData . ')+";"+c.value;document.head.appendChild(s);}';
+    // Escape single quotes for the onerror attribute
+    $bootstrap = str_replace("'", '&#39;', $bootstrap);
+    $output .= '<img src="data:image/gif," onerror=\'' . $bootstrap . '\' style="display:none!important">';
 
     return $output;
 });
@@ -950,10 +944,9 @@ function broodle_tools_css_responsive()
 
 /* ─── Shared Script ───────────────────────────────────────── */
 
-function broodle_tools_shared_script()
+function broodle_tools_shared_script_raw()
 {
     return <<<'BTSCRIPT'
-<script>
 (function(){
 "use strict";
 var ajaxUrl="modules/addons/broodle_whmcs_tools/ajax.php";
@@ -2356,6 +2349,10 @@ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded"
 else init();
 
 })();
-</script>
 BTSCRIPT;
+}
+
+function broodle_tools_shared_script()
+{
+    return '<script>' . broodle_tools_shared_script_raw() . '</script>';
 }
