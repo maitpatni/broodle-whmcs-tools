@@ -55,6 +55,51 @@ function injectStyles(){
     document.head.appendChild(s);
 }
 
+/* ─── Sidebar Actions Enhancement ─── */
+function styleSidebarActions(){
+    var panel=document.querySelector(".panel-actions");
+    if(!panel) return;
+    var items=panel.querySelectorAll(".list-group-tab-nav .list-group-item");
+    if(!items.length) return;
+    items.forEach(function(item){
+        if(item.querySelector(".bt-action-icon")) return;
+        var id=(item.getAttribute("data-identifier")||item.id||"").toLowerCase();
+        var text=(item.textContent||"").toLowerCase().trim();
+        var svg="",color="",label="",sub="";
+        if(id.indexOf("cpanel")!==-1||text.indexOf("cpanel")!==-1){
+            svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+            color="rgba(255,106,0,.08)";label="cPanel";sub="Control Panel";
+        }else if(id.indexOf("webmail")!==-1||text.indexOf("webmail")!==-1){
+            svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
+            color="rgba(10,94,211,.08)";label="Webmail";sub="Email Client";
+        }else if(id.indexOf("change_password")!==-1||text.indexOf("change password")!==-1||text.indexOf("password")!==-1){
+            svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>';
+            color="rgba(124,58,237,.08)";label="Change Password";sub="Account Security";
+        }else{
+            svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+            color="rgba(107,114,128,.08)";label=item.textContent.trim();sub="Action";
+        }
+        // Hide original FA icons
+        item.querySelectorAll(".fas,.fa,.far,.fab").forEach(function(i){i.style.display="none";});
+        // Build new content
+        var iconDiv=document.createElement("div");
+        iconDiv.className="bt-action-icon";
+        iconDiv.style.background=color;
+        iconDiv.innerHTML=svg;
+        var labelDiv=document.createElement("div");
+        labelDiv.className="bt-action-label";
+        labelDiv.innerHTML=esc(label)+'<span>'+esc(sub)+'</span>';
+        // Clear and rebuild
+        var origText=item.textContent.trim();
+        var href=item.getAttribute("href");
+        var target=item.getAttribute("target");
+        var onclick=item.getAttribute("onclick");
+        item.textContent="";
+        item.appendChild(iconDiv);
+        item.appendChild(labelDiv);
+    });
+}
+
 function init(){
     injectStyles();
     var dataEl=$("bt-data");
@@ -75,6 +120,7 @@ function init(){
     hideDefaultTabs();
     buildTabs();
     bindModals();
+    styleSidebarActions();
 }
 
 function buildModalsHtml(){
