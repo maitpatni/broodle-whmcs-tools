@@ -256,31 +256,39 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    // DEBUG: Always output diagnostic info so we can see what's happening
     $serviceId = broodle_tools_get_service_id($vars);
-    $cpData = $serviceId ? broodle_tools_get_cpanel_service($serviceId) : null;
 
-    $debug  = '<div style="padding:15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;font-family:monospace;font-size:13px;">';
-    $debug .= '<strong>🔧 Broodle Debug v3.10.3</strong><br>';
-    $debug .= 'serviceId: ' . ($serviceId ?: 'NONE') . '<br>';
-    $debug .= 'cpData: ' . ($cpData ? 'YES' : 'NO') . '<br>';
-    $debug .= '</div>';
+    $output  = '<div style="padding:15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;font-family:monospace;font-size:13px;">';
+    $output .= '<strong>🔧 Broodle Tag Test v3.10.4</strong><br>';
 
-    $data = broodle_tools_gather_data($vars);
-    if (!$data) {
-        return $debug . '<div style="padding:15px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;">gather_data FAILED</div>';
-    }
+    // Test 1: inline style attribute (should work - we saw it)
+    $output .= '<span style="color:green;font-weight:bold;">TEST1-INLINE-STYLE: visible</span><br>';
 
-    // TEST 1: Just CSS hide rules (small output)
-    $test1 = broodle_tools_css_hide();
+    // Test 2: <style> tag
+    $output .= '<style>.bt-test-style-tag{color:red !important;font-weight:bold !important;}</style>';
+    $output .= '<span class="bt-test-style-tag">TEST2-STYLE-TAG: if red, style tags work</span><br>';
 
-    // TEST 2: A visible marker after CSS
-    $test2 = '<div style="padding:15px;margin:10px 0;background:#d1fae5;border:2px solid #059669;border-radius:8px;font-family:monospace;font-size:13px;"><strong>✅ TEST: gather_data OK, CSS injected, this is after styles</strong></div>';
+    // Test 3: <script> tag
+    $output .= '<script>document.getElementById("bt-script-test").textContent="TEST3-SCRIPT: JS executed";</script>';
+    $output .= '<span id="bt-script-test">TEST3-SCRIPT: not executed</span><br>';
 
-    // TEST 3: Tiny inline script
-    $test3 = '<script>console.log("BT_HOOK_FIRED", ' . json_encode($data['serviceId']) . ');</script>';
+    // Test 4: <img> with onerror
+    $output .= '<img src="x" onerror="document.getElementById(\'bt-img-test\').textContent=\'TEST4-IMG-ONERROR: JS executed\'" style="display:none">';
+    $output .= '<span id="bt-img-test">TEST4-IMG-ONERROR: not executed</span><br>';
 
-    return $debug . $test1 . $test2 . $test3;
+    // Test 5: <iframe> srcdoc
+    $output .= '<span id="bt-iframe-test">TEST5-IFRAME: not executed</span><br>';
+
+    // Test 6: <link> tag for external CSS
+    $output .= '<link rel="stylesheet" href="data:text/css,.bt-test-link{color:blue !important;font-weight:bold !important;}">';
+    $output .= '<span class="bt-test-link">TEST6-LINK-TAG: if blue, link tags work</span><br>';
+
+    // Test 7: SVG with foreignObject
+    $output .= '<span id="bt-svg-test">TEST7-SVG: not executed</span><br>';
+
+    $output .= '</div>';
+
+    return $output;
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */
