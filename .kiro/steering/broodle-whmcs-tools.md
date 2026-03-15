@@ -152,8 +152,17 @@ Secondary colors:
 
 ### Theme Compatibility
 
-- **Primary target**: Lagom WHMCS theme
-- Tab navigation: `ul.panel-tabs.nav.nav-tabs` (Lagom), fallback to `.section-body ul.nav.nav-tabs`
+- **Primary target**: Lagom WHMCS theme (all versions including 2.x+)
+- **Also supports**: Default WHMCS Six theme, and WHMCS 8.8+ block-based layouts
+- Tab navigation: Multiple fallback selectors for different WHMCS/theme versions
+- The `buildTabs` function uses a multi-strategy insertion approach:
+  1. Insert before Quick Shortcuts section
+  2. Insert after hidden default panels (`[data-bt-hidden]`)
+  3. Insert after panel-tabs panel
+  4. Insert at top of content area (`.content-padded`, `.content-area`, `.main-content`, `.section-body`, etc.)
+  5. Last resort: insert near the `bt-data` div
+- The `init()` function retries up to 10 times (150ms intervals) if the content area isn't ready yet (handles dynamic/lazy-loaded templates)
+- `hideDefaultTabs` hides both old panel-based and new block-based WHMCS structures (`.service-details-blocks`, `.product-details-blocks`, etc.)
 - Dark mode: CSS variables with `[data-theme="dark"]` and `.dark-mode` selectors
 - Uses CSS custom properties: `--card-bg`, `--border-color`, `--heading-color`, `--text-muted`, `--input-bg`
 
@@ -218,10 +227,22 @@ Located in `broodle_tools_render_admin()`. Features:
 ### Steps to release a new version:
 
 1. Update `BROODLE_TOOLS_VERSION` constant in `broodle_whmcs_tools.php`
-2. Commit changes
-3. Create and push a git tag: `git tag v{X.Y.Z} && git push origin v{X.Y.Z}`
-4. GitHub Actions workflow (`.github/workflows/release.yml`) auto-creates the release with a zip
-5. **IMPORTANT**: The Actions workflow creates the release automatically. To update release notes, use GitHub API `PATCH` (not `POST`, which fails with `already_exists`)
+2. Update the `@version` docblock tag in `broodle_whmcs_tools.php`
+3. Commit all changes with a descriptive message
+4. Create the release zip: `Compress-Archive -Path "modules" -DestinationPath "broodle-whmcs-tools-v{X.Y.Z}.zip" -Force`
+5. Create and push a git tag: `git tag -a v{X.Y.Z} -m "v{X.Y.Z} - description" ; git push origin main ; git push origin v{X.Y.Z}`
+6. Create a GitHub release with the zip attached (via `gh release create` or GitHub web UI)
+7. **IMPORTANT**: Always do ALL of these steps after every fix or feature — never skip the tag, zip, or release.
+
+### After Every Code Change (MANDATORY)
+
+Every time code is modified in this module, the following must happen before considering the task done:
+- Version bump in `BROODLE_TOOLS_VERSION` and `@version` docblock
+- Git commit with clear message
+- Git tag with the new version
+- Push commit and tag to origin
+- Create release zip (`broodle-whmcs-tools-v{X.Y.Z}.zip`) containing the `modules/` directory
+- Create GitHub release with the zip as an asset
 
 ### Semver Guidelines
 
