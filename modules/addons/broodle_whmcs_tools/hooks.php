@@ -427,6 +427,19 @@ function broodle_tools_shared_script()
 @media(max-width:768px){#tabOverview .broodle-overview-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:480px){#tabOverview .broodle-overview-grid{grid-template-columns:1fr}}
 
+/* ─── Addons/Upgrades in Overview ─── */
+#tabOverview .broodle-upgrades-section{margin-top:20px;padding:18px 20px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:12px}
+#tabOverview .broodle-upgrades-section h4{margin:0 0 14px;font-size:14px;font-weight:700;color:var(--heading-color,#111827);display:flex;align-items:center;gap:8px}
+#tabOverview .broodle-upgrades-section h4 svg{color:#0a5ed3}
+#tabOverview .broodle-upgrades-section .panel,#tabOverview .broodle-upgrades-section .card{border:none;box-shadow:none;margin:0;background:transparent}
+#tabOverview .broodle-upgrades-section .panel-heading,#tabOverview .broodle-upgrades-section .card-header{display:none}
+#tabOverview .broodle-upgrades-section .panel-body,#tabOverview .broodle-upgrades-section .card-body{padding:0}
+#tabOverview .broodle-upgrades-section table{width:100%;border-collapse:separate;border-spacing:0}
+#tabOverview .broodle-upgrades-section table td,#tabOverview .broodle-upgrades-section table th{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border-color,#f3f4f6)}
+#tabOverview .broodle-upgrades-section table tr:last-child td{border-bottom:none}
+#tabOverview .broodle-upgrades-section .btn,#tabOverview .broodle-upgrades-section a.btn{font-size:12px;padding:5px 14px;border-radius:7px}
+[data-theme="dark"] #tabOverview .broodle-upgrades-section,.dark-mode #tabOverview .broodle-upgrades-section{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+
 .bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
 .bns-card-head-left{display:flex;align-items:center;gap:12px}
@@ -716,31 +729,73 @@ function broodle_tools_shared_script()
                 if(cells.length>=2){pairs.push({label:cells[0].textContent.trim().replace(/:$/,""),value:cells[1].innerHTML.trim(),el:tr});}
             });
         }
-        if(!pairs.length) return;
-        // Build grid
-        var grid=document.createElement("div");
-        grid.className="broodle-overview-grid";
-        pairs.forEach(function(p){
-            if(!p.label&&!p.value) return;
-            var card=document.createElement("div");
-            card.className="broodle-ov-card";
-            card.innerHTML="<div class=\"broodle-ov-label\">"+escHtml(p.label)+"</div><div class=\"broodle-ov-value\">"+p.value+"</div>";
-            grid.appendChild(card);
-        });
-        // Replace original content — find the container holding the rows
-        var parent=pairs[0].el.parentNode;
-        // Remove all original detail rows
-        var seen=new Set();
-        pairs.forEach(function(p){
-            if(p.el&&p.el.parentNode){
-                // For dt/dd pairs, also remove the dd
-                if(p.el.tagName==="DT"){var dd=p.el.nextElementSibling;if(dd&&dd.tagName==="DD")dd.remove();}
-                p.el.remove();
+        if(pairs.length){
+            // Build grid
+            var grid=document.createElement("div");
+            grid.className="broodle-overview-grid";
+            pairs.forEach(function(p){
+                if(!p.label&&!p.value) return;
+                var card=document.createElement("div");
+                card.className="broodle-ov-card";
+                card.innerHTML="<div class=\"broodle-ov-label\">"+escHtml(p.label)+"</div><div class=\"broodle-ov-value\">"+p.value+"</div>";
+                grid.appendChild(card);
+            });
+            // Remove all original detail rows
+            pairs.forEach(function(p){
+                if(p.el&&p.el.parentNode){
+                    if(p.el.tagName==="DT"){var dd=p.el.nextElementSibling;if(dd&&dd.tagName==="DD")dd.remove();}
+                    p.el.remove();
+                }
+            });
+            // Insert grid at top of tab
+            if(tab.firstChild) tab.insertBefore(grid,tab.firstChild);
+            else tab.appendChild(grid);
+        }
+
+        // Move "Addons and Extras" / configurable options section into the overview tab
+        moveAddonsSection(tab);
+    }
+
+    function moveAddonsSection(tab){
+        // Find the Addons/Extras section — Lagom theme renders it as a panel outside tabs
+        // Look for headings containing "addon", "extra", "configurable", "upgrade"
+        var candidates=document.querySelectorAll(".panel,.card,.section,.module-section");
+        var addonsPanel=null;
+        candidates.forEach(function(panel){
+            // Skip if already inside our tab
+            if(tab.contains(panel)) return;
+            var heading=panel.querySelector(".panel-heading,.card-header,h3,h4,h5");
+            if(!heading) return;
+            var txt=(heading.textContent||"").toLowerCase();
+            if(txt.indexOf("addon")!==-1||txt.indexOf("extra")!==-1||txt.indexOf("configurable option")!==-1){
+                addonsPanel=panel;
             }
         });
-        // Insert grid at top of tab
-        if(tab.firstChild) tab.insertBefore(grid,tab.firstChild);
-        else tab.appendChild(grid);
+        // Also try finding by ID patterns
+        if(!addonsPanel){
+            var byId=document.getElementById("tabAddons")||document.getElementById("addons-extras")||document.querySelector("[id*=configoption],[id*=addon]");
+            if(byId){
+                addonsPanel=byId.closest(".panel,.card")||byId;
+                if(tab.contains(addonsPanel)) addonsPanel=null;
+            }
+        }
+        // Also search for panels with upgrade links or configurable options tables
+        if(!addonsPanel){
+            var allPanels=document.querySelectorAll(".panel,.card");
+            allPanels.forEach(function(p){
+                if(tab.contains(p)||addonsPanel) return;
+                var links=p.querySelectorAll("a[href*=\"upgrade\"],a[href*=\"configoptions\"]");
+                if(links.length>0) addonsPanel=p;
+            });
+        }
+        if(!addonsPanel) return;
+        // Wrap in our styled container
+        var wrapper=document.createElement("div");
+        wrapper.className="broodle-upgrades-section";
+        wrapper.innerHTML="<h4><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\"/></svg> Available Upgrades</h4>";
+        // Move the panel content into our wrapper
+        wrapper.appendChild(addonsPanel);
+        tab.appendChild(wrapper);
     }
 
     function broodleInit(){

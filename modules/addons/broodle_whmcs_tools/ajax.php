@@ -206,12 +206,11 @@ switch ($action) {
         $emailFull = isset($_POST['email']) ? trim($_POST['email']) : '';
         if (empty($emailFull)) { echo json_encode(['success' => false, 'message' => 'Missing email']); exit; }
 
-        // Create a session for the specific email user (not the cPanel account)
-        // WHM create_user_session with the email address as user + service=webmaild
+        // Create a cPanel session for the email account owner, then redirect straight to Roundcube inbox
         $url = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
              . "?api.version=1"
-             . "&user=" . urlencode($emailFull)
-             . "&service=webmaild"
+             . "&user=" . urlencode($cpUsername)
+             . "&service=cpaneld"
              . "&locale=en";
 
         $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
@@ -220,31 +219,23 @@ switch ($action) {
             $json = json_decode($r['body'], true);
             $sessionUrl = $json['data']['url'] ?? '';
             if (!empty($sessionUrl)) {
+                // Parse the session URL to extract the cpsess token and build a Roundcube URL
+                // Session URL looks like: https://host:2083/cpsess1234567890/...
+                if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
+                    $baseSession = $m[1];
+                    $roundcubeUrl = $baseSession . '/3rdparty/roundcube/?_task=mail&_mbox=INBOX&_user=' . urlencode($emailFull);
+                    echo json_encode(['success' => true, 'url' => $roundcubeUrl]);
+                    break;
+                }
+                // If we can't parse, still use the session URL
                 echo json_encode(['success' => true, 'url' => $sessionUrl]);
                 break;
             }
         }
 
-        // Fallback: try with cPanel user + webmaild, append email param
-        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
-              . "?api.version=1"
-              . "&user=" . urlencode($cpUsername)
-              . "&service=webmaild";
-
-        $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
-
-        if ($r2['code'] === 200 && $r2['body']) {
-            $json2 = json_decode($r2['body'], true);
-            $sessionUrl2 = $json2['data']['url'] ?? '';
-            if (!empty($sessionUrl2)) {
-                echo json_encode(['success' => true, 'url' => $sessionUrl2]);
-                break;
-            }
-        }
-
-        // Final fallback: direct webmail URL
+        // Fallback: direct webmail URL with Roundcube path
         $webmailPort = $secure ? 2096 : 2095;
-        echo json_encode(['success' => true, 'url' => "{$protocol}://{$hostname}:{$webmailPort}/"]);
+        echo json_encode(['success' => true, 'url' => "{$protocol}://{$hostname}:{$webmailPort}/3rdparty/roundcube/?_task=mail&_mbox=INBOX"]);
         break;
 
     case 'get_domains':
@@ -309,10 +300,10 @@ switch ($action) {
         }
         if (empty($docroot)) $docroot = $domain;
 
-        // Use AddonDomain::addaddondomain (legacy, works on all cPanel versions)
+        // Use AddonDomain::addaddondomain (cPanel API 2)
         $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_apiversion=2"
              . "&cpanel_jsonapi_module=AddonDomain"
              . "&cpanel_jsonapi_func=addaddondomain"
              . "&newdomain=" . urlencode($domain)
@@ -326,7 +317,7 @@ switch ($action) {
         if (!$p['ok'] && strpos($p['error'], 'module') !== false) {
             $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                   . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                  . "&cpanel_jsonapi_apiversion=3"
+                  . "&cpanel_jsonapi_apiversion=2"
                   . "&cpanel_jsonapi_module=SubDomain"
                   . "&cpanel_jsonapi_func=addsubdomain"
                   . "&domain=" . urlencode($domain)
@@ -352,7 +343,7 @@ switch ($action) {
 
         $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_apiversion=2"
              . "&cpanel_jsonapi_module=SubDomain"
              . "&cpanel_jsonapi_func=addsubdomain"
              . "&domain=" . urlencode($subdomain)
@@ -373,27 +364,27 @@ switch ($action) {
 
         $url = '';
         if ($type === 'addon') {
-            // AddonDomain::deladdondomain
+            // AddonDomain::deladdondomain (cPanel API 2)
             $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_apiversion=2"
                  . "&cpanel_jsonapi_module=AddonDomain"
                  . "&cpanel_jsonapi_func=deladdondomain"
                  . "&domain=" . urlencode($domain)
                  . "&subdomain=" . urlencode(str_replace('.', '', $domain) . '.' . ($service->domain ?? ''));
         } elseif ($type === 'sub') {
-            // SubDomain::delsubdomain
+            // SubDomain::delsubdomain (cPanel API 2)
             $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_apiversion=2"
                  . "&cpanel_jsonapi_module=SubDomain"
                  . "&cpanel_jsonapi_func=delsubdomain"
                  . "&domain=" . urlencode($domain);
         } elseif ($type === 'parked') {
-            // Park::unpark
+            // Park::unpark (cPanel API 2)
             $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_apiversion=2"
                  . "&cpanel_jsonapi_module=Park"
                  . "&cpanel_jsonapi_func=unpark"
                  . "&domain=" . urlencode($domain);
