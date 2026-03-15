@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '2.8.0');
+define('BROODLE_TOOLS_VERSION', '3.0.0');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -57,6 +57,7 @@ function broodle_whmcs_tools_activate()
             'tweak_email_list'      => '1',
             'tweak_wordpress_toolkit' => '0',
             'tweak_domain_management' => '1',
+            'tweak_database_management' => '1',
             'auto_update_enabled'   => '0',
         ];
 
@@ -108,6 +109,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_email_list',
             'tweak_wordpress_toolkit',
             'tweak_domain_management',
+            'tweak_database_management',
             'auto_update_enabled',
         ];
 
@@ -167,6 +169,7 @@ function broodle_tools_render_admin($vars, $settings)
     $emailListEnabled = !empty($settings['tweak_email_list']) && $settings['tweak_email_list'] === '1';
     $wpToolkitEnabled = !empty($settings['tweak_wordpress_toolkit']) && $settings['tweak_wordpress_toolkit'] === '1';
     $domainMgmtEnabled = !empty($settings['tweak_domain_management']) && $settings['tweak_domain_management'] === '1';
+    $dbMgmtEnabled = !empty($settings['tweak_database_management']) && $settings['tweak_database_management'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -287,6 +290,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_domain_management" value="1" ' . ($domainMgmtEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Database Management</h4>
+                            <p>Show a Databases tab on cPanel product details with MySQL database management, phpMyAdmin access, and user privileges.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_database_management" value="1" ' . ($dbMgmtEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>

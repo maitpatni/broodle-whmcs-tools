@@ -42,7 +42,16 @@ if (!$service || (int) $service->userid !== $clientId) {
 
 // Check feature toggle based on action
 $domainActions = ['get_parent_domains', 'add_addon_domain', 'add_subdomain', 'delete_domain'];
-$featureKey = in_array($action, $domainActions) ? 'tweak_domain_management' : 'tweak_email_list';
+$dbActions = ['list_databases', 'create_database', 'create_db_user', 'delete_database', 'delete_db_user', 'assign_db_user', 'get_phpmyadmin_url'];
+
+if (in_array($action, $domainActions)) {
+    $featureKey = 'tweak_domain_management';
+} elseif (in_array($action, $dbActions)) {
+    $featureKey = 'tweak_database_management';
+} else {
+    $featureKey = 'tweak_email_list';
+}
+
 $enabled = Capsule::table('mod_broodle_tools_settings')
     ->where('setting_key', $featureKey)
     ->value('setting_value');
@@ -394,6 +403,213 @@ switch ($action) {
 
         $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
         echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Domain deleted successfully' : $p['error']]);
+        break;
+
+    // ── Database Management Actions ──
+
+    case 'list_databases':
+        // List databases
+        $urlDbs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=list_databases";
+        $rDbs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDbs);
+
+        // List users
+        $urlUsers = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=list_users";
+        $rUsers = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlUsers);
+
+        $databases = [];
+        $users = [];
+        $mappings = [];
+        $prefix = $cpUsername . '_';
+
+        if ($rDbs['code'] === 200 && $rDbs['body']) {
+            $json = json_decode($rDbs['body'], true);
+            $dbList = $json['result']['data'] ?? [];
+            if (is_array($dbList)) {
+                foreach ($dbList as $db) {
+                    $dbName = is_string($db) ? $db : ($db['db'] ?? ($db['database'] ?? ''));
+                    if ($dbName) $databases[] = $dbName;
+                }
+            }
+        }
+
+        if ($rUsers['code'] === 200 && $rUsers['body']) {
+            $json = json_decode($rUsers['body'], true);
+            $uList = $json['result']['data'] ?? [];
+            if (is_array($uList)) {
+                foreach ($uList as $u) {
+                    $uName = is_string($u) ? $u : ($u['user'] ?? '');
+                    if ($uName) $users[] = $uName;
+                }
+            }
+        }
+
+        // Get user-database mappings via list_routines or by querying each DB's users
+        foreach ($databases as $dbName) {
+            $urlPriv = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Mysql"
+                 . "&cpanel_jsonapi_func=get_privileges_on_database"
+                 . "&database=" . urlencode($dbName);
+            $rPriv = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlPriv);
+            if ($rPriv['code'] === 200 && $rPriv['body']) {
+                $pJson = json_decode($rPriv['body'], true);
+                $privData = $pJson['result']['data'] ?? [];
+                if (is_array($privData)) {
+                    foreach ($privData as $p) {
+                        $pUser = is_string($p) ? $p : ($p['user'] ?? '');
+                        if ($pUser) $mappings[] = ['db' => $dbName, 'user' => $pUser];
+                    }
+                }
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'databases' => array_values(array_unique($databases)),
+            'users' => array_values(array_unique($users)),
+            'mappings' => $mappings,
+            'prefix' => $prefix,
+        ]);
+        break;
+
+    case 'create_database':
+        $dbname = isset($_POST['dbname']) ? trim($_POST['dbname']) : '';
+        if (empty($dbname)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a database name']);
+            exit;
+        }
+        // Prepend prefix if not already present
+        $prefix = $cpUsername . '_';
+        $fullName = (strpos($dbname, $prefix) === 0) ? $dbname : $prefix . $dbname;
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=create_database"
+             . "&name=" . urlencode($fullName);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Database created: ' . $fullName : $p['error']]);
+        break;
+
+    case 'create_db_user':
+        $dbuser = isset($_POST['dbuser']) ? trim($_POST['dbuser']) : '';
+        $dbpass = isset($_POST['dbpass']) ? $_POST['dbpass'] : '';
+        if (empty($dbuser) || empty($dbpass)) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all fields']);
+            exit;
+        }
+        $prefix = $cpUsername . '_';
+        $fullUser = (strpos($dbuser, $prefix) === 0) ? $dbuser : $prefix . $dbuser;
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=create_user"
+             . "&name=" . urlencode($fullUser)
+             . "&password=" . urlencode($dbpass);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'User created: ' . $fullUser : $p['error']]);
+        break;
+
+    case 'delete_database':
+        $database = isset($_POST['database']) ? trim($_POST['database']) : '';
+        if (empty($database)) {
+            echo json_encode(['success' => false, 'message' => 'Missing database name']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=delete_database"
+             . "&name=" . urlencode($database);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Database deleted' : $p['error']]);
+        break;
+
+    case 'delete_db_user':
+        $dbuser = isset($_POST['dbuser']) ? trim($_POST['dbuser']) : '';
+        if (empty($dbuser)) {
+            echo json_encode(['success' => false, 'message' => 'Missing username']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=delete_user"
+             . "&name=" . urlencode($dbuser);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'User deleted' : $p['error']]);
+        break;
+
+    case 'assign_db_user':
+        $database = isset($_POST['database']) ? trim($_POST['database']) : '';
+        $dbuser   = isset($_POST['dbuser']) ? trim($_POST['dbuser']) : '';
+        $privileges = isset($_POST['privileges']) ? trim($_POST['privileges']) : 'ALL PRIVILEGES';
+
+        if (empty($database) || empty($dbuser)) {
+            echo json_encode(['success' => false, 'message' => 'Select a database and user']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=set_privileges_on_database"
+             . "&user=" . urlencode($dbuser)
+             . "&database=" . urlencode($database)
+             . "&privileges=" . urlencode($privileges);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Privileges assigned successfully' : $p['error']]);
+        break;
+
+    case 'get_phpmyadmin_url':
+        // Create a cPanel session and return phpMyAdmin URL
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
+             . "?api.version=1"
+             . "&user=" . urlencode($cpUsername)
+             . "&service=cpaneld"
+             . "&locale=en";
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $sessionUrl = $json['data']['url'] ?? '';
+            if (!empty($sessionUrl)) {
+                if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
+                    $pmaUrl = $m[1] . '/3rdparty/phpMyAdmin/index.php';
+                    echo json_encode(['success' => true, 'url' => $pmaUrl]);
+                    break;
+                }
+                echo json_encode(['success' => true, 'url' => $sessionUrl]);
+                break;
+            }
+        }
+
+        // Fallback: direct cPanel URL
+        $cpPort = $secure ? 2083 : 2082;
+        echo json_encode(['success' => true, 'url' => "{$protocol}://{$hostname}:{$cpPort}/3rdparty/phpMyAdmin/index.php"]);
         break;
 
     default:
