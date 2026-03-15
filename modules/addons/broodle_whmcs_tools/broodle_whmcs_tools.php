@@ -8,7 +8,7 @@
  * @author     Broodle
  * @copyright  2026 Broodle
  * @link       https://broodle.host
- * @version    3.5.1
+ * @version    3.5.2
  */
 
 if (!defined('WHMCS')) {
@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.5.1');
+define('BROODLE_TOOLS_VERSION', '3.5.2');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -237,6 +237,52 @@ function broodle_tools_render_admin($vars, $settings)
         .bt-toast.info { background: #0a5ed3; }
         .bt-toast.show { display: block; }
         @keyframes btSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ─── Dark Mode (WHMCS Admin) ─── */
+        @media (prefers-color-scheme: dark) {
+            .bt-head { border-bottom-color: #374151; }
+            .bt-head-text h2 { color: #e5e7eb; }
+            .bt-head-text span { color: #9ca3af; }
+            .bt-section-label { color: #6b7280; }
+            .bt-card { background: #1f2937; border-color: #374151; }
+            .bt-row { border-top-color: #374151 !important; }
+            .bt-row + .bt-row { border-top-color: #374151; }
+            .bt-row-info h4 { color: #e5e7eb; }
+            .bt-row-info p { color: #9ca3af; }
+            .bt-toggle .bt-slider { background: #4b5563; }
+            .bt-toggle input:checked + .bt-slider { background: #2563eb; }
+            .bt-update-bar { background: #111827; border-top-color: #374151; }
+            .bt-update-bar span { color: #9ca3af; }
+            .bt-update-bar span strong { color: #e5e7eb; }
+            .bt-btn-primary { background: #2563eb; }
+            .bt-btn-primary:hover { background: #1d4ed8; }
+            .bt-btn-outline { background: #1f2937; color: #d1d5db; border-color: #374151; }
+            .bt-btn-outline:hover { background: #111827; border-color: #6b7280; color: #e5e7eb; }
+            .bt-footer { border-top-color: #374151; }
+            .bt-footer span { color: #6b7280; }
+            .bt-footer a { color: #5b9cf6; }
+        }
+        /* Also support WHMCS admin dark class if present */
+        body.dark-mode .bt-head, body[data-theme="dark"] .bt-head { border-bottom-color: #374151; }
+        body.dark-mode .bt-head-text h2, body[data-theme="dark"] .bt-head-text h2 { color: #e5e7eb; }
+        body.dark-mode .bt-head-text span, body[data-theme="dark"] .bt-head-text span { color: #9ca3af; }
+        body.dark-mode .bt-section-label, body[data-theme="dark"] .bt-section-label { color: #6b7280; }
+        body.dark-mode .bt-card, body[data-theme="dark"] .bt-card { background: #1f2937; border-color: #374151; }
+        body.dark-mode .bt-row + .bt-row, body[data-theme="dark"] .bt-row + .bt-row { border-top-color: #374151; }
+        body.dark-mode .bt-row-info h4, body[data-theme="dark"] .bt-row-info h4 { color: #e5e7eb; }
+        body.dark-mode .bt-row-info p, body[data-theme="dark"] .bt-row-info p { color: #9ca3af; }
+        body.dark-mode .bt-toggle .bt-slider, body[data-theme="dark"] .bt-toggle .bt-slider { background: #4b5563; }
+        body.dark-mode .bt-toggle input:checked + .bt-slider, body[data-theme="dark"] .bt-toggle input:checked + .bt-slider { background: #2563eb; }
+        body.dark-mode .bt-update-bar, body[data-theme="dark"] .bt-update-bar { background: #111827; border-top-color: #374151; }
+        body.dark-mode .bt-update-bar span, body[data-theme="dark"] .bt-update-bar span { color: #9ca3af; }
+        body.dark-mode .bt-update-bar span strong, body[data-theme="dark"] .bt-update-bar span strong { color: #e5e7eb; }
+        body.dark-mode .bt-btn-primary, body[data-theme="dark"] .bt-btn-primary { background: #2563eb; }
+        body.dark-mode .bt-btn-primary:hover, body[data-theme="dark"] .bt-btn-primary:hover { background: #1d4ed8; }
+        body.dark-mode .bt-btn-outline, body[data-theme="dark"] .bt-btn-outline { background: #1f2937; color: #d1d5db; border-color: #374151; }
+        body.dark-mode .bt-btn-outline:hover, body[data-theme="dark"] .bt-btn-outline:hover { background: #111827; border-color: #6b7280; color: #e5e7eb; }
+        body.dark-mode .bt-footer, body[data-theme="dark"] .bt-footer { border-top-color: #374151; }
+        body.dark-mode .bt-footer span, body[data-theme="dark"] .bt-footer span { color: #6b7280; }
+        body.dark-mode .bt-footer a, body[data-theme="dark"] .bt-footer a { color: #5b9cf6; }
     </style>
 
     <div class="bt-wrap">
