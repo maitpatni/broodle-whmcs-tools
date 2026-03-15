@@ -310,6 +310,8 @@ function broodle_tools_css_hide()
 #Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
 #cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel{display:none!important}
 .bt-hidden-section{display:none!important}
+[data-bt-hidden="1"]{display:none!important}
+.service-details-blocks,.product-details-blocks,.product-info-blocks,[class*="product-details-block"],[class*="service-detail-block"]{display:none!important}
 </style>';
 }
 
@@ -966,6 +968,12 @@ function init(){
     var dataEl=$("bt-data");
     if(!dataEl) return;
     try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
+    // Check if the content area is ready; if not, retry with a short delay (handles dynamic/lazy-loaded WHMCS templates)
+    var contentArea=document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".panel")||document.querySelector(".container");
+    if(!contentArea){
+        if(!init._retries) init._retries=0;
+        if(init._retries<10){init._retries++;setTimeout(init,150);return;}
+    }
     hideDefaultTabs();
     enhanceSidebarActions();
     buildTabs();
@@ -983,7 +991,7 @@ function hideDefaultTabs(){
     });
     ["billingInfo","tabOverview","domainInfo","tabAddons"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
     var panelTabs=document.querySelector("ul.panel-tabs");
-    if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
+    if(panelTabs){var panel=panelTabs.closest(".panel");if(panel){panel.style.display="none";panel.setAttribute("data-bt-hidden","1");}}
     // Hide Quick Create Email section (but NOT Quick Shortcuts / server actions)
     document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
     // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
@@ -1005,6 +1013,16 @@ function hideDefaultTabs(){
         if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1){
             p.setAttribute("data-bt-hidden","1");p.style.display="none";
         }
+    });
+    // Hide default WHMCS blocks-based product details (WHMCS 8.8+ / Lagom 2.x+)
+    document.querySelectorAll(".service-details-blocks,.product-details-blocks,.product-info-blocks,[class*=product-details-block],[class*=service-detail-block]").forEach(function(el){
+        el.setAttribute("data-bt-hidden","1");el.style.display="none";
+    });
+    // Hide default tab-based sections in newer WHMCS (nav-tabs inside content area)
+    document.querySelectorAll(".content-padded > .nav-tabs,.content-area > .nav-tabs,.main-content > .nav-tabs").forEach(function(el){
+        el.style.display="none";
+        var sib=el.nextElementSibling;
+        if(sib&&sib.classList&&sib.classList.contains("tab-content")) sib.style.display="none";
     });
     // Also hide by sidebar menu item IDs
     ["Primary_Sidebar-productdetails_addons_and_extras"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
@@ -1044,9 +1062,9 @@ function enhanceSidebarActions(){
 }
 
 function buildTabs(){
-    var target=document.querySelector(".panel");
-    if(!target) target=document.querySelector(".section-body");
-    if(!target) return;
+    // Find the main content area — try multiple selectors for different WHMCS/theme versions
+    var contentArea=document.querySelector(".content-padded")||document.querySelector(".content-area")||document.querySelector(".main-content")||document.querySelector(".section-body")||document.querySelector("#main-body")||document.querySelector(".container-fluid > .row > .col-md-9,.container-fluid > .row > .col-lg-9")||document.querySelector(".panel:not([data-bt-hidden])")||document.querySelector(".container");
+    if(!contentArea) return;
 
     // Find the Quick Shortcuts section (cPanel server module actions)
     var quickShortcutsSection=null;
@@ -1119,20 +1137,50 @@ function buildTabs(){
     });
 
     wrap.appendChild(nav);wrap.appendChild(panes);
-    // Insert our tabs BEFORE the Quick Shortcuts section so tabs appear first
-    if(quickShortcutsSection&&quickShortcutsSection.parentNode){
+    // Insert our tabs — try multiple strategies for different WHMCS/theme versions
+    var inserted=false;
+    // Strategy 1: Insert before Quick Shortcuts section
+    if(!inserted&&quickShortcutsSection&&quickShortcutsSection.parentNode){
         quickShortcutsSection.parentNode.insertBefore(wrap,quickShortcutsSection);
-    } else {
-        // Fallback: insert after the hidden panel or at the top of the content area
-        var hiddenPanel=document.querySelector("ul.panel-tabs");
-        var insertAfter=hiddenPanel?hiddenPanel.closest(".panel"):null;
+        inserted=true;
+    }
+    // Strategy 2: Insert after the hidden panel (old WHMCS structure)
+    if(!inserted){
+        var hiddenPanel=document.querySelector("[data-bt-hidden]");
+        if(hiddenPanel&&hiddenPanel.parentNode){
+            hiddenPanel.parentNode.insertBefore(wrap,hiddenPanel.nextSibling);
+            inserted=true;
+        }
+    }
+    // Strategy 3: Insert after hidden panel-tabs panel
+    if(!inserted){
+        var panelTabs=document.querySelector("ul.panel-tabs");
+        var insertAfter=panelTabs?panelTabs.closest(".panel"):null;
         if(insertAfter&&insertAfter.parentNode){
             insertAfter.parentNode.insertBefore(wrap,insertAfter.nextSibling);
-        } else {
-            var container=document.querySelector(".main-content,.content-padded,.section-body,.container");
-            if(container){
-                container.insertBefore(wrap,container.firstChild);
-            }
+            inserted=true;
+        }
+    }
+    // Strategy 4: Insert at the top of the content area (works for all WHMCS/theme versions)
+    if(!inserted&&contentArea){
+        // Find the first visible child that is not our data div
+        var firstVisible=null;
+        for(var ci=0;ci<contentArea.children.length;ci++){
+            var ch=contentArea.children[ci];
+            if(ch.id==="bt-data"||ch.id==="bt-wrap") continue;
+            if(ch.style&&ch.style.display==="none") continue;
+            if(ch.getAttribute&&ch.getAttribute("data-bt-hidden")==="1") continue;
+            firstVisible=ch;break;
+        }
+        if(firstVisible) contentArea.insertBefore(wrap,firstVisible);
+        else contentArea.insertBefore(wrap,contentArea.firstChild);
+        inserted=true;
+    }
+    // Strategy 5: Last resort — append to body near bt-data
+    if(!inserted){
+        var dataEl2=$("bt-data");
+        if(dataEl2&&dataEl2.parentNode){
+            dataEl2.parentNode.insertBefore(wrap,dataEl2.nextSibling);
         }
     }
 
