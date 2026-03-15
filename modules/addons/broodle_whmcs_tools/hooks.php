@@ -296,14 +296,18 @@ function broodle_tools_shared_styles()
 function broodle_tools_css_hide()
 {
     return '<style>
-.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.quick-shortcut-container,.quick-shortcut,.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content{display:none!important}
+.product-details-tab-container,#Primary_Sidebar-productdetails_addons_and_extras,.quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.quick-shortcut-container,.quick-shortcut,.module-quick-create-email,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"],.product-details-tab-container+.tab-content,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.sidebar-shortcuts,.sidebar-quick-create{display:none!important}
+.panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"],.panel-body .quick-shortcut,.panel-body .quick-shortcuts{display:none!important}
+.sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"],.sidebar-right .quick-shortcut{display:none!important}
+#Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
 </style>';
 }
 
 function broodle_tools_css_tabs()
 {
     return '<style>
-.bt-wrap{margin-top:15px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.bt-wrap{margin-top:15px;font-family:inherit}
+.bt-wrap *{font-family:inherit}
 .bt-tabs-nav{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:2px solid var(--border-color,#e5e7eb);padding:0;margin:0}
 .bt-tabs-nav::-webkit-scrollbar{display:none}
 .bt-tab-btn{display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);cursor:pointer;border:none;background:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;flex-shrink:0}
@@ -594,6 +598,10 @@ function post(data,cb){ajax(ajaxUrl,data,cb);}
 function wpPost(data,cb){ajax(wpAjaxUrl,data,cb);}
 function doCopy(t,btn){if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){btn.classList.add("copied");setTimeout(function(){btn.classList.remove("copied");},1500);});}else{var ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;opacity:0";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);btn.classList.add("copied");setTimeout(function(){btn.classList.remove("copied");},1500);}}
 
+var wpSvg16="<svg width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\" fill=\\"currentColor\\"><path d=\\"M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8\\"/><path d=\\"M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z\\"/><path fill-rule=\\"evenodd\\" d=\\"M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8\\"/></svg>";
+var wpSvg20=wpSvg16.replace(/width=\\"16\\"/g,"width=\\"20\\"").replace(/height=\\"16\\"/g,"height=\\"20\\"");
+var wpSvg32=wpSvg16.replace(/width=\\"16\\"/g,"width=\\"32\\"").replace(/height=\\"16\\"/g,"height=\\"32\\"");
+
 /* ─── Init ─── */
 function init(){
     var dataEl=$("bt-data");
@@ -617,16 +625,18 @@ function hideDefaultTabs(){
     var panelTabs=document.querySelector("ul.panel-tabs");
     if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
     // Hide Quick Create Email section
-    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email").forEach(function(el){el.style.display="none";});
+    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut]").forEach(function(el){el.style.display="none";});
     // Hide Addons & Extras panels (we move content to overview)
-    document.querySelectorAll(".panel,.card").forEach(function(p){
-        var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title");
+    document.querySelectorAll(".panel,.card,.sidebar-box,.sidebar-panel").forEach(function(p){
+        var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title,.sidebar-header,.sidebar-title");
         if(!h) return;
         var t=(h.textContent||"").toLowerCase();
-        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1){
+        if(t.indexOf("addon")!==-1||t.indexOf("extra")!==-1||t.indexOf("configurable")!==-1||t.indexOf("quick create email")!==-1||t.indexOf("quick create")!==-1||t.indexOf("shortcut")!==-1){
             p.setAttribute("data-bt-hidden","1");p.style.display="none";
         }
     });
+    // Also hide by sidebar menu item IDs
+    ["Primary_Sidebar-productdetails_addons_and_extras"].forEach(function(id){var el=$(id);if(el)el.style.display="none";});
 }
 
 function buildTabs(){
@@ -640,8 +650,8 @@ function buildTabs(){
     var wrap=document.createElement("div");
     wrap.className="bt-wrap";wrap.id="bt-wrap";
 
-    // WordPress icon — proper W shape
-    var wpIcon="<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x271.8\\x27 stroke-linecap=\\x27round\\x27 stroke-linejoin=\\x27round\\x27><circle cx=\\x2712\\x27 cy=\\x2712\\x27 r=\\x2710\\x27/><path d=\\x27M6.5 8l2 8 1.5-5.5L11.5 16l2-8\\x27/><path d=\\x27M13.5 8l2 8 2-8\\x27/></svg>";
+    // WordPress icon — official WP logo
+    var wpIcon="<svg viewBox=\\x270 0 16 16\\x27 fill=\\x27currentColor\\x27><path d=\\x27M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8\\x27/><path d=\\x27M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z\\x27/><path fill-rule=\\x27evenodd\\x27 d=\\x27M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8\\x27/></svg>";
 
     var tabs=[
         {id:"overview",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x273\\x27 y=\\x273\\x27 width=\\x2718\\x27 height=\\x2718\\x27 rx=\\x272\\x27/><path d=\\x27M3 9h18M9 21V9\\x27/></svg>",label:"Overview"},
@@ -907,7 +917,7 @@ function submitAssignDb(){
 /* ─── WordPress Pane ─── */
 function buildWpPane(){
     var pane=$("bt-pane-wordpress");if(!pane) return;
-    pane.innerHTML="<div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M6.5 8l2 8 1.5-5.5L11.5 16l2-8\"/><path d=\"M13.5 8l2 8 2-8\"/></svg></div><div><h5>WordPress Manager</h5><p class=\"bt-wp-count\">Loading...</p></div></div></div><div class=\"bt-list\" id=\"bt-wp-list\"><div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading WordPress installations...</span></div></div></div>";
+    pane.innerHTML="<div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8\"/><path d=\"M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z\"/><path fill-rule=\"evenodd\" d=\"M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8\"/></svg></div><div><h5>WordPress Manager</h5><p class=\"bt-wp-count\">Loading...</p></div></div></div><div class=\"bt-list\" id=\"bt-wp-list\"><div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading WordPress installations...</span></div></div></div>";
 }
 
 function loadWpInstances(){
@@ -918,7 +928,7 @@ function loadWpInstances(){
         wpInstances=r.instances||[];
         var countEl=document.querySelector(".bt-wp-count");
         if(countEl) countEl.textContent=wpInstances.length+" site"+(wpInstances.length!==1?"s":"");
-        if(!wpInstances.length){list.innerHTML="<div class=\"bt-empty\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M6.5 8l2 8 1.5-5.5L11.5 16l2-8\"/><path d=\"M13.5 8l2 8 2-8\"/></svg><span>No WordPress installations found</span></div>";return;}
+        if(!wpInstances.length){list.innerHTML="<div class=\"bt-empty\">"+wpSvg32+"<span>No WordPress installations found</span></div>";return;}
         var html="";
         wpInstances.forEach(function(inst){
             var statusCls=inst.alive?"active":"inactive";var statusTxt=inst.alive?"Active":"Inactive";
@@ -926,7 +936,7 @@ function loadWpInstances(){
             if(inst.pluginUpdates>0) meta+="<span style=\"color:#0a5ed3\">"+inst.pluginUpdates+" plugin update"+(inst.pluginUpdates>1?"s":"")+"</span>";
             if(inst.themeUpdates>0) meta+="<span style=\"color:#7c3aed\">"+inst.themeUpdates+" theme update"+(inst.themeUpdates>1?"s":"")+"</span>";
             if(inst.availableUpdate) meta+="<span style=\"color:#d97706\">Core update: "+esc(inst.availableUpdate)+"</span>";
-            html+="<div class=\"bwp-site\" data-id=\""+inst.id+"\"><div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M6.5 8l2 8 1.5-5.5L11.5 16l2-8\"/><path d=\"M13.5 8l2 8 2-8\"/></svg></div><div class=\"bwp-site-info\"><p class=\"bwp-site-domain\">"+esc(inst.displayTitle||inst.domain)+"</p><div class=\"bwp-site-meta\"><span class=\"bwp-status-badge "+statusCls+"\"><span style=\"width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block\"></span> "+statusTxt+"</span>"+meta+"</div></div><div class=\"bwp-site-actions\"><button type=\"button\" class=\"bt-row-btn login\" data-wpid=\""+inst.id+"\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg><span>Login</span></button><a href=\""+esc(inst.site_url)+"\" target=\"_blank\" class=\"bt-row-btn visit\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg><span>Visit</span></a><button type=\"button\" class=\"bt-row-btn\" data-wpdetail=\""+inst.id+"\" style=\"color:#0a5ed3\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z\"/></svg><span>Manage</span></button></div></div>";
+            html+="<div class=\"bwp-site\" data-id=\""+inst.id+"\"><div class=\"bwp-site-icon\">"+wpSvg20+"</div><div class=\"bwp-site-info\"><p class=\"bwp-site-domain\">"+esc(inst.displayTitle||inst.domain)+"</p><div class=\"bwp-site-meta\"><span class=\"bwp-status-badge "+statusCls+"\"><span style=\"width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block\"></span> "+statusTxt+"</span>"+meta+"</div></div><div class=\"bwp-site-actions\"><button type=\"button\" class=\"bt-row-btn login\" data-wpid=\""+inst.id+"\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg><span>Login</span></button><a href=\""+esc(inst.site_url)+"\" target=\"_blank\" class=\"bt-row-btn visit\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg><span>Visit</span></a><button type=\"button\" class=\"bt-row-btn\" data-wpdetail=\""+inst.id+"\" style=\"color:#0a5ed3\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z\"/></svg><span>Manage</span></button></div></div>";
         });
         list.innerHTML=html;
         list.querySelectorAll(".bt-row-btn.login[data-wpid]").forEach(function(b){b.addEventListener("click",function(){bwpAutoLogin(parseInt(this.getAttribute("data-wpid")));});});
@@ -955,7 +965,7 @@ function bwpOpenDetail(id){
     var ovTab=$("bwpTabOverview");
     var siteUrl=currentWpInstance.site_url||"";
     var html="<div class=\"bwp-overview-hero\"><div class=\"bwp-preview-col\"><div class=\"bwp-preview-wrap\"><div class=\"bwp-preview-bar\"><div class=\"bwp-preview-dots\"><span></span><span></span><span></span></div><div class=\"bwp-preview-url\">"+esc(siteUrl)+"</div></div><div class=\"bwp-preview-frame-wrap\"><iframe src=\""+esc(siteUrl)+"\" style=\"width:200%;height:200%;transform:scale(.5);transform-origin:0 0;border:none;pointer-events:none\" loading=\"lazy\" sandbox=\"allow-same-origin\"></iframe></div></div><div class=\"bwp-quick-actions\"><button type=\"button\" class=\"bt-btn-add\" onclick=\"bwpDoLogin("+id+")\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg> WP Admin</button><a href=\""+esc(siteUrl)+"\" target=\"_blank\" class=\"bt-btn-outline\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg> Visit Site</a></div></div>";
-    html+="<div class=\"bwp-overview-right\"><div class=\"bwp-site-header\"><div class=\"bwp-site-header-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M6.5 8l2 8 1.5-5.5L11.5 16l2-8\"/><path d=\"M13.5 8l2 8 2-8\"/></svg></div><div class=\"bwp-site-header-info\"><h4>"+esc(currentWpInstance.displayTitle||currentWpInstance.domain)+"</h4><p><span>WP "+esc(currentWpInstance.version)+"</span><span>"+esc(currentWpInstance.path)+"</span></p></div></div>";
+    html+="<div class=\"bwp-overview-right\"><div class=\"bwp-site-header\"><div class=\"bwp-site-header-icon\">"+wpSvg20+"</div><div class=\"bwp-site-header-info\"><h4>"+esc(currentWpInstance.displayTitle||currentWpInstance.domain)+"</h4><p><span>WP "+esc(currentWpInstance.version)+"</span><span>"+esc(currentWpInstance.path)+"</span></p></div></div>";
     html+="<div class=\"bwp-overview-grid\">";
     html+="<div class=\"bwp-stat\"><div class=\"bwp-stat-label\">Status</div><div class=\"bwp-stat-value\">"+(currentWpInstance.alive?"<span style=\"color:#059669\">Active</span>":"<span style=\"color:#ef4444\">Inactive</span>")+"</div></div>";
     html+="<div class=\"bwp-stat\"><div class=\"bwp-stat-label\">SSL</div><div class=\"bwp-stat-value\">"+(currentWpInstance.ssl?"<span style=\"color:#059669\">Enabled</span>":"<span style=\"color:#d97706\">Disabled</span>")+"</div></div>";

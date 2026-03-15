@@ -413,69 +413,67 @@ switch ($action) {
         $mappings = [];
         $prefix = $cpUsername . '_';
 
-        // Primary: Use cPanel API 2 MysqlFE::listdbs — returns userlist per database
-        $urlListDbs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+        // Primary: UAPI Mysql::list_databases — returns {database, users[], disk_usage} per entry
+        $urlDbs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=2"
-             . "&cpanel_jsonapi_module=MysqlFE"
-             . "&cpanel_jsonapi_func=listdbs";
-        $rListDbs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlListDbs);
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Mysql"
+             . "&cpanel_jsonapi_func=list_databases";
+        $rDbs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDbs);
 
         $gotMappings = false;
-        if ($rListDbs['code'] === 200 && $rListDbs['body']) {
-            $json = json_decode($rListDbs['body'], true);
-            $dbList = $json['cpanelresult']['data'] ?? [];
-            if (is_array($dbList) && !empty($dbList)) {
-                $gotMappings = true;
+        if ($rDbs['code'] === 200 && $rDbs['body']) {
+            $json = json_decode($rDbs['body'], true);
+            $dbList = $json['result']['data'] ?? [];
+            if (is_array($dbList)) {
                 foreach ($dbList as $db) {
-                    $dbName = $db['db'] ?? '';
+                    if (!is_array($db)) continue;
+                    $dbName = $db['database'] ?? ($db['db'] ?? '');
                     if (!$dbName) continue;
                     $databases[] = $dbName;
-                    // userlist is a comma-separated or HTML string of users assigned to this DB
-                    $userList = $db['userlist'] ?? '';
-                    if (!empty($userList)) {
-                        // Strip HTML tags (cPanel sometimes wraps in <a> tags)
-                        $userList = strip_tags($userList);
-                        $dbUsers = array_map('trim', explode(',', $userList));
-                        foreach ($dbUsers as $u) {
-                            if (!empty($u)) {
-                                $mappings[] = ['db' => $dbName, 'user' => $u];
-                            }
+                    // UAPI returns users as a plain string array: ["user1", "user2"]
+                    if (!empty($db['users']) && is_array($db['users'])) {
+                        $gotMappings = true;
+                        foreach ($db['users'] as $u) {
+                            $uName = is_string($u) ? $u : ($u['user'] ?? '');
+                            if ($uName) $mappings[] = ['db' => $dbName, 'user' => $uName];
                         }
                     }
                 }
             }
         }
 
-        // Fallback: UAPI Mysql::list_databases if API 2 didn't work
+        // Fallback: cPanel API 2 MysqlFE::listdbs — returns {db, userlist: [{db,user}], usercount}
         if (empty($databases)) {
-            $urlDbs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+            $urlListDbs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
-                 . "&cpanel_jsonapi_module=Mysql"
-                 . "&cpanel_jsonapi_func=list_databases";
-            $rDbs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDbs);
-            if ($rDbs['code'] === 200 && $rDbs['body']) {
-                $json = json_decode($rDbs['body'], true);
-                $dbList = $json['result']['data'] ?? [];
-                if (is_array($dbList)) {
+                 . "&cpanel_jsonapi_apiversion=2"
+                 . "&cpanel_jsonapi_module=MysqlFE"
+                 . "&cpanel_jsonapi_func=listdbs";
+            $rListDbs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlListDbs);
+            if ($rListDbs['code'] === 200 && $rListDbs['body']) {
+                $json = json_decode($rListDbs['body'], true);
+                $dbList = $json['cpanelresult']['data'] ?? [];
+                if (is_array($dbList) && !empty($dbList)) {
                     foreach ($dbList as $db) {
-                        $dbName = is_string($db) ? $db : ($db['db'] ?? ($db['database'] ?? ''));
-                        if ($dbName) $databases[] = $dbName;
-                        // UAPI may include users array per database
-                        if (is_array($db) && !empty($db['users'])) {
-                            foreach ($db['users'] as $u) {
-                                $uName = is_string($u) ? $u : ($u['user'] ?? '');
+                        $dbName = $db['db'] ?? '';
+                        if (!$dbName) continue;
+                        $databases[] = $dbName;
+                        // userlist is an array of {db, user} objects
+                        $userList = $db['userlist'] ?? [];
+                        if (is_array($userList)) {
+                            $gotMappings = true;
+                            foreach ($userList as $entry) {
+                                $uName = is_array($entry) ? ($entry['user'] ?? '') : '';
                                 if ($uName) $mappings[] = ['db' => $dbName, 'user' => $uName];
                             }
-                            $gotMappings = true;
                         }
                     }
                 }
             }
         }
 
-        // List users via UAPI
+        // UAPI Mysql::list_users — returns {user, shortuser, databases[]}
         $urlUsers = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=3"
@@ -487,29 +485,17 @@ switch ($action) {
             $uList = $json['result']['data'] ?? [];
             if (is_array($uList)) {
                 foreach ($uList as $u) {
-                    $uName = is_string($u) ? $u : ($u['user'] ?? '');
-                    if ($uName) $users[] = $uName;
-                }
-            }
-        }
-
-        // If we still don't have mappings, try get_privileges_on_database per DB
-        if (!$gotMappings && !empty($databases)) {
-            foreach ($databases as $dbName) {
-                $urlPriv = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                     . "&cpanel_jsonapi_apiversion=3"
-                     . "&cpanel_jsonapi_module=Mysql"
-                     . "&cpanel_jsonapi_func=get_privileges_on_database"
-                     . "&database=" . urlencode($dbName);
-                $rPriv = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlPriv);
-                if ($rPriv['code'] === 200 && $rPriv['body']) {
-                    $pJson = json_decode($rPriv['body'], true);
-                    $privData = $pJson['result']['data'] ?? [];
-                    if (is_array($privData)) {
-                        foreach ($privData as $p) {
-                            $pUser = is_string($p) ? $p : ($p['user'] ?? '');
-                            if ($pUser) $mappings[] = ['db' => $dbName, 'user' => $pUser];
+                    if (!is_array($u)) continue;
+                    $uName = $u['user'] ?? '';
+                    if ($uName) {
+                        $users[] = $uName;
+                        // list_users also returns databases per user — use as fallback mappings
+                        if (!$gotMappings && !empty($u['databases']) && is_array($u['databases'])) {
+                            foreach ($u['databases'] as $dbName) {
+                                if (is_string($dbName) && $dbName) {
+                                    $mappings[] = ['db' => $dbName, 'user' => $uName];
+                                }
+                            }
                         }
                     }
                 }
