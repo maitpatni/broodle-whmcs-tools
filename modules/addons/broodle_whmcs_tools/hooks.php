@@ -273,7 +273,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.19\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="x" onerror="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.20\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -629,20 +629,20 @@ function broodle_tools_css_wp()
 .bwp-msg.info{background:rgba(10,94,211,.08);color:#0a5ed3}
 
 /* Sidebar — icon box buttons */
-.list-group-tab-nav{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
-.list-group-tab-nav .list-group-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03)}
-.list-group-tab-nav .list-group-item:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.08);transform:translateY(-1px);color:#0a5ed3}
-.list-group-tab-nav .list-group-item .fas,.list-group-tab-nav .list-group-item .fa,.list-group-tab-nav .list-group-item .far,.list-group-tab-nav .list-group-item .fab,.list-group-tab-nav .list-group-item .fal,.list-group-tab-nav .list-group-item .lm,.list-group-tab-nav .list-group-item .ls{display:none}
-.list-group-tab-nav .list-group-item .bt-action-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.list-group-tab-nav .list-group-item .bt-action-icon svg{width:18px;height:18px}
-.list-group-tab-nav .list-group-item .bt-action-label{display:flex;flex-direction:column;gap:1px}
-.list-group-tab-nav .list-group-item .bt-action-label span{font-size:10px;font-weight:500;color:var(--text-muted,#6b7280)}
-.list-group-tab-nav .list-group-item[data-identifier="cpanel"] .bt-action-icon{background:rgba(255,106,0,.08);color:#ff6a00}
-.list-group-tab-nav .list-group-item[data-identifier="webmail"] .bt-action-icon{background:rgba(10,94,211,.08);color:#0a5ed3}
-.list-group-tab-nav .list-group-item[id*="Change_Password"] .bt-action-icon{background:rgba(124,58,237,.08);color:#7c3aed}
-.list-group-tab-nav .list-group-item[data-identifier="cpanel"]:hover .bt-action-icon{background:rgba(255,106,0,.12)}
-.list-group-tab-nav .list-group-item[data-identifier="webmail"]:hover .bt-action-icon{background:rgba(10,94,211,.12)}
-.list-group-tab-nav .list-group-item[id*="Change_Password"]:hover .bt-action-icon{background:rgba(124,58,237,.12)}
+.list-group-tab-nav,.panel-actions .list-group,.panel-actions .panel-body{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
+.list-group-tab-nav .list-group-item,.panel-actions .list-group-item,.panel-actions .panel-body>a{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#1f2937);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.list-group-tab-nav .list-group-item:hover,.panel-actions .list-group-item:hover,.panel-actions .panel-body>a:hover{border-color:rgba(10,94,211,.25);box-shadow:0 2px 8px rgba(10,94,211,.08);transform:translateY(-1px);color:#0a5ed3}
+.list-group-tab-nav .list-group-item .fas,.list-group-tab-nav .list-group-item .fa,.list-group-tab-nav .list-group-item .far,.list-group-tab-nav .list-group-item .fab,.list-group-tab-nav .list-group-item .fal,.list-group-tab-nav .list-group-item .lm,.list-group-tab-nav .list-group-item .ls,.panel-actions .list-group-item .fas,.panel-actions .list-group-item .fa,.panel-actions .list-group-item .far,.panel-actions .list-group-item .fab,.panel-actions .list-group-item .fal,.panel-actions .list-group-item .lm,.panel-actions .list-group-item .ls,.panel-actions .panel-body>a .fas,.panel-actions .panel-body>a .fa{display:none}
+.list-group-tab-nav .list-group-item .bt-action-icon,.panel-actions .list-group-item .bt-action-icon,.panel-actions .panel-body>a .bt-action-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.list-group-tab-nav .list-group-item .bt-action-icon svg,.panel-actions .list-group-item .bt-action-icon svg,.panel-actions .panel-body>a .bt-action-icon svg{width:18px;height:18px}
+.list-group-tab-nav .list-group-item .bt-action-label,.panel-actions .list-group-item .bt-action-label,.panel-actions .panel-body>a .bt-action-label{display:flex;flex-direction:column;gap:1px}
+.list-group-tab-nav .list-group-item .bt-action-label span,.panel-actions .list-group-item .bt-action-label span,.panel-actions .panel-body>a .bt-action-label span{font-size:10px;font-weight:500;color:var(--text-muted,#6b7280)}
+.list-group-tab-nav .list-group-item[data-identifier="cpanel"] .bt-action-icon,.panel-actions .list-group-item[data-identifier="cpanel"] .bt-action-icon,.panel-actions [id*="Login_to_cPanel"] .bt-action-icon{background:rgba(255,106,0,.08);color:#ff6a00}
+.list-group-tab-nav .list-group-item[data-identifier="webmail"] .bt-action-icon,.panel-actions .list-group-item[data-identifier="webmail"] .bt-action-icon,.panel-actions [id*="Login_to_Webmail"] .bt-action-icon{background:rgba(10,94,211,.08);color:#0a5ed3}
+.list-group-tab-nav .list-group-item[id*="Change_Password"] .bt-action-icon,.panel-actions .list-group-item[id*="Change_Password"] .bt-action-icon,.panel-actions [id*="Change_Password"] .bt-action-icon{background:rgba(124,58,237,.08);color:#7c3aed}
+.list-group-tab-nav .list-group-item[data-identifier="cpanel"]:hover .bt-action-icon,.panel-actions [id*="Login_to_cPanel"]:hover .bt-action-icon{background:rgba(255,106,0,.12)}
+.list-group-tab-nav .list-group-item[data-identifier="webmail"]:hover .bt-action-icon,.panel-actions [id*="Login_to_Webmail"]:hover .bt-action-icon{background:rgba(10,94,211,.12)}
+.list-group-tab-nav .list-group-item[id*="Change_Password"]:hover .bt-action-icon,.panel-actions [id*="Change_Password"]:hover .bt-action-icon{background:rgba(124,58,237,.12)}
 .panel-actions .panel-heading,.sidebar-header-wrapper{border-bottom:none;padding:12px 14px 2px}
 .panel-actions .panel-heading .panel-title{font-size:11px;font-weight:700;color:var(--text-muted,#6b7280);letter-spacing:.4px;text-transform:uppercase}
 .panel-actions .panel-heading .panel-title .fas.fa-wrench{color:var(--text-muted,#9ca3af)}
@@ -912,8 +912,8 @@ function broodle_tools_css_dark()
 [data-theme="dark"] #btDnsAddFields textarea,.dark-mode #btDnsAddFields textarea,[data-theme="dark"] #btDnsEditFields textarea,.dark-mode #btDnsEditFields textarea{background:var(--input-bg,#111827);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb)}
 
 /* Sidebar dark mode */
-[data-theme="dark"] .list-group-tab-nav .list-group-item,.dark-mode .list-group-tab-nav .list-group-item{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-[data-theme="dark"] .list-group-tab-nav .list-group-item:hover,.dark-mode .list-group-tab-nav .list-group-item:hover{border-color:rgba(91,156,246,.3);box-shadow:0 2px 8px rgba(91,156,246,.1);color:#5b9cf6}
+[data-theme="dark"] .list-group-tab-nav .list-group-item,[data-theme="dark"] .panel-actions .list-group-item,[data-theme="dark"] .panel-actions .panel-body>a,.dark-mode .list-group-tab-nav .list-group-item,.dark-mode .panel-actions .list-group-item,.dark-mode .panel-actions .panel-body>a{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+[data-theme="dark"] .list-group-tab-nav .list-group-item:hover,[data-theme="dark"] .panel-actions .list-group-item:hover,[data-theme="dark"] .panel-actions .panel-body>a:hover,.dark-mode .list-group-tab-nav .list-group-item:hover,.dark-mode .panel-actions .list-group-item:hover,.dark-mode .panel-actions .panel-body>a:hover{border-color:rgba(91,156,246,.3);box-shadow:0 2px 8px rgba(91,156,246,.1);color:#5b9cf6}
 [data-theme="dark"] .panel-actions .panel-heading .panel-title,.dark-mode .panel-actions .panel-heading .panel-title,[data-theme="dark"] .panel-default>.panel-heading .panel-title,.dark-mode .panel-default>.panel-heading .panel-title{color:var(--text-muted,#9ca3af)}
 </style>';
 }
