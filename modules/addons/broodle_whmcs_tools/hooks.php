@@ -265,8 +265,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // No modals, no extra CSS — keep output small to avoid truncation
     $output  = broodle_tools_css_hide();
     $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
-    $output .= '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.8";document.head.appendChild(s);\' style="display:none!important">';
-    $output .= '<div style="padding:12px;margin:10px 0;background:#d1fae5;border:2px solid #059669;border-radius:8px;font-family:monospace;font-size:13px;">✅ v3.10.8 hook output length: ' . strlen($output) . ' chars</div>';
+    $output .= '<img src="data:image/gif," onerror=\'var s=document.createElement("script");s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.9";document.head.appendChild(s);\' style="display:none!important">';
 
     return $output;
 });
