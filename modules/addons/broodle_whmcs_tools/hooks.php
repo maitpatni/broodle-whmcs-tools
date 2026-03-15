@@ -553,24 +553,43 @@ function broodle_tools_shared_script()
 .bwp-action-btn:hover{border-color:#21759b;color:#21759b}
 .bwp-action-btn.primary{background:#21759b;color:#fff;border-color:#21759b}
 .bwp-action-btn.primary:hover{background:#1a5f7e}
-.bwp-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);display:flex;align-items:stretch;justify-content:flex-end;animation:bemFadeIn .2s}
-.bwp-detail-panel{width:100%;max-width:640px;background:var(--card-bg,#fff);overflow-y:auto;animation:bwpSlideIn .25s}
-@keyframes bwpSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-.bwp-detail-head{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border-color,#f3f4f6);position:sticky;top:0;background:var(--card-bg,#fff);z-index:1}
-.bwp-detail-head h5{flex:1;margin:0;font-size:16px;font-weight:600;color:var(--heading-color,#111827)}
-.bwp-back-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
-.bwp-back-btn:hover{border-color:#21759b;color:#21759b}
-.bwp-detail-tabs{display:flex;gap:0;padding:0 22px;border-bottom:1px solid var(--border-color,#f3f4f6);position:sticky;top:60px;background:var(--card-bg,#fff);z-index:1}
-.bwp-tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s}
+.bwp-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:24px;animation:bwpFadeIn .2s;backdrop-filter:blur(4px)}
+@keyframes bwpFadeIn{from{opacity:0}to{opacity:1}}
+.bwp-detail-panel{width:100%;max-width:900px;max-height:90vh;background:var(--card-bg,#fff);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.05);animation:bwpPopIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bwpPopIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.bwp-detail-head{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border-color,#f3f4f6);background:var(--card-bg,#fff);flex-shrink:0}
+.bwp-detail-head h5{flex:1;margin:0;font-size:17px;font-weight:700;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bwp-back-btn{display:none}
+.bwp-close-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:var(--input-bg,#f3f4f6);color:var(--text-muted,#6b7280);cursor:pointer;border-radius:8px;font-size:18px;transition:all .15s;flex-shrink:0}
+.bwp-close-btn:hover{background:rgba(239,68,68,.08);color:#ef4444}
+.bwp-detail-tabs{display:flex;gap:0;padding:0 24px;border-bottom:1px solid var(--border-color,#f3f4f6);background:var(--card-bg,#fff);flex-shrink:0;overflow-x:auto}
+.bwp-tab{padding:12px 18px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .bwp-tab:hover{color:var(--heading-color,#111827)}
 .bwp-tab.active{color:#21759b;border-bottom-color:#21759b}
-.bwp-detail-body{padding:0}
-.bwp-tab-content{display:none;padding:20px 22px}
+.bwp-detail-body{flex:1;overflow-y:auto;padding:0}
+.bwp-tab-content{display:none;padding:24px}
 .bwp-tab-content.active{display:block}
-.bwp-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.bwp-preview-wrap{margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:#f9fafb;position:relative}
+.bwp-preview-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--input-bg,#f3f4f6);border-bottom:1px solid var(--border-color,#e5e7eb)}
+.bwp-preview-dots{display:flex;gap:5px}
+.bwp-preview-dots span{width:10px;height:10px;border-radius:50%}
+.bwp-preview-dots span:nth-child(1){background:#ef4444}
+.bwp-preview-dots span:nth-child(2){background:#f59e0b}
+.bwp-preview-dots span:nth-child(3){background:#22c55e}
+.bwp-preview-url{flex:1;font-size:11px;color:var(--text-muted,#6b7280);background:var(--card-bg,#fff);padding:4px 10px;border-radius:5px;border:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SFMono-Regular",Consolas,monospace}
+.bwp-preview-frame{width:100%;height:280px;border:none;background:#fff}
+.bwp-preview-overlay{position:absolute;inset:0;top:34px;cursor:pointer;z-index:1}
+.bwp-preview-overlay:hover::after{content:"Click to visit site";position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600}
+.bwp-site-header{display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--input-bg,#f9fafb);border-radius:12px;border:1px solid var(--border-color,#f3f4f6);margin-bottom:20px}
+.bwp-site-header-icon{width:48px;height:48px;border-radius:12px;background:#21759b;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bwp-site-header-info{flex:1;min-width:0}
+.bwp-site-header-info h4{margin:0;font-size:16px;font-weight:700;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bwp-site-header-info p{margin:3px 0 0;font-size:12px;color:var(--text-muted,#6b7280);display:flex;gap:10px;flex-wrap:wrap}
+.bwp-site-header-info p span{display:inline-flex;align-items:center;gap:3px}
+.bwp-overview-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
 .bwp-stat{padding:14px 16px;background:var(--input-bg,#f9fafb);border-radius:10px;border:1px solid var(--border-color,#f3f4f6)}
-.bwp-stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted,#9ca3af);margin:0 0 4px}
-.bwp-stat-value{font-size:15px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-all}
+.bwp-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af);margin:0 0 4px}
+.bwp-stat-value{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-all}
 .bwp-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .bwp-item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color,#f3f4f6)}
 .bwp-item-row:last-child{border-bottom:none}
@@ -609,7 +628,8 @@ function broodle_tools_shared_script()
 .bwp-msg.success{background:rgba(5,150,101,.08);color:#059669}
 .bwp-msg.error{background:rgba(239,68,68,.08);color:#ef4444}
 .bwp-msg.info{background:rgba(10,94,211,.08);color:#0a5ed3}
-@media(max-width:600px){.bwp-overview-grid{grid-template-columns:1fr}.bwp-detail-panel{max-width:100%}.bwp-site-actions{flex-direction:column}}
+@media(max-width:700px){.bwp-overview-grid{grid-template-columns:1fr 1fr}.bwp-detail-panel{max-width:100%;max-height:100vh;border-radius:0}.bwp-preview-frame{height:200px}}
+@media(max-width:500px){.bwp-overview-grid{grid-template-columns:1fr}.bwp-site-actions{flex-direction:column}}
 </style>
 
 <script>
@@ -927,8 +947,6 @@ function broodle_tools_shared_script()
         var overlay=document.getElementById("bwpDetailOverlay");
         if(overlay){
             overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.style.display="none";});
-            var backBtn=document.getElementById("bwpBackBtn");
-            if(backBtn) backBtn.addEventListener("click",function(){overlay.style.display="none";});
             var closeBtn=document.getElementById("bwpDetailClose");
             if(closeBtn) closeBtn.addEventListener("click",function(){overlay.style.display="none";});
 
@@ -1050,21 +1068,45 @@ function broodle_tools_shared_script()
         overlay.querySelectorAll(".bwp-tab").forEach(function(t,i){t.classList.toggle("active",i===0);});
         overlay.querySelectorAll(".bwp-tab-content").forEach(function(c,i){c.classList.toggle("active",i===0);});
 
-        // Build overview
+        // Build overview with preview + site header + 3-col grid
         var ov=document.getElementById("bwpTabOverview");
+        var siteUrl=inst.site_url||("http://"+inst.domain);
+        var safeUrl=bwpEsc(siteUrl);
         var updateInfo=inst.availableUpdate?"<div class=\"bwp-msg info\">WordPress "+bwpEsc(inst.availableUpdate)+" is available. <button class=\"bwp-item-btn update\" onclick=\"bwpUpdateCore()\">Update Core</button></div>":"";
-        ov.innerHTML=updateInfo
+
+        // Website preview
+        var preview="<div class=\"bwp-preview-wrap\">"
+            +"<div class=\"bwp-preview-bar\">"
+            +"<div class=\"bwp-preview-dots\"><span></span><span></span><span></span></div>"
+            +"<div class=\"bwp-preview-url\">"+safeUrl+"</div>"
+            +"</div>"
+            +"<iframe class=\"bwp-preview-frame\" src=\""+safeUrl+"\" sandbox=\"allow-scripts allow-same-origin\" loading=\"lazy\"></iframe>"
+            +"<div class=\"bwp-preview-overlay\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\"></div>"
+            +"</div>";
+
+        // Site header card
+        var statusBadge=inst.alive?"<span class=\"bwp-status-badge active\">Online</span>":"<span class=\"bwp-status-badge inactive\">Offline</span>";
+        var sslBadge=inst.ssl?"<span class=\"bwp-status-badge active\">SSL</span>":"<span class=\"bwp-status-badge inactive\">No SSL</span>";
+        var infectedBadge=inst.infected?"<span class=\"bwp-status-badge\" style=\"background:rgba(239,68,68,.08);color:#ef4444\">&#9888; Infected</span>":"";
+        var header="<div class=\"bwp-site-header\">"
+            +"<div class=\"bwp-site-header-icon\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zM3.443 12c0-1.178.25-2.296.69-3.313l3.8 10.411A8.57 8.57 0 0 1 3.443 12zm8.557 8.557c-.82 0-1.613-.12-2.363-.34l2.51-7.29 2.57 7.04c.017.04.037.078.058.115a8.523 8.523 0 0 1-2.775.475zm1.166-12.546c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.106-2.224.106-.82 0-2.198-.106-2.198-.106-.45-.026-.503.664-.053.69 0 0 .427.052.878.078l1.305 3.575-1.833 5.498L7.34 7.01c.503-.026.956-.078.956-.078.45-.052.397-.715-.053-.69 0 0-1.352.107-2.224.107-.156 0-.34-.004-.535-.012A8.544 8.544 0 0 1 12 3.443c2.1 0 4.017.76 5.5 2.018-.035-.002-.069-.007-.105-.007-.82 0-1.4.715-1.4 1.48 0 .69.397 1.272.82 1.96.318.555.69 1.268.69 2.296 0 .715-.274 1.543-.635 2.7l-.833 2.78-3.015-8.97zm4.394 11.14l2.025-5.852c.378-.945.503-1.7.503-2.374 0-.244-.016-.47-.045-.684A8.544 8.544 0 0 1 20.557 12a8.545 8.545 0 0 1-2.997 6.51z\"/></svg></div>"
+            +"<div class=\"bwp-site-header-info\">"
+            +"<h4>"+bwpEsc(inst.displayTitle||inst.site_url||inst.domain)+"</h4>"
+            +"<p><span>WP "+bwpEsc(inst.version)+"</span><span>"+bwpEsc(inst.path||"/")+"</span><span>"+statusBadge+"</span><span>"+sslBadge+"</span>"+infectedBadge+"</p>"
+            +"</div></div>";
+
+        ov.innerHTML=preview+header+updateInfo
             +"<div class=\"bwp-overview-grid\">"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">URL</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.site_url)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.version)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.path)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Site URL</p><p class=\"bwp-stat-value\"><a href=\""+safeUrl+"\" target=\"_blank\" style=\"color:#21759b;text-decoration:none\">"+safeUrl+"</a></p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.version)+(inst.availableUpdate?" &rarr; "+bwpEsc(inst.availableUpdate):"")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Install Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.path)+"</p></div>"
             +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Owner</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.owner)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">SSL</p><p class=\"bwp-stat-value\">"+(inst.ssl?"Enabled &#128274;":"Disabled")+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Status</p><p class=\"bwp-stat-value\">"+(inst.alive?"Online":"Offline")+(inst.infected?" &#9888; Infected":"")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">SSL Certificate</p><p class=\"bwp-stat-value\">"+(inst.ssl?"&#128274; Enabled":"Disabled")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Status</p><p class=\"bwp-stat-value\">"+(inst.alive?"&#9989; Online":"&#10060; Offline")+"</p></div>"
             +"</div>"
             +"<div class=\"bwp-quick-actions\">"
-            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\">WP Admin Login</button>"
-            +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+bwpEsc(inst.site_url)+"\\x27,\\x27_blank\\x27)\">Visit Site</button>"
+            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg> WP Admin Login</button>"
+            +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+safeUrl+"\\x27,\\x27_blank\\x27)\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg> Visit Site</button>"
             +"</div>";
 
         document.getElementById("bwpTabPlugins").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
@@ -1500,13 +1542,12 @@ function broodle_tools_build_wp_output($serviceId)
   </div>
 </div>
 
-<!-- WP Detail Panel (slides in) -->
+<!-- WP Detail Panel (popup modal) -->
 <div class="bwp-overlay" id="bwpDetailOverlay" style="display:none">
   <div class="bwp-detail-panel">
     <div class="bwp-detail-head">
-      <button type="button" class="bwp-back-btn" id="bwpBackBtn">&larr; Back</button>
       <h5 id="bwpDetailTitle">Site Details</h5>
-      <button type="button" class="bem-modal-close" id="bwpDetailClose">&times;</button>
+      <button type="button" class="bwp-close-btn" id="bwpDetailClose">&times;</button>
     </div>
     <div class="bwp-detail-tabs">
       <button type="button" class="bwp-tab active" data-tab="overview">Overview</button>
