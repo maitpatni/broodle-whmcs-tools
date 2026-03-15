@@ -3,3 +3,4 @@ Thumbs.db
 *.log
 *.tmp
 /release/
+_temp_broodle_app/

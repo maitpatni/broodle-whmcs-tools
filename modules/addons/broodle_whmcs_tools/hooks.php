@@ -42,6 +42,11 @@ function broodle_tools_wp_enabled()
     return broodle_tools_setting_enabled('tweak_wordpress_toolkit');
 }
 
+function broodle_tools_domain_enabled()
+{
+    return broodle_tools_setting_enabled('tweak_domain_management');
+}
+
 function broodle_tools_get_service_id($vars)
 {
     if (!empty($vars['serviceid'])) return (int) $vars['serviceid'];
@@ -220,6 +225,14 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         if ($cpData) {
             $emails = broodle_tools_get_emails($serviceId);
             $output .= broodle_tools_build_email_output($emails, $serviceId);
+        }
+    }
+
+    // ── Domain Management Tab ──
+    if (broodle_tools_domain_enabled()) {
+        $cpData = broodle_tools_get_cpanel_service($serviceId);
+        if ($cpData) {
+            $output .= broodle_tools_build_domain_output($serviceId, $cpData);
         }
     }
 
@@ -1015,6 +1028,356 @@ function broodle_tools_shared_script()
         });
     }
 
+    /* ─── WordPress Toolkit ─── */
+    var wpAjaxUrl="modules/addons/broodle_whmcs_tools/ajax_wordpress.php";
+    var wpInstances=[];
+    var currentWpInstance=null;
+    var wpServiceId=0;
+
+    function bwpInit(){
+        var wpSrc=document.getElementById("broodle-wp-source");
+        if(!wpSrc) return;
+        wpServiceId=wpSrc.getAttribute("data-service-id")||0;
+
+        var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
+        if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
+
+        if(tabNav){
+            var li=document.createElement("li");
+            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
+            tabNav.appendChild(li);
+            var tabContent=panel?panel.querySelector(".tab-content"):null;
+            if(tabContent){
+                var tp=document.createElement("div");
+                tp.className="panel-body tab-pane";tp.id="broodleWpInfo";
+                tp.innerHTML=wpSrc.innerHTML;
+                wpSrc.parentNode.removeChild(wpSrc);
+                tabContent.appendChild(tp);
+                bwpBindEvents(tp);
+                bwpLoadInstances();
+            }
+        }
+    }
+
+    function bwpBindEvents(container){
+        var scanBtn=container.querySelector("#bwpScanBtn");
+        if(scanBtn) scanBtn.addEventListener("click",function(){bwpRefresh();});
+
+        var overlay=document.getElementById("bwpDetailOverlay");
+        if(overlay){
+            overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.style.display="none";});
+            var backBtn=document.getElementById("bwpBackBtn");
+            if(backBtn) backBtn.addEventListener("click",function(){overlay.style.display="none";});
+            var closeBtn=document.getElementById("bwpDetailClose");
+            if(closeBtn) closeBtn.addEventListener("click",function(){overlay.style.display="none";});
+
+            overlay.querySelectorAll(".bwp-tab").forEach(function(tab){
+                tab.addEventListener("click",function(){
+                    overlay.querySelectorAll(".bwp-tab").forEach(function(t){t.classList.remove("active");});
+                    overlay.querySelectorAll(".bwp-tab-content").forEach(function(c){c.classList.remove("active");});
+                    tab.classList.add("active");
+                    var target=tab.getAttribute("data-tab");
+                    var content=document.getElementById("bwpTab"+target.charAt(0).toUpperCase()+target.slice(1));
+                    if(content) content.classList.add("active");
+                    if(target==="plugins"&&currentWpInstance) bwpLoadPlugins();
+                    if(target==="themes"&&currentWpInstance) bwpLoadThemes();
+                    if(target==="security"&&currentWpInstance) bwpLoadSecurity();
+                });
+            });
+        }
+    }
+
+    function bwpAjax(data,cb){
+        var fd=new FormData();
+        for(var k in data) fd.append(k,data[k]);
+        fd.append("service_id",wpServiceId);
+        var x=new XMLHttpRequest();x.open("POST",wpAjaxUrl,true);
+        x.onload=function(){try{cb(JSON.parse(x.responseText));}catch(e){cb({success:false,message:"Invalid response"});}};
+        x.onerror=function(){cb({success:false,message:"Network error"});};
+        x.send(fd);
+    }
+
+    function bwpLoadInstances(){
+        var loading=document.getElementById("bwpLoading");
+        var list=document.getElementById("bwpList");
+        var empty=document.getElementById("bwpEmpty");
+        if(loading) loading.style.display="flex";
+        if(list) list.style.display="none";
+        if(empty) empty.style.display="none";
+
+        bwpAjax({action:"get_wp_instances"},function(r){
+            if(loading) loading.style.display="none";
+            if(r.success&&r.instances&&r.instances.length>0){
+                wpInstances=r.instances;
+                if(list){
+                    list.style.display="block";
+                    var html="";
+                    r.instances.forEach(function(inst){
+                        var updates=[];
+                        if(inst.availableUpdate) updates.push("Core update");
+                        if(inst.pluginUpdates>0) updates.push(inst.pluginUpdates+" plugin"+(inst.pluginUpdates>1?"s":""));
+                        if(inst.themeUpdates>0) updates.push(inst.themeUpdates+" theme"+(inst.themeUpdates>1?"s":""));
+                        var updateBadge=updates.length?"<span class=\"bwp-status-badge update-available\">"+updates.join(", ")+"</span>":"";
+                        var statusBadge=inst.alive?"<span class=\"bwp-status-badge active\">Online</span>":"<span class=\"bwp-status-badge inactive\">Offline</span>";
+                        var sslBadge=inst.ssl?"<span title=\"SSL enabled\" style=\"color:#059669\">&#128274;</span>":"";
+
+                        html+="<div class=\"bwp-site\" data-id=\""+inst.id+"\">"
+                            +"<div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z\"/></svg></div>"
+                            +"<div class=\"bwp-site-info\">"
+                            +"<p class=\"bwp-site-domain\">"+bwpEsc(inst.displayTitle||inst.site_url||inst.domain)+" "+sslBadge+"</p>"
+                            +"<div class=\"bwp-site-meta\">"
+                            +"<span>WP "+bwpEsc(inst.version)+"</span>"
+                            +"<span>"+bwpEsc(inst.path||"/")+"</span>"
+                            +"<span>"+statusBadge+"</span>"
+                            +(updateBadge?"<span>"+updateBadge+"</span>":"")
+                            +"</div></div>"
+                            +"<div class=\"bwp-site-actions\">"
+                            +"<button type=\"button\" class=\"bwp-action-btn primary bwp-login-btn\" data-id=\""+inst.id+"\">Login</button>"
+                            +"<button type=\"button\" class=\"bwp-action-btn bwp-manage-btn\" data-id=\""+inst.id+"\">Manage</button>"
+                            +"</div></div>";
+                    });
+                    list.innerHTML=html;
+
+                    list.querySelectorAll(".bwp-login-btn").forEach(function(btn){
+                        btn.addEventListener("click",function(e){e.stopPropagation();bwpAutoLogin(parseInt(this.getAttribute("data-id")));});
+                    });
+                    list.querySelectorAll(".bwp-manage-btn").forEach(function(btn){
+                        btn.addEventListener("click",function(e){e.stopPropagation();bwpOpenDetail(parseInt(this.getAttribute("data-id")));});
+                    });
+                    list.querySelectorAll(".bwp-site").forEach(function(site){
+                        site.addEventListener("click",function(){bwpOpenDetail(parseInt(this.getAttribute("data-id")));});
+                    });
+                }
+            } else {
+                if(empty) empty.style.display="flex";
+                if(r.message&&!r.success){
+                    var errEl=document.getElementById("bwpEmpty");
+                    if(errEl) errEl.innerHTML="<div class=\"bwp-msg error\">"+bwpEsc(r.message)+"</div>";
+                }
+            }
+        });
+    }
+
+    function bwpEsc(s){if(s===null||s===undefined)return"";s=String(s);var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+
+    function bwpRefresh(){
+        var btn=document.getElementById("bwpScanBtn");
+        if(btn){btn.disabled=true;btn.innerHTML="Loading...";}
+        bwpLoadInstances();
+        setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML="<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21.21 15.89A10 10 0 1 1 8 2.83\"/><path d=\"M22 12A10 10 0 0 0 12 2v10z\"/></svg> Refresh";}},2000);
+    }
+
+    function bwpAutoLogin(instId){
+        bwpAjax({action:"wp_autologin",instance_id:instId},function(r){
+            if(r.success&&r.login_url){window.open(r.login_url,"_blank");}
+            else{alert(r.message||"Could not create login session");}
+        });
+    }
+
+    function bwpOpenDetail(instId){
+        var inst=null;
+        for(var i=0;i<wpInstances.length;i++){if(wpInstances[i].id===instId){inst=wpInstances[i];break;}}
+        if(!inst) return;
+        currentWpInstance=inst;
+
+        var overlay=document.getElementById("bwpDetailOverlay");
+        if(!overlay) return;
+        overlay.style.display="flex";
+
+        document.getElementById("bwpDetailTitle").textContent=inst.displayTitle||inst.site_url||inst.domain;
+
+        overlay.querySelectorAll(".bwp-tab").forEach(function(t,i){t.classList.toggle("active",i===0);});
+        overlay.querySelectorAll(".bwp-tab-content").forEach(function(c,i){c.classList.toggle("active",i===0);});
+
+        // Build overview
+        var ov=document.getElementById("bwpTabOverview");
+        var updateInfo=inst.availableUpdate?"<div class=\"bwp-msg info\">WordPress "+bwpEsc(inst.availableUpdate)+" is available. <button class=\"bwp-item-btn update\" onclick=\"bwpUpdateCore()\">Update Core</button></div>":"";
+        ov.innerHTML=updateInfo
+            +"<div class=\"bwp-overview-grid\">"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">URL</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.site_url)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.version)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.path)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Owner</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.owner)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">SSL</p><p class=\"bwp-stat-value\">"+(inst.ssl?"Enabled &#128274;":"Disabled")+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Status</p><p class=\"bwp-stat-value\">"+(inst.alive?"Online":"Offline")+(inst.infected?" &#9888; Infected":"")+"</p></div>"
+            +"</div>"
+            +"<div class=\"bwp-quick-actions\">"
+            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\">WP Admin Login</button>"
+            +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+bwpEsc(inst.site_url)+"\\x27,\\x27_blank\\x27)\">Visit Site</button>"
+            +"</div>";
+
+        document.getElementById("bwpTabPlugins").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
+        document.getElementById("bwpTabThemes").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
+        document.getElementById("bwpTabSecurity").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
+    }
+
+    window.bwpDoLogin=function(){if(currentWpInstance) bwpAutoLogin(currentWpInstance.id);};
+
+    window.bwpUpdateCore=function(){
+        if(!currentWpInstance) return;
+        bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"core"},function(r){
+            alert(r.message||(r.success?"Core updated":"Update failed"));
+            if(r.success) bwpLoadInstances();
+        });
+    };
+
+    function bwpLoadPlugins(){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabPlugins");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
+
+        bwpAjax({action:"wp_list_plugins",instance_id:currentWpInstance.id},function(r){
+            if(r.success&&r.plugins){
+                if(r.plugins.length===0){container.innerHTML="<div class=\"bwp-empty\"><span>No plugins found</span></div>";return;}
+                var html="";
+                r.plugins.forEach(function(p){
+                    var isActive=p.active===true||p.active==="true";
+                    var statusClass=isActive?"active":"inactive";
+                    var hasUpdate=!!p.availableVersion;
+                    html+="<div class=\"bwp-item-row\">"
+                        +"<div class=\"bwp-item-icon plugin\">&#128268;</div>"
+                        +"<div class=\"bwp-item-info\">"
+                        +"<p class=\"bwp-item-name\">"+bwpEsc(p.title||p.slug)+" <span class=\"bwp-status-badge "+statusClass+"\">"+(isActive?"Active":"Inactive")+"</span>"
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
+                        +"</p>"
+                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(p.version)+(hasUpdate?" &rarr; "+bwpEsc(p.availableVersion):"")+" &middot; "+bwpEsc(p.slug)+"</p>"
+                        +"</div>"
+                        +"<div class=\"bwp-item-actions\">"
+                        +"<button class=\"bwp-item-btn "+(isActive?"active":"inactive")+"-state\" data-slug=\""+bwpEsc(p.slug)+"\" data-activate=\""+(isActive?"0":"1")+"\" onclick=\"bwpTogglePlugin(this)\">"+(isActive?"Deactivate":"Activate")+"</button>"
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(p.slug)+"\" onclick=\"bwpUpdatePlugin(this)\">Update</button>":"")
+                        +"</div></div>";
+                });
+                container.innerHTML=html;
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load plugins.")+"</div>";
+            }
+        });
+    }
+
+    window.bwpTogglePlugin=function(btn){
+        if(!currentWpInstance) return;
+        var slug=btn.getAttribute("data-slug"),activate=btn.getAttribute("data-activate");
+        btn.disabled=true;btn.textContent="...";
+        bwpAjax({action:"wp_toggle_plugin",instance_id:currentWpInstance.id,slug:slug,activate:activate},function(r){
+            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent=activate==="1"?"Activate":"Deactivate";}
+        });
+    };
+    window.bwpUpdatePlugin=function(btn){
+        if(!currentWpInstance) return;
+        var slug=btn.getAttribute("data-slug");
+        btn.disabled=true;btn.textContent="Updating...";
+        bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins",slug:slug},function(r){
+            if(r.success){bwpLoadPlugins();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Update";}
+        });
+    };
+
+    function bwpLoadThemes(){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabThemes");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
+
+        bwpAjax({action:"wp_list_themes",instance_id:currentWpInstance.id},function(r){
+            if(r.success&&r.themes){
+                if(r.themes.length===0){container.innerHTML="<div class=\"bwp-empty\"><span>No themes found</span></div>";return;}
+                var html="";
+                r.themes.forEach(function(t){
+                    var isActive=t.active===true||t.active==="true";
+                    var hasUpdate=!!t.availableVersion;
+                    html+="<div class=\"bwp-item-row\">"
+                        +"<div class=\"bwp-item-icon theme\">&#127912;</div>"
+                        +"<div class=\"bwp-item-info\">"
+                        +"<p class=\"bwp-item-name\">"+bwpEsc(t.title||t.slug)+" <span class=\"bwp-status-badge "+(isActive?"active":"inactive")+"\">"+(isActive?"Active":"Inactive")+"</span>"
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
+                        +"</p>"
+                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(t.version)+(hasUpdate?" &rarr; "+bwpEsc(t.availableVersion):"")+" &middot; "+bwpEsc(t.slug)+"</p>"
+                        +"</div>"
+                        +"<div class=\"bwp-item-actions\">"
+                        +(!isActive?"<button class=\"bwp-item-btn active-state\" data-slug=\""+bwpEsc(t.slug)+"\" onclick=\"bwpActivateTheme(this)\">Activate</button>":"")
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" data-slug=\""+bwpEsc(t.slug)+"\" onclick=\"bwpUpdateTheme(this)\">Update</button>":"")
+                        +"</div></div>";
+                });
+                container.innerHTML=html;
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load themes.")+"</div>";
+            }
+        });
+    }
+
+    window.bwpActivateTheme=function(btn){
+        if(!currentWpInstance) return;
+        var slug=btn.getAttribute("data-slug");
+        btn.disabled=true;btn.textContent="...";
+        bwpAjax({action:"wp_toggle_theme",instance_id:currentWpInstance.id,slug:slug},function(r){
+            if(r.success){bwpLoadThemes();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Activate";}
+        });
+    };
+    window.bwpUpdateTheme=function(btn){
+        if(!currentWpInstance) return;
+        var slug=btn.getAttribute("data-slug");
+        btn.disabled=true;btn.textContent="Updating...";
+        bwpAjax({action:"wp_update",instance_id:currentWpInstance.id,type:"themes",slug:slug},function(r){
+            if(r.success){bwpLoadThemes();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Update";}
+        });
+    };
+
+    function bwpLoadSecurity(){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabSecurity");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
+
+        bwpAjax({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
+            if(r.success&&r.security){
+                if(!Array.isArray(r.security)||r.security.length===0){
+                    container.innerHTML="<div class=\"bwp-empty\"><span>No security measures data available</span></div>";
+                    return;
+                }
+                var html="";
+                r.security.forEach(function(item){
+                    var status=item.status||"unknown";
+                    var iconClass="warning";
+                    var icon="&#9888;";
+                    if(status==="applied"||status==="ok"||status==="success"){iconClass="ok";icon="&#10003;";}
+                    else if(status==="error"||status==="danger"||status==="failed"){iconClass="danger";icon="&#10007;";}
+                    var measureId=item.id||item.measureId||"";
+                    var canApply=status!=="applied"&&status!=="ok"&&measureId;
+                    var canRevert=status==="applied"&&measureId;
+                    html+="<div class=\"bwp-security-item\">"
+                        +"<div class=\"bwp-sec-icon "+iconClass+"\">"+icon+"</div>"
+                        +"<div class=\"bwp-sec-info\">"
+                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.title||item.id||"Security Check")+"</p>"
+                        +"<p class=\"bwp-sec-detail\">"+bwpEsc(item.description||item.detail||"")+"</p>"
+                        +"</div>"
+                        +"<div class=\"bwp-item-actions\">"
+                        +(canApply?"<button class=\"bwp-item-btn update\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityApply(this)\">Apply Fix</button>":"")
+                        +(canRevert?"<button class=\"bwp-item-btn\" data-measure=\""+bwpEsc(measureId)+"\" onclick=\"bwpSecurityRevert(this)\">Revert</button>":"")
+                        +"<span class=\"bwp-sec-value "+iconClass+"\">"+bwpEsc(status)+"</span>"
+                        +"</div></div>";
+                });
+                container.innerHTML=html;
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Security scan failed.")+"</div>";
+            }
+        });
+    }
+
+    window.bwpSecurityApply=function(btn){
+        if(!currentWpInstance) return;
+        var measureId=btn.getAttribute("data-measure");
+        btn.disabled=true;btn.textContent="Applying...";
+        bwpAjax({action:"wp_security_apply",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
+            if(r.success){bwpLoadSecurity();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Apply Fix";}
+        });
+    };
+    window.bwpSecurityRevert=function(btn){
+        if(!currentWpInstance) return;
+        var measureId=btn.getAttribute("data-measure");
+        btn.disabled=true;btn.textContent="Reverting...";
+        bwpAjax({action:"wp_security_revert",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
+            if(r.success){bwpLoadSecurity();}else{alert(r.message||"Failed");btn.disabled=false;btn.textContent="Revert";}
+        });
+    };
+
     // Initialize WP toolkit after main init
     var origInit=broodleInit;
     broodleInit=function(){origInit();bwpInit();};
@@ -1023,6 +1386,219 @@ function broodle_tools_shared_script()
     else{setTimeout(broodleInit,150);}
 })();
 </script>';
+}
+
+/* ─── Domain Management Tab Builder ───────────────────────── */
+
+function broodle_tools_get_domains_detailed($serviceId)
+{
+    $data = broodle_tools_get_cpanel_service($serviceId);
+    if (!$data) return ['main' => '', 'addon' => [], 'sub' => [], 'parked' => []];
+    $server = $data['server'];
+    $service = $data['service'];
+    $username = $service->username;
+    if (empty($username)) return ['main' => $service->domain ?? '', 'addon' => [], 'sub' => [], 'parked' => []];
+
+    $hostname = $server->hostname;
+    $port = !empty($server->port) ? (int) $server->port : 2087;
+    $serverUser = $server->username;
+    $secure = !empty($server->secure) && ($server->secure === 'on' || $server->secure === '1' || $server->secure === 1);
+    $protocol = $secure ? 'https' : 'http';
+
+    $accessHash = '';
+    $password = '';
+    if (!empty($server->accesshash)) {
+        $raw = trim($server->accesshash);
+        if (preg_match('/^[A-Za-z0-9]{10,64}$/', $raw)) {
+            $accessHash = $raw;
+        } else {
+            $accessHash = trim(decrypt($raw));
+            if (empty($accessHash) || !preg_match('/^[A-Za-z0-9]{10,64}$/', $accessHash)) {
+                $accessHash = '';
+            }
+        }
+    }
+    if (empty($accessHash) && !empty($server->password)) {
+        $password = trim(decrypt($server->password));
+    }
+    if (empty($accessHash) && empty($password)) return ['main' => $service->domain ?? '', 'addon' => [], 'sub' => [], 'parked' => []];
+
+    $headers = [];
+    if (!empty($accessHash)) {
+        $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
+    }
+
+    $result = ['main' => '', 'addon' => [], 'sub' => [], 'parked' => []];
+
+    // DomainInfo::list_domains
+    $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+         . "?cpanel_jsonapi_user=" . urlencode($username)
+         . "&cpanel_jsonapi_apiversion=3"
+         . "&cpanel_jsonapi_module=DomainInfo"
+         . "&cpanel_jsonapi_func=list_domains";
+    $r = broodle_tools_whm_get($url, $headers, $serverUser, $password);
+    if ($r) {
+        $d = $r['result']['data'] ?? [];
+        $result['main'] = $d['main_domain'] ?? ($service->domain ?? '');
+        $result['addon'] = $d['addon_domains'] ?? [];
+        $result['parked'] = $d['parked_domains'] ?? [];
+        // Filter subdomains: exclude system-generated ones for addon domains
+        $subs = $d['sub_domains'] ?? [];
+        $addonSet = array_map('strtolower', $result['addon']);
+        $mainDomain = strtolower($result['main']);
+        $filtered = [];
+        foreach ($subs as $sd) {
+            $sdLower = strtolower($sd);
+            // Skip subdomains that are just addon_domain.main_domain
+            $isAddonSub = false;
+            foreach ($addonSet as $ad) {
+                if ($sdLower === str_replace('.', '.', strtolower($ad)) . '.' . $mainDomain) {
+                    $isAddonSub = true;
+                    break;
+                }
+            }
+            if (!$isAddonSub) {
+                $filtered[] = $sd;
+            }
+        }
+        $result['sub'] = $filtered;
+    }
+
+    return $result;
+}
+
+function broodle_tools_build_domain_output($serviceId, $cpData)
+{
+    $domains = broodle_tools_get_domains_detailed($serviceId);
+    $mainDomain = $domains['main'];
+    $addonDomains = $domains['addon'];
+    $subDomains = $domains['sub'];
+    $parkedDomains = $domains['parked'];
+    $totalCount = 1 + count($addonDomains) + count($subDomains) + count($parkedDomains);
+
+    $rows = '';
+
+    // Main domain
+    if (!empty($mainDomain)) {
+        $e = htmlspecialchars($mainDomain);
+        $rows .= '<div class="bdm-row" data-domain="' . $e . '" data-type="main">'
+            . '<div class="bdm-icon main"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div>'
+            . '<div class="bdm-info"><span class="bdm-name">' . $e . '</span><span class="bdm-badge bdm-badge-main">Primary</span></div>'
+            . '<div class="bdm-actions"><a href="https://' . $e . '" target="_blank" class="bdm-btn bdm-btn-visit" title="Visit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Visit</span></a></div>'
+            . '</div>';
+    }
+
+    // Addon domains
+    foreach ($addonDomains as $d) {
+        $e = htmlspecialchars($d);
+        $rows .= '<div class="bdm-row" data-domain="' . $e . '" data-type="addon">'
+            . '<div class="bdm-icon addon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>'
+            . '<div class="bdm-info"><span class="bdm-name">' . $e . '</span><span class="bdm-badge bdm-badge-addon">Addon</span></div>'
+            . '<div class="bdm-actions">'
+            . '<a href="https://' . $e . '" target="_blank" class="bdm-btn bdm-btn-visit" title="Visit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Visit</span></a>'
+            . '<button type="button" class="bdm-btn bdm-btn-del" data-domain="' . $e . '" data-type="addon" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>'
+            . '</div></div>';
+    }
+
+    // Subdomains
+    foreach ($subDomains as $d) {
+        $e = htmlspecialchars($d);
+        $rows .= '<div class="bdm-row" data-domain="' . $e . '" data-type="sub">'
+            . '<div class="bdm-icon sub"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg></div>'
+            . '<div class="bdm-info"><span class="bdm-name">' . $e . '</span><span class="bdm-badge bdm-badge-sub">Subdomain</span></div>'
+            . '<div class="bdm-actions">'
+            . '<a href="https://' . $e . '" target="_blank" class="bdm-btn bdm-btn-visit" title="Visit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Visit</span></a>'
+            . '<button type="button" class="bdm-btn bdm-btn-del" data-domain="' . $e . '" data-type="sub" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>'
+            . '</div></div>';
+    }
+
+    // Parked domains
+    foreach ($parkedDomains as $d) {
+        $e = htmlspecialchars($d);
+        $rows .= '<div class="bdm-row" data-domain="' . $e . '" data-type="parked">'
+            . '<div class="bdm-icon parked"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>'
+            . '<div class="bdm-info"><span class="bdm-name">' . $e . '</span><span class="bdm-badge bdm-badge-parked">Alias</span></div>'
+            . '<div class="bdm-actions">'
+            . '<a href="https://' . $e . '" target="_blank" class="bdm-btn bdm-btn-visit" title="Visit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Visit</span></a>'
+            . '<button type="button" class="bdm-btn bdm-btn-del" data-domain="' . $e . '" data-type="parked" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>'
+            . '</div></div>';
+    }
+
+    if (empty($rows)) {
+        $rows = '<div class="bdm-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg><span>No domains found</span></div>';
+    }
+
+    return '
+<div id="broodle-domain-source" style="display:none" data-service-id="' . (int) $serviceId . '">
+  <div class="bns-card" style="margin-top:20px">
+    <div class="bns-card-head">
+      <div class="bns-card-head-left">
+        <div class="bns-icon-circle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>
+        </div>
+        <div>
+          <h5>Domains</h5>
+          <p class="bdm-count">' . $totalCount . ' domain' . ($totalCount !== 1 ? 's' : '') . '</p>
+        </div>
+      </div>
+      <div class="bdm-head-btns">
+        <button type="button" class="bem-create-btn bdm-add-btn" id="bdmAddAddonBtn" title="Add Addon Domain">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Domain
+        </button>
+        <button type="button" class="bdm-sub-btn" id="bdmAddSubBtn" title="Add Subdomain">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+          Add Subdomain
+        </button>
+      </div>
+    </div>
+    <div class="bns-list bdm-list">' . $rows . '</div>
+  </div>
+</div>
+' . broodle_tools_domain_modals();
+}
+
+function broodle_tools_domain_modals()
+{
+    return '
+<!-- Add Addon Domain Modal -->
+<div class="bem-overlay" id="bdmAddonModal" style="display:none">
+  <div class="bem-modal">
+    <div class="bem-modal-head"><h5>Add Addon Domain</h5><button type="button" class="bem-modal-close" data-close>&times;</button></div>
+    <div class="bem-modal-body">
+      <div class="bem-field"><label>Domain Name</label><input type="text" id="bdmAddonDomain" placeholder="example.com" autocomplete="off"></div>
+      <div class="bem-field"><label>Document Root</label><div class="bdm-docroot-wrap"><span class="bdm-docroot-prefix">/home/user/</span><input type="text" id="bdmAddonDocroot" placeholder="example.com"></div></div>
+      <div class="bem-modal-msg" id="bdmAddonMsg"></div>
+    </div>
+    <div class="bem-modal-foot"><button type="button" class="bem-mbtn bem-mbtn-cancel" data-close>Cancel</button><button type="button" class="bem-mbtn bem-mbtn-primary" id="bdmAddonSubmit">Add Domain</button></div>
+  </div>
+</div>
+<!-- Add Subdomain Modal -->
+<div class="bem-overlay" id="bdmSubModal" style="display:none">
+  <div class="bem-modal">
+    <div class="bem-modal-head"><h5>Add Subdomain</h5><button type="button" class="bem-modal-close" data-close>&times;</button></div>
+    <div class="bem-modal-body">
+      <div class="bem-field"><label>Subdomain</label><div class="bem-input-group"><input type="text" id="bdmSubName" placeholder="blog" autocomplete="off"><span class="bem-at">.</span><select id="bdmSubParent"><option>Loading...</option></select></div></div>
+      <div class="bem-field"><label>Document Root</label><div class="bdm-docroot-wrap"><span class="bdm-docroot-prefix">/home/user/</span><input type="text" id="bdmSubDocroot" placeholder="blog.example.com"></div></div>
+      <div class="bem-modal-msg" id="bdmSubMsg"></div>
+    </div>
+    <div class="bem-modal-foot"><button type="button" class="bem-mbtn bem-mbtn-cancel" data-close>Cancel</button><button type="button" class="bem-mbtn bem-mbtn-primary" id="bdmSubSubmit">Add Subdomain</button></div>
+  </div>
+</div>
+<!-- Delete Domain Confirmation Modal -->
+<div class="bem-overlay" id="bdmDelModal" style="display:none">
+  <div class="bem-modal bem-modal-sm">
+    <div class="bem-modal-head"><h5>Delete Domain</h5><button type="button" class="bem-modal-close" data-close>&times;</button></div>
+    <div class="bem-modal-body" style="text-align:center">
+      <div style="margin:8px 0 16px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="margin:0 auto;display:block"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      <p style="margin:0 0 4px;font-size:14px;color:var(--heading-color,#111827)">Are you sure you want to delete</p>
+      <p style="margin:0;font-size:15px;font-weight:600;color:#ef4444" id="bdmDelDomain"></p>
+      <p style="margin:8px 0 0;font-size:12px;color:var(--text-muted,#9ca3af)">This will remove the domain and its files from the server.</p>
+      <div class="bem-modal-msg" id="bdmDelMsg"></div>
+    </div>
+    <div class="bem-modal-foot"><button type="button" class="bem-mbtn bem-mbtn-cancel" data-close>Cancel</button><button type="button" class="bem-mbtn bem-mbtn-danger" id="bdmDelSubmit">Delete</button></div>
+  </div>
+</div>';
 }
 
 /* ─── WordPress Toolkit Output Builder ────────────────────── */
@@ -1043,9 +1619,9 @@ function broodle_tools_build_wp_output($serviceId)
         </div>
       </div>
       <div class="bwp-head-actions">
-        <button type="button" class="bwp-scan-btn" id="bwpScanBtn" title="Scan for new installations">
+        <button type="button" class="bwp-scan-btn" id="bwpScanBtn" title="Refresh installations list">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-          Scan
+          Refresh
         </button>
       </div>
     </div>
@@ -1058,7 +1634,7 @@ function broodle_tools_build_wp_output($serviceId)
       <div class="bwp-empty" id="bwpEmpty" style="display:none">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
         <span>No WordPress installations found</span>
-        <button type="button" class="bwp-scan-btn" onclick="bwpScan()">Scan for Installations</button>
+        <button type="button" class="bwp-scan-btn" onclick="bwpRefresh()">Refresh</button>
       </div>
     </div>
   </div>

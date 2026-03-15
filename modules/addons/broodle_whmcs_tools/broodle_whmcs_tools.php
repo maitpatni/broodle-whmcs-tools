@@ -56,6 +56,7 @@ function broodle_whmcs_tools_activate()
             'tweak_nameservers_tab' => '1',
             'tweak_email_list'      => '1',
             'tweak_wordpress_toolkit' => '0',
+            'tweak_domain_management' => '1',
             'auto_update_enabled'   => '0',
         ];
 
@@ -106,6 +107,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_nameservers_tab',
             'tweak_email_list',
             'tweak_wordpress_toolkit',
+            'tweak_domain_management',
             'auto_update_enabled',
         ];
 
@@ -164,6 +166,7 @@ function broodle_tools_render_admin($vars, $settings)
     $nameserversEnabled = !empty($settings['tweak_nameservers_tab']) && $settings['tweak_nameservers_tab'] === '1';
     $emailListEnabled = !empty($settings['tweak_email_list']) && $settings['tweak_email_list'] === '1';
     $wpToolkitEnabled = !empty($settings['tweak_wordpress_toolkit']) && $settings['tweak_wordpress_toolkit'] === '1';
+    $domainMgmtEnabled = !empty($settings['tweak_domain_management']) && $settings['tweak_domain_management'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -274,6 +277,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_wordpress_toolkit" value="1" ' . ($wpToolkitEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Domain Management</h4>
+                            <p>Show a Domains tab on cPanel product details with addon domains, subdomains, and management options.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_domain_management" value="1" ' . ($domainMgmtEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>
