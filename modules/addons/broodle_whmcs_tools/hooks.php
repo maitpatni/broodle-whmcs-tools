@@ -395,6 +395,17 @@ function broodle_tools_css_cards()
 .bt-btn-add:hover{background:#0950b3}
 .bt-btn-outline{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
 .bt-btn-outline:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}
+.bt-accordion{margin-top:20px;border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--card-bg,#fff)}
+.bt-accordion-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .12s}
+.bt-accordion-head:hover{background:var(--input-bg,#f9fafb)}
+.bt-accordion-icon{width:36px;height:36px;border-radius:10px;background:#0a5ed3;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.bt-accordion-info{flex:1;min-width:0}
+.bt-accordion-info h5{margin:0;font-size:14px;font-weight:600;color:var(--heading-color,#111827)}
+.bt-accordion-info p{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
+.bt-accordion-arrow{width:20px;height:20px;color:var(--text-muted,#9ca3af);transition:transform .25s ease;flex-shrink:0}
+.bt-accordion.open .bt-accordion-arrow{transform:rotate(180deg)}
+.bt-accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.bt-accordion.open .bt-accordion-body{max-height:800px}
 .bt-addons-section{margin-top:20px}
 .bt-addon-wrap{position:relative;padding:0 36px 6px}
 .bt-addon-scroll{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0;cursor:grab;user-select:none}
@@ -587,6 +598,8 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-addon-item:hover,.dark-mode .bt-addon-item:hover{background:var(--input-bg,#111827)}
 [data-theme="dark"] .bt-addon-btn,.dark-mode .bt-addon-btn{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bt-addon-nav,.dark-mode .bt-addon-nav{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-accordion,.dark-mode .bt-accordion{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-accordion-head:hover,.dark-mode .bt-accordion-head:hover{background:var(--input-bg,#111827)}
 [data-theme="dark"] .bt-addon-tooltip,.dark-mode .bt-addon-tooltip{background:#111827;color:#e5e7eb}
 [data-theme="dark"] .bt-addon-tooltip::after,.dark-mode .bt-addon-tooltip::after{border-top-color:#111827}
 [data-theme="dark"] .bt-btn-outline,.dark-mode .bt-btn-outline{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}
@@ -827,9 +840,10 @@ function buildOverviewPane(){
         html+="</div>";
     }
 
-    // Nameservers
+    // Nameservers (accordion, closed by default)
     if(C.nsEnabled&&C.ns&&C.ns.ns&&C.ns.ns.length){
-        html+="<div class=\"bt-ns-section\"><div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z\"/></svg></div><div><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div></div></div><div class=\"bt-list\">";
+        var nsCount=C.ns.ns.length+(C.ns.ip?1:0);
+        html+="<div class=\"bt-accordion\" id=\"btAccNs\"><div class=\"bt-accordion-head\" onclick=\"this.parentElement.classList.toggle(\\x27open\\x27)\"><div class=\"bt-accordion-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z\"/></svg></div><div class=\"bt-accordion-info\"><h5>Nameservers</h5><p>"+nsCount+" record"+(nsCount!==1?"s":"")+" · Point your domain to these nameservers</p></div><svg class=\"bt-accordion-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"6 9 12 15 18 9\"/></svg></div><div class=\"bt-accordion-body\"><div class=\"bt-list\" style=\"padding:4px 10px 10px\">";
         C.ns.ns.forEach(function(ns,i){
             html+="<div class=\"bt-row\"><div class=\"bt-row-icon ns\">NS"+(i+1)+"</div><div class=\"bt-row-info\"><span class=\"bt-row-name mono\">"+esc(ns)+"</span></div><button type=\"button\" class=\"bt-copy\" data-copy=\""+esc(ns)+"\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\" ry=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/></svg></button></div>";
         });
@@ -877,7 +891,7 @@ function buildOverviewPane(){
     if(allItems.length){
         var perPage=window.innerWidth<=600?4:4;
         var pages=[];for(var pi=0;pi<allItems.length;pi+=perPage){pages.push(allItems.slice(pi,pi+perPage));}
-        html+="<div class=\"bt-addons-section\"><div class=\"bt-card\"><div class=\"bt-card-head\"><div class=\"bt-card-head-left\"><div class=\"bt-icon-circle\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"/></svg></div><div><h5>Addons &amp; Upgrades</h5><p>"+allItems.length+" available</p></div></div></div><div class=\"bt-addon-wrap\"><button type=\"button\" class=\"bt-addon-nav prev"+(pages.length<=1?" hidden":"")+"\" id=\"btAddonPrev\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"15 18 9 12 15 6\"/></svg></button><button type=\"button\" class=\"bt-addon-nav next"+(pages.length<=1?" hidden":"")+"\" id=\"btAddonNext\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"9 18 15 12 9 6\"/></svg></button><div class=\"bt-addon-scroll\" id=\"btAddonScroll\">";
+        html+="<div class=\"bt-accordion\" id=\"btAccAddons\"><div class=\"bt-accordion-head\" onclick=\"this.parentElement.classList.toggle(\\x27open\\x27)\"><div class=\"bt-accordion-icon\" style=\"background:rgba(124,58,237,1)\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"/></svg></div><div class=\"bt-accordion-info\"><h5>Addons &amp; Upgrades</h5><p>"+allItems.length+" available · Enhance your hosting</p></div><svg class=\"bt-accordion-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"6 9 12 15 18 9\"/></svg></div><div class=\"bt-accordion-body\"><div class=\"bt-addon-wrap\"><button type=\"button\" class=\"bt-addon-nav prev"+(pages.length<=1?" hidden":"")+"\" id=\"btAddonPrev\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"15 18 9 12 15 6\"/></svg></button><button type=\"button\" class=\"bt-addon-nav next"+(pages.length<=1?" hidden":"")+"\" id=\"btAddonNext\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"9 18 15 12 9 6\"/></svg></button><div class=\"bt-addon-scroll\" id=\"btAddonScroll\">";
         pages.forEach(function(page){
             html+="<div class=\"bt-addon-page\">";
             page.forEach(function(item){
