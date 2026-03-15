@@ -298,7 +298,7 @@ function broodle_tools_wp_detail_modal()
 
 function broodle_tools_shared_styles()
 {
-    return broodle_tools_css_hide() . broodle_tools_css_tabs() . broodle_tools_css_overview() . broodle_tools_css_cards() . broodle_tools_css_modals() . broodle_tools_css_wp() . broodle_tools_css_dark() . broodle_tools_css_responsive();
+    return broodle_tools_css_hide() . broodle_tools_css_tabs() . broodle_tools_css_overview() . broodle_tools_css_cards() . broodle_tools_css_modals() . broodle_tools_css_wp() . broodle_tools_css_dns() . broodle_tools_css_dark() . broodle_tools_css_responsive();
 }
 
 function broodle_tools_css_hide()
@@ -624,6 +624,21 @@ function broodle_tools_css_wp()
 </style>';
 }
 
+function broodle_tools_css_dns()
+{
+    return '<style>
+.bt-dns-toolbar{border-bottom:1px solid var(--border-color,#f3f4f6)}
+.bt-dns-filter-bar{border-bottom:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#fafbfc)}
+.bt-dns-record-row{gap:10px;align-items:flex-start;padding:10px 14px}
+.bt-dns-record-row .bt-row-info{gap:2px}
+.bt-dns-record-row .bt-row-actions{margin-top:2px}
+.bt-dns-domain-row:hover{background:var(--input-bg,#f5f7fa)}
+.bt-dns-filter-btn:hover{border-color:#0a5ed3!important;color:#0a5ed3!important}
+#btDnsAddFields textarea,#btDnsEditFields textarea{outline:none;transition:border-color .15s}
+#btDnsAddFields textarea:focus,#btDnsEditFields textarea:focus{border-color:#0a5ed3;box-shadow:0 0 0 3px rgba(10,94,211,.1)}
+</style>';
+}
+
 function broodle_tools_css_dark()
 {
     // Use D as shorthand for the two dark mode selectors Lagom uses
@@ -859,6 +874,15 @@ function broodle_tools_css_dark()
 [data-theme="dark"] .bt-ssl-generate,.dark-mode .bt-ssl-generate{color:#34d399!important;border-color:#34d399!important}
 [data-theme="dark"] .bt-ssl-generate:hover,.dark-mode .bt-ssl-generate:hover{background:rgba(52,211,153,.08)!important}
 [data-theme="dark"] #btSslRunAutossl,.dark-mode #btSslRunAutossl{background:#059669}
+
+/* --- DNS Manager dark mode --- */
+[data-theme="dark"] .bt-dns-toolbar,.dark-mode .bt-dns-toolbar{border-bottom-color:var(--border-color,#374151)}
+[data-theme="dark"] .bt-dns-filter-bar,.dark-mode .bt-dns-filter-bar{border-bottom-color:var(--border-color,#374151);background:var(--input-bg,#111827)}
+[data-theme="dark"] .bt-dns-filter-btn,.dark-mode .bt-dns-filter-btn{background:var(--card-bg,#1f2937)!important;border-color:var(--border-color,#374151)!important;color:var(--heading-color,#d1d5db)!important}
+[data-theme="dark"] .bt-dns-filter-btn.active,.dark-mode .bt-dns-filter-btn.active{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
+[data-theme="dark"] .bt-dns-filter-btn:hover,.dark-mode .bt-dns-filter-btn:hover{border-color:#5b9cf6!important;color:#5b9cf6!important}
+[data-theme="dark"] .bt-dns-domain-row:hover,.dark-mode .bt-dns-domain-row:hover{background:var(--input-bg,#111827)}
+[data-theme="dark"] #btDnsAddFields textarea,.dark-mode #btDnsAddFields textarea,[data-theme="dark"] #btDnsEditFields textarea,.dark-mode #btDnsEditFields textarea{background:var(--input-bg,#111827);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb)}
 
 /* Sidebar Actions dark mode */
 [data-theme="dark"] .panel-actions .list-group-tab-nav .list-group-item,.dark-mode .panel-actions .list-group-tab-nav .list-group-item{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151);color:var(--heading-color,#e5e7eb);box-shadow:0 1px 3px rgba(0,0,0,.15)}
@@ -1910,6 +1934,340 @@ function openDelDomainModal(domain,type){
             }
         });
     };
+}
+
+/* ─── DNS Manager Pane ─── */
+var dnsCurrentDomain="";
+var dnsRecords=[];
+var dnsSelectedLines={};
+var dnsActiveFilter="ALL";
+
+function buildDnsPane(){
+    var pane=$("bt-pane-dns");if(!pane) return;
+    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div><h5>DNS Manager</h5><p id="bt-dns-subtitle">Select a domain to manage DNS records</p></div></div></div><div id="bt-dns-body"><div id="bt-dns-domain-list" class="bt-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading domains...</span></div></div><div id="bt-dns-records-view" style="display:none"><div class="bt-dns-toolbar" id="bt-dns-toolbar"></div><div class="bt-dns-filter-bar" id="bt-dns-filter-bar"></div><div class="bt-list" id="bt-dns-records-list"></div></div></div></div>';
+}
+
+function loadDnsDomains(){
+    var list=$("bt-dns-domain-list");if(!list) return;
+    list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading domains...</span></div>';
+    post({action:"dns_list_domains"},function(r){
+        if(!r.success||!r.domains||!r.domains.length){
+            list.innerHTML='<div class="bt-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>No domains found</span></div>';
+            return;
+        }
+        var html="";
+        var typeIcons={main:"main",addon:"addon",sub:"sub",parked:"parked"};
+        var typeBadges={main:"bt-badge-primary",addon:"bt-badge-green",sub:"bt-badge-purple",parked:"bt-badge-amber"};
+        r.domains.forEach(function(d){
+            html+='<div class="bt-row bt-dns-domain-row" data-domain="'+esc(d.domain)+'" style="cursor:pointer">'
+                +'<div class="bt-row-icon '+(typeIcons[d.type]||"main")+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div>'
+                +'<div class="bt-row-info"><span class="bt-row-name">'+esc(d.domain)+'</span><span class="bt-row-badge '+(typeBadges[d.type]||"bt-badge-primary")+'">'+esc(d.type)+'</span></div>'
+                +'<div class="bt-row-actions"><span style="color:var(--text-muted,#9ca3af)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span></div>'
+                +'</div>';
+        });
+        list.innerHTML=html;
+        list.querySelectorAll(".bt-dns-domain-row").forEach(function(row){
+            row.addEventListener("click",function(){
+                var domain=this.getAttribute("data-domain");
+                dnsCurrentDomain=domain;
+                $("bt-dns-domain-list").style.display="none";
+                $("bt-dns-records-view").style.display="block";
+                $("bt-dns-subtitle").textContent=domain;
+                loadDnsRecords(domain);
+            });
+        });
+    });
+}
+
+function loadDnsRecords(domain){
+    var list=$("bt-dns-records-list");if(!list) return;
+    list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading DNS records...</span></div>';
+    dnsSelectedLines={};
+    post({action:"dns_fetch_records",domain:domain},function(r){
+        if(!r.success){
+            list.innerHTML='<div class="bt-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>'+(r.message||"Failed to load records")+'</span></div>';
+            return;
+        }
+        dnsRecords=r.records||[];
+        renderDnsToolbar();
+        renderDnsFilterBar();
+        renderDnsRecords();
+    });
+}
+
+function renderDnsToolbar(){
+    var tb=$("bt-dns-toolbar");if(!tb) return;
+    tb.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:12px 14px;flex-wrap:wrap">'
+        +'<button type="button" class="bt-btn-outline bt-dns-back-btn" style="padding:6px 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Domains</button>'
+        +'<div style="flex:1"></div>'
+        +'<button type="button" class="bt-btn-outline bt-dns-bulk-del-btn" style="padding:6px 12px;display:none;color:#ef4444;border-color:#ef4444"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete Selected (<span class="bt-dns-sel-count">0</span>)</button>'
+        +'<button type="button" class="bt-btn-add bt-dns-add-btn" style="padding:7px 14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Record</button>'
+        +'</div>';
+    tb.querySelector(".bt-dns-back-btn").addEventListener("click",function(){
+        $("bt-dns-records-view").style.display="none";
+        $("bt-dns-domain-list").style.display="block";
+        $("bt-dns-subtitle").textContent="Select a domain to manage DNS records";
+        dnsCurrentDomain="";
+    });
+    tb.querySelector(".bt-dns-add-btn").addEventListener("click",function(){
+        openDnsAddModal();
+    });
+    tb.querySelector(".bt-dns-bulk-del-btn").addEventListener("click",function(){
+        dnsHandleBulkDelete();
+    });
+}
+
+function renderDnsFilterBar(){
+    var fb=$("bt-dns-filter-bar");if(!fb) return;
+    var types=["ALL"];
+    var typeCounts={ALL:0};
+    dnsRecords.forEach(function(r){
+        typeCounts.ALL++;
+        if(!typeCounts[r.type]) typeCounts[r.type]=0;
+        typeCounts[r.type]++;
+        if(types.indexOf(r.type)===-1) types.push(r.type);
+    });
+    // Sort types: ALL first, then SOA, NS, A, AAAA, CNAME, MX, TXT, SRV, CAA, rest
+    var order=["ALL","SOA","NS","A","AAAA","CNAME","MX","TXT","SRV","CAA"];
+    types.sort(function(a,b){
+        var ia=order.indexOf(a),ib=order.indexOf(b);
+        if(ia===-1) ia=99;if(ib===-1) ib=99;
+        return ia-ib;
+    });
+    var html='<div style="display:flex;gap:4px;padding:8px 14px;overflow-x:auto;flex-wrap:wrap">';
+    types.forEach(function(t){
+        var active=t===dnsActiveFilter?" active":"";
+        html+='<button type="button" class="bt-dns-filter-btn'+active+'" data-filter="'+t+'" style="padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:'+(active?"#0a5ed3":"var(--card-bg,#fff)")+';color:'+(active?"#fff":"var(--heading-color,#374151)")+';transition:all .15s;white-space:nowrap">'+t+' <span style="opacity:.6;font-size:11px">('+typeCounts[t]+')</span></button>';
+    });
+    html+='</div>';
+    fb.innerHTML=html;
+    fb.querySelectorAll(".bt-dns-filter-btn").forEach(function(btn){
+        btn.addEventListener("click",function(){
+            dnsActiveFilter=this.getAttribute("data-filter");
+            renderDnsFilterBar();
+            renderDnsRecords();
+        });
+    });
+}
+
+function dnsRecordValue(r){
+    switch(r.type){
+        case "A":case "AAAA": return r.address||"";
+        case "CNAME": return r.cname||"";
+        case "MX": return (r.preference||0)+" "+( r.exchange||"");
+        case "TXT": return r.txtdata||"";
+        case "NS": return r.nsdname||"";
+        case "SRV": return (r.priority||0)+" "+(r.weight||0)+" "+(r.port||0)+" "+(r.target||"");
+        case "CAA": return (r.flag||0)+" "+(r.tag||"")+" "+(r.value||"");
+        case "SOA": return (r.mname||"")+" "+(r.rname||"");
+        default: return "";
+    }
+}
+
+function dnsTypeColor(type){
+    var colors={A:"#0a5ed3",AAAA:"#7c3aed",CNAME:"#059669",MX:"#d97706",TXT:"#6366f1",NS:"#0891b2",SRV:"#be185d",CAA:"#dc2626",SOA:"#6b7280"};
+    return colors[type]||"#6b7280";
+}
+
+function renderDnsRecords(){
+    var list=$("bt-dns-records-list");if(!list) return;
+    var filtered=dnsActiveFilter==="ALL"?dnsRecords:dnsRecords.filter(function(r){return r.type===dnsActiveFilter;});
+    if(!filtered.length){
+        list.innerHTML='<div class="bt-empty"><span>No '+dnsActiveFilter+' records found</span></div>';
+        return;
+    }
+    var html="";
+    filtered.forEach(function(r){
+        var val=dnsRecordValue(r);
+        var isEditable=["A","AAAA","CNAME","MX","TXT","SRV","CAA"].indexOf(r.type)!==-1;
+        var isDeletable=["A","AAAA","CNAME","MX","TXT","SRV","CAA"].indexOf(r.type)!==-1;
+        var checked=dnsSelectedLines[r.line]?" checked":"";
+        var color=dnsTypeColor(r.type);
+        html+='<div class="bt-row bt-dns-record-row" data-line="'+r.line+'">'
+            +(isDeletable?'<label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0"><input type="checkbox" class="bt-dns-check" data-line="'+r.line+'"'+checked+' style="width:16px;height:16px;accent-color:#0a5ed3;cursor:pointer"></label>':'<div style="width:16px"></div>')
+            +'<div style="min-width:56px;flex-shrink:0"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:'+color+'15;color:'+color+';letter-spacing:.3px">'+esc(r.type)+'</span></div>'
+            +'<div class="bt-row-info" style="flex-direction:column;align-items:flex-start;gap:2px;min-width:0">'
+            +'<span class="bt-row-name mono" style="font-size:13px">'+esc(r.name)+'</span>'
+            +'<span style="font-size:12px;color:var(--text-muted,#6b7280);word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis">'+esc(val)+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-muted,#9ca3af);white-space:nowrap;flex-shrink:0">TTL: '+r.ttl+'</div>'
+            +'<div class="bt-row-actions">'
+            +(isEditable?'<button type="button" class="bt-row-btn pass bt-dns-edit-btn" data-line="'+r.line+'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit</span></button>':'')
+            +(isDeletable?'<button type="button" class="bt-row-btn del bt-dns-del-btn" data-line="'+r.line+'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>':'')
+            +'</div></div>';
+    });
+    list.innerHTML=html;
+    // Bind checkboxes
+    list.querySelectorAll(".bt-dns-check").forEach(function(cb){
+        cb.addEventListener("change",function(){
+            var line=parseInt(this.getAttribute("data-line"));
+            if(this.checked) dnsSelectedLines[line]=true;
+            else delete dnsSelectedLines[line];
+            updateDnsBulkBtn();
+        });
+    });
+    // Bind edit buttons
+    list.querySelectorAll(".bt-dns-edit-btn").forEach(function(btn){
+        btn.addEventListener("click",function(){
+            var line=parseInt(this.getAttribute("data-line"));
+            var rec=dnsRecords.find(function(r){return r.line===line;});
+            if(rec) openDnsEditModal(rec);
+        });
+    });
+    // Bind delete buttons
+    list.querySelectorAll(".bt-dns-del-btn").forEach(function(btn){
+        btn.addEventListener("click",function(){
+            var line=parseInt(this.getAttribute("data-line"));
+            var rec=dnsRecords.find(function(r){return r.line===line;});
+            if(rec) openDnsDeleteConfirm(rec);
+        });
+    });
+}
+
+function updateDnsBulkBtn(){
+    var count=Object.keys(dnsSelectedLines).length;
+    var btn=document.querySelector(".bt-dns-bulk-del-btn");
+    if(!btn) return;
+    btn.style.display=count>0?"inline-flex":"none";
+    var span=btn.querySelector(".bt-dns-sel-count");
+    if(span) span.textContent=count;
+}
+
+function dnsHandleBulkDelete(){
+    var lines=Object.keys(dnsSelectedLines).map(Number);
+    if(!lines.length) return;
+    if(!confirm("Delete "+lines.length+" selected DNS record(s)? This cannot be undone.")) return;
+    var btn=document.querySelector(".bt-dns-bulk-del-btn");
+    if(btn) btn.disabled=true;
+    post({action:"dns_bulk_delete",domain:dnsCurrentDomain,lines:lines.join(",")},function(r){
+        if(btn) btn.disabled=false;
+        if(r.success||r.deleted>0){
+            dnsSelectedLines={};
+            loadDnsRecords(dnsCurrentDomain);
+        } else {
+            alert(r.message||"Failed to delete records");
+        }
+    });
+}
+
+function openDnsAddModal(){
+    var overlay=document.createElement("div");
+    overlay.className="bt-overlay";overlay.id="btDnsAddOverlay";
+    overlay.innerHTML='<div class="bt-modal" style="max-width:520px"><div class="bt-modal-head"><h5>Add DNS Record</h5><button type="button" class="bt-modal-close" data-dns-close>&times;</button></div><div class="bt-modal-body">'
+        +'<div class="bt-field"><label>Record Type</label><select id="btDnsAddType" class="bt-select"><option value="A">A</option><option value="AAAA">AAAA</option><option value="CNAME">CNAME</option><option value="MX">MX</option><option value="TXT">TXT</option><option value="SRV">SRV</option><option value="CAA">CAA</option></select></div>'
+        +'<div class="bt-field"><label>Name</label><input type="text" id="btDnsAddName" placeholder="subdomain.'+esc(dnsCurrentDomain)+'." autocomplete="off"></div>'
+        +'<div class="bt-field"><label>TTL</label><input type="number" id="btDnsAddTtl" value="14400" min="60"></div>'
+        +'<div id="btDnsAddFields"></div>'
+        +'<div class="bt-msg" id="btDnsAddMsg"></div>'
+        +'</div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-dns-close>Cancel</button><button type="button" class="bt-btn-primary" id="btDnsAddSubmit">Add Record</button></div></div>';
+    document.body.appendChild(overlay);
+    overlay.style.display="flex";
+    var typeSelect=$("btDnsAddType");
+    function updateFields(){dnsRenderTypeFields("btDnsAddFields",typeSelect.value,{});}
+    typeSelect.addEventListener("change",updateFields);
+    updateFields();
+    overlay.querySelector("[data-dns-close]").addEventListener("click",function(){overlay.remove();});
+    overlay.querySelectorAll("[data-dns-close]").forEach(function(b){b.addEventListener("click",function(){overlay.remove();});});
+    overlay.addEventListener("click",function(e){if(e.target===overlay) overlay.remove();});
+    $("btDnsAddSubmit").addEventListener("click",function(){
+        var data={action:"dns_add_record",domain:dnsCurrentDomain,type:typeSelect.value,name:$("btDnsAddName").value.trim(),ttl:$("btDnsAddTtl").value};
+        Object.assign(data,dnsCollectTypeFields("btDnsAddFields",typeSelect.value));
+        var msg=$("btDnsAddMsg");msg.style.display="none";
+        this.disabled=true;var btn=this;
+        post(data,function(r){
+            btn.disabled=false;
+            showMsg(msg,r.message||"Done",r.success);
+            if(r.success) setTimeout(function(){overlay.remove();loadDnsRecords(dnsCurrentDomain);},600);
+        });
+    });
+}
+
+function openDnsEditModal(rec){
+    var overlay=document.createElement("div");
+    overlay.className="bt-overlay";overlay.id="btDnsEditOverlay";
+    overlay.innerHTML='<div class="bt-modal" style="max-width:520px"><div class="bt-modal-head"><h5>Edit '+esc(rec.type)+' Record</h5><button type="button" class="bt-modal-close" data-dns-close>&times;</button></div><div class="bt-modal-body">'
+        +'<div class="bt-field"><label>Name</label><input type="text" id="btDnsEditName" value="'+esc(rec.name)+'" autocomplete="off"></div>'
+        +'<div class="bt-field"><label>TTL</label><input type="number" id="btDnsEditTtl" value="'+rec.ttl+'" min="60"></div>'
+        +'<div id="btDnsEditFields"></div>'
+        +'<div class="bt-msg" id="btDnsEditMsg"></div>'
+        +'</div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-dns-close>Cancel</button><button type="button" class="bt-btn-primary" id="btDnsEditSubmit">Save Changes</button></div></div>';
+    document.body.appendChild(overlay);
+    overlay.style.display="flex";
+    dnsRenderTypeFields("btDnsEditFields",rec.type,rec);
+    overlay.querySelector("[data-dns-close]").addEventListener("click",function(){overlay.remove();});
+    overlay.querySelectorAll("[data-dns-close]").forEach(function(b){b.addEventListener("click",function(){overlay.remove();});});
+    overlay.addEventListener("click",function(e){if(e.target===overlay) overlay.remove();});
+    $("btDnsEditSubmit").addEventListener("click",function(){
+        var data={action:"dns_edit_record",domain:dnsCurrentDomain,line:rec.line,type:rec.type,name:$("btDnsEditName").value.trim(),ttl:$("btDnsEditTtl").value};
+        Object.assign(data,dnsCollectTypeFields("btDnsEditFields",rec.type));
+        var msg=$("btDnsEditMsg");msg.style.display="none";
+        this.disabled=true;var btn=this;
+        post(data,function(r){
+            btn.disabled=false;
+            showMsg(msg,r.message||"Done",r.success);
+            if(r.success) setTimeout(function(){overlay.remove();loadDnsRecords(dnsCurrentDomain);},600);
+        });
+    });
+}
+
+function openDnsDeleteConfirm(rec){
+    if(!confirm("Delete this "+rec.type+" record for "+rec.name+"?")) return;
+    post({action:"dns_delete_record",domain:dnsCurrentDomain,line:rec.line},function(r){
+        if(r.success){
+            loadDnsRecords(dnsCurrentDomain);
+        } else {
+            alert(r.message||"Failed to delete record");
+        }
+    });
+}
+
+function dnsRenderTypeFields(containerId,type,rec){
+    var c=$(containerId);if(!c) return;
+    var html="";
+    switch(type){
+        case "A":
+            html='<div class="bt-field"><label>IPv4 Address</label><input type="text" class="dns-field" data-key="address" value="'+esc(rec.address||"")+'" placeholder="192.168.1.1"></div>';
+            break;
+        case "AAAA":
+            html='<div class="bt-field"><label>IPv6 Address</label><input type="text" class="dns-field" data-key="address" value="'+esc(rec.address||"")+'" placeholder="2001:db8::1"></div>';
+            break;
+        case "CNAME":
+            html='<div class="bt-field"><label>Target</label><input type="text" class="dns-field" data-key="cname" value="'+esc(rec.cname||"")+'" placeholder="target.example.com"></div>';
+            break;
+        case "MX":
+            html='<div class="bt-field"><label>Priority</label><input type="number" class="dns-field" data-key="preference" value="'+(rec.preference||10)+'" min="0"></div>'
+                +'<div class="bt-field"><label>Mail Server</label><input type="text" class="dns-field" data-key="exchange" value="'+esc(rec.exchange||"")+'" placeholder="mail.example.com"></div>';
+            break;
+        case "TXT":
+            html='<div class="bt-field"><label>TXT Data</label><textarea class="dns-field" data-key="txtdata" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border-color,#d1d5db);border-radius:8px;font-size:14px;color:var(--heading-color,#111827);background:var(--input-bg,#fff);resize:vertical;font-family:monospace;box-sizing:border-box">'+esc(rec.txtdata||"")+'</textarea></div>';
+            break;
+        case "SRV":
+            html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+                +'<div class="bt-field"><label>Priority</label><input type="number" class="dns-field" data-key="priority" value="'+(rec.priority||0)+'" min="0"></div>'
+                +'<div class="bt-field"><label>Weight</label><input type="number" class="dns-field" data-key="weight" value="'+(rec.weight||0)+'" min="0"></div>'
+                +'<div class="bt-field"><label>Port</label><input type="number" class="dns-field" data-key="port" value="'+(rec.port||0)+'" min="0"></div>'
+                +'</div>'
+                +'<div class="bt-field"><label>Target</label><input type="text" class="dns-field" data-key="target" value="'+esc(rec.target||"")+'" placeholder="target.example.com"></div>';
+            break;
+        case "CAA":
+            html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+                +'<div class="bt-field"><label>Flag</label><input type="number" class="dns-field" data-key="flag" value="'+(rec.flag||0)+'" min="0" max="255"></div>'
+                +'<div class="bt-field"><label>Tag</label><select class="dns-field bt-select" data-key="tag"><option value="issue"'+(rec.tag==="issue"?" selected":"")+'>issue</option><option value="issuewild"'+(rec.tag==="issuewild"?" selected":"")+'>issuewild</option><option value="iodef"'+(rec.tag==="iodef"?" selected":"")+'>iodef</option></select></div>'
+                +'</div>'
+                +'<div class="bt-field"><label>Value</label><input type="text" class="dns-field" data-key="value" value="'+esc(rec.value||"")+'" placeholder="letsencrypt.org"></div>';
+            break;
+    }
+    c.innerHTML=html;
+}
+
+function dnsCollectTypeFields(containerId,type){
+    var c=$(containerId);if(!c) return {};
+    var data={};
+    c.querySelectorAll(".dns-field").forEach(function(f){
+        var key=f.getAttribute("data-key");
+        if(key) data[key]=f.value;
+    });
+    return data;
 }
 
 /* ─── Modal Bindings ─── */

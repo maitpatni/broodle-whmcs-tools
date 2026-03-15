@@ -63,3 +63,16 @@ $_ADDONLANG['ssl_run_autossl']     = 'Run AutoSSL';
 $_ADDONLANG['ssl_autossl_running'] = 'AutoSSL in progress...';
 $_ADDONLANG['ssl_issuer']          = 'Issuer';
 $_ADDONLANG['ssl_expiry']          = 'Expiry';
+
+// DNS Management
+$_ADDONLANG['dns_manager']        = 'DNS Manager';
+$_ADDONLANG['dns_records']        = 'DNS Records';
+$_ADDONLANG['dns_add_record']     = 'Add Record';
+$_ADDONLANG['dns_edit_record']    = 'Edit Record';
+$_ADDONLANG['dns_delete_record']  = 'Delete Record';
+$_ADDONLANG['dns_bulk_delete']    = 'Bulk Delete';
+$_ADDONLANG['dns_record_type']    = 'Record Type';
+$_ADDONLANG['dns_record_name']    = 'Name';
+$_ADDONLANG['dns_record_value']   = 'Value';
+$_ADDONLANG['dns_record_ttl']     = 'TTL';
+$_ADDONLANG['dns_select_domain']  = 'Select a domain to manage DNS records';
