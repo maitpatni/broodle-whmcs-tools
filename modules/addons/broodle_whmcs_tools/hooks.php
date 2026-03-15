@@ -300,6 +300,8 @@ function broodle_tools_css_hide()
 .panel-body .quick-create-email,.panel-body .quick-create-email-section,.panel-body [class*="quick-create"],.panel-body .quick-shortcut,.panel-body .quick-shortcuts{display:none!important}
 .sidebar-right .quick-create-email,.sidebar-right [class*="quick-create"],.sidebar-right .quick-shortcut{display:none!important}
 #Primary_Sidebar .panel:has([class*="quick-create"]),#Primary_Sidebar .panel:has([class*="addons_and_extras"]),#Primary_Sidebar .panel:has([class*="addons-extras"]){display:none!important}
+#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel{display:none!important}
+.bt-hidden-section{display:none!important}
 </style>';
 }
 
@@ -368,7 +370,7 @@ function broodle_tools_css_cards()
 .bt-row-icon.db{background:rgba(10,94,211,.08);color:#0a5ed3}
 .bt-row-icon.dbuser{background:rgba(124,58,237,.08);color:#7c3aed}
 .bt-row-info{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
-.bt-row-name{font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-row-name{font-size:14px;font-weight:500;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bt-row-name.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
 .bt-row-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
 .bt-badge-primary{background:rgba(10,94,211,.08);color:#0a5ed3}
@@ -625,7 +627,17 @@ function hideDefaultTabs(){
     var panelTabs=document.querySelector("ul.panel-tabs");
     if(panelTabs){var panel=panelTabs.closest(".panel");if(panel) panel.style.display="none";}
     // Hide Quick Create Email section
-    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut]").forEach(function(el){el.style.display="none";});
+    document.querySelectorAll(".quick-create-email,.quick-create-email-section,[class*=quick-create-email],.module-quick-create-email,.quick-create-section,.module-quick-shortcuts,.quick-shortcuts-container,.quick-shortcuts,.quick-shortcut-container,.quick-shortcut,.sidebar-shortcuts,.sidebar-quick-create,[class*=quick-create],[class*=quick-shortcut],#cPanelQuickEmailPanel,#cPanelExtrasPurchasePanel").forEach(function(el){el.style.display="none";});
+    // Hide .section elements by title text (Lagom theme uses .section > .section-header > h2.section-title)
+    document.querySelectorAll(".section").forEach(function(sec){
+        var title=sec.querySelector(".section-title,h2,h3");
+        if(!title) return;
+        var t=(title.textContent||"").toLowerCase().trim();
+        if(t.indexOf("quick create email")!==-1||t.indexOf("addons and extras")!==-1||t.indexOf("addon")!==-1&&t.indexOf("extra")!==-1){
+            sec.classList.add("bt-hidden-section");sec.style.display="none";
+            sec.setAttribute("data-bt-hidden","1");
+        }
+    });
     // Hide Addons & Extras panels (we move content to overview)
     document.querySelectorAll(".panel,.card,.sidebar-box,.sidebar-panel").forEach(function(p){
         var h=p.querySelector(".panel-heading,.card-header,h3,h4,h5,.panel-title,.sidebar-header,.sidebar-title");
@@ -958,7 +970,7 @@ function bwpOpenDetail(id){
     if(!currentWpInstance) return;
     var ov=$("bwpDetailOverlay");ov.style.display="flex";
     $("bwpDetailTitle").textContent=currentWpInstance.displayTitle||currentWpInstance.domain;
-    // Reset tabs
+    // Reset tabs to overview
     ov.querySelectorAll(".bwp-tab").forEach(function(t,i){t.classList.toggle("active",i===0);});
     ov.querySelectorAll(".bwp-tab-content").forEach(function(c,i){c.classList.toggle("active",i===0);});
     // Build overview
@@ -975,14 +987,15 @@ function bwpOpenDetail(id){
     if(currentWpInstance.availableUpdate) html+="<div class=\"bwp-msg info\">Core update available: WordPress "+esc(currentWpInstance.availableUpdate)+"</div>";
     html+="</div></div>";
     ovTab.innerHTML=html;
-    // Load plugins/themes/security on tab switch
-    $("bwpTabPlugins").innerHTML="<div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading plugins...</span></div>";
-    $("bwpTabThemes").innerHTML="<div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading themes...</span></div>";
-    $("bwpTabSecurity").innerHTML="<div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Running security scan...</span></div>";
-    bwpLoadPlugins();bwpLoadThemes();bwpLoadSecurity();
+    // Mark sub-tabs as not loaded so they load on first view
+    ["bwpTabPlugins","bwpTabThemes","bwpTabSecurity"].forEach(function(tid){
+        var t=$(tid);if(t){t.removeAttribute("data-loaded");t.innerHTML="<div class=\"bt-loading\"><div class=\"bt-spinner\"></div><span>Loading...</span></div>";}
+    });
+    // Pre-load plugins since it is the next likely tab
+    bwpLoadPlugins();
 }
 
-/* ─── WP Detail Tab Handlers ─── */
+/* ─── WP Detail Tab Handlers (lazy load, no reset on switch) ─── */
 (function(){
     var overlay=$("bwpDetailOverlay");if(!overlay) return;
     overlay.querySelectorAll(".bwp-tab").forEach(function(tab){
@@ -990,8 +1003,17 @@ function bwpOpenDetail(id){
             overlay.querySelectorAll(".bwp-tab").forEach(function(t){t.classList.remove("active");});
             overlay.querySelectorAll(".bwp-tab-content").forEach(function(c){c.classList.remove("active");});
             tab.classList.add("active");
-            var target=$("bwpTab"+tab.getAttribute("data-tab").charAt(0).toUpperCase()+tab.getAttribute("data-tab").slice(1));
-            if(target) target.classList.add("active");
+            var tabName=tab.getAttribute("data-tab");
+            var target=$("bwpTab"+tabName.charAt(0).toUpperCase()+tabName.slice(1));
+            if(target){
+                target.classList.add("active");
+                // Lazy load: only load if not already loaded
+                if(!target.getAttribute("data-loaded")){
+                    if(tabName==="plugins") bwpLoadPlugins();
+                    else if(tabName==="themes") bwpLoadThemes();
+                    else if(tabName==="security") bwpLoadSecurity();
+                }
+            }
         });
     });
     $("bwpDetailClose").addEventListener("click",function(){overlay.style.display="none";});
@@ -1015,6 +1037,7 @@ function bwpLoadPlugins(){
             html+="</div></div>";
         });
         el.innerHTML=html;
+        el.setAttribute("data-loaded","1");
     });
 }
 window.bwpTogglePlugin=function(slug,activate){
@@ -1051,6 +1074,7 @@ function bwpLoadThemes(){
         });
         html+="</div>";
         el.innerHTML=html;
+        el.setAttribute("data-loaded","1");
     });
 }
 window.bwpActivateTheme=function(slug,btn){
@@ -1073,19 +1097,37 @@ function bwpLoadSecurity(){
     if(!currentWpInstance) return;
     wpPost({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){
         var el=$("bwpTabSecurity");
-        if(!r.success){el.innerHTML="<div class=\"bt-empty\"><span>"+(r.message||"Security scan failed")+"</span></div>";return;}
+        if(!r.success){el.innerHTML="<div class=\"bt-empty\"><span>"+(r.message||"Security scan failed")+"</span></div>";el.setAttribute("data-loaded","1");return;}
         var measures=r.security||[];
-        if(!measures.length){el.innerHTML="<div class=\"bt-empty\"><span>No security data available</span></div>";return;}
+        if(!measures.length){el.innerHTML="<div class=\"bt-empty\"><span>No security data available</span></div>";el.setAttribute("data-loaded","1");return;}
         var applied=0;measures.forEach(function(m){if(m.status==="applied"||m.status==="true"||m.status===true) applied++;});
         var pct=Math.round(applied/measures.length*100);
         var html="<div class=\"bwp-sec-summary\"><div class=\"bwp-sec-summary-bar\"><div class=\"bwp-sec-summary-fill\" style=\"width:"+pct+"%\"></div></div><div class=\"bwp-sec-summary-text\"><span><strong>"+applied+"</strong> of <strong>"+measures.length+"</strong> measures applied</span><span><strong>"+pct+"%</strong> secure</span></div></div>";
         measures.forEach(function(m){
             var ok=m.status==="applied"||m.status==="true"||m.status===true;
-            html+="<div class=\"bwp-security-item\"><div class=\"bwp-sec-icon "+(ok?"ok":"warning")+"\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\">"+(ok?"<polyline points=\"20 6 9 17 4 12\"/>":"<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/>")+"</svg></div><div class=\"bwp-sec-info\"><p class=\"bwp-sec-label\">"+esc(m.title||m.id)+"</p><p class=\"bwp-sec-detail\">"+esc(m.id)+"</p></div><div class=\"bwp-sec-value "+(ok?"ok":"warning")+"\">"+(ok?"Applied":"Not Applied")+"</div></div>";
+            var mid=esc(m.id);
+            html+="<div class=\"bwp-security-item\" data-measure=\""+mid+"\"><div class=\"bwp-sec-icon "+(ok?"ok":"warning")+"\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\">"+(ok?"<polyline points=\"20 6 9 17 4 12\"/>":"<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/>")+"</svg></div><div class=\"bwp-sec-info\"><p class=\"bwp-sec-label\">"+esc(m.title||m.id)+"</p><p class=\"bwp-sec-detail\">"+mid+"</p></div><div class=\"bwp-sec-actions\" style=\"display:flex;gap:6px;flex-shrink:0\">"+(ok?"<button type=\"button\" class=\"bwp-item-btn inactive-state\" onclick=\"bwpRevertSecurity(\\x27"+mid+"\\x27,this)\">Revert</button>":"<button type=\"button\" class=\"bwp-item-btn active-state\" onclick=\"bwpApplySecurity(\\x27"+mid+"\\x27,this)\">Apply</button>")+"</div></div>";
         });
         el.innerHTML=html;
+        el.setAttribute("data-loaded","1");
     });
 }
+window.bwpApplySecurity=function(measureId,btn){
+    if(!currentWpInstance) return;btn.disabled=true;btn.textContent="Applying...";
+    wpPost({action:"wp_security_apply",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
+        btn.disabled=false;
+        if(r.success){$("bwpTabSecurity").removeAttribute("data-loaded");bwpLoadSecurity();}
+        else{btn.textContent="Apply";alert(r.message||"Failed to apply security measure");}
+    });
+};
+window.bwpRevertSecurity=function(measureId,btn){
+    if(!currentWpInstance) return;btn.disabled=true;btn.textContent="Reverting...";
+    wpPost({action:"wp_security_revert",instance_id:currentWpInstance.id,measure_id:measureId},function(r){
+        btn.disabled=false;
+        if(r.success){$("bwpTabSecurity").removeAttribute("data-loaded");bwpLoadSecurity();}
+        else{btn.textContent="Revert";alert(r.message||"Failed to revert security measure");}
+    });
+};
 
 /* ─── Email Actions ─── */
 function bindEmailActions(pane){
