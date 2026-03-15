@@ -436,6 +436,94 @@ function broodle_tools_shared_script()
 [data-theme="dark"] .bem-field input,[data-theme="dark"] .bem-field select,.dark-mode .bem-field input,.dark-mode .bem-field select{background:var(--input-bg,#111827);border-color:var(--border-color,#374151);color:var(--heading-color,#f3f4f6)}
 [data-theme="dark"] .bem-input-group,.dark-mode .bem-input-group{border-color:var(--border-color,#374151)}
 [data-theme="dark"] .bem-at,.dark-mode .bem-at{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}
+
+/* WordPress Toolkit */
+.bwp-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.bwp-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
+.bwp-card-head-left{display:flex;align-items:center;gap:12px}
+.bwp-icon-circle{width:38px;height:38px;background:#21759b;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.bwp-card-head h5{margin:0;font-size:15px;font-weight:600;color:var(--heading-color,#111827)}
+.bwp-subtitle{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
+.bwp-head-actions{display:flex;gap:8px}
+.bwp-scan-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
+.bwp-scan-btn:hover{border-color:#21759b;color:#21759b;background:rgba(33,117,155,.04)}
+.bwp-body{padding:0}
+.bwp-loading{padding:40px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.bwp-spinner{width:28px;height:28px;border:3px solid var(--border-color,#e5e7eb);border-top-color:#21759b;border-radius:50%;animation:bwpSpin .7s linear infinite}
+@keyframes bwpSpin{to{transform:rotate(360deg)}}
+.bwp-empty{padding:40px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.bwp-empty svg{opacity:.3}
+.bwp-list{padding:8px 10px}
+.bwp-site{display:flex;align-items:center;gap:14px;padding:14px;border-radius:9px;transition:background .15s;cursor:pointer}
+.bwp-site:hover{background:var(--input-bg,#f9fafb)}
+.bwp-site+.bwp-site{border-top:1px solid var(--border-color,#f3f4f6)}
+.bwp-site-icon{width:40px;height:40px;border-radius:10px;background:rgba(33,117,155,.08);color:#21759b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bwp-site-info{flex:1;min-width:0}
+.bwp-site-domain{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bwp-site-meta{font-size:12px;color:var(--text-muted,#6b7280);margin:2px 0 0;display:flex;gap:12px;flex-wrap:wrap}
+.bwp-site-meta span{display:inline-flex;align-items:center;gap:4px}
+.bwp-site-actions{display:flex;gap:6px;flex-shrink:0}
+.bwp-action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s;white-space:nowrap;color:var(--heading-color,#374151)}
+.bwp-action-btn:hover{border-color:#21759b;color:#21759b}
+.bwp-action-btn.primary{background:#21759b;color:#fff;border-color:#21759b}
+.bwp-action-btn.primary:hover{background:#1a5f7e}
+.bwp-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);display:flex;align-items:stretch;justify-content:flex-end;animation:bemFadeIn .2s}
+.bwp-detail-panel{width:100%;max-width:640px;background:var(--card-bg,#fff);overflow-y:auto;animation:bwpSlideIn .25s}
+@keyframes bwpSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.bwp-detail-head{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border-color,#f3f4f6);position:sticky;top:0;background:var(--card-bg,#fff);z-index:1}
+.bwp-detail-head h5{flex:1;margin:0;font-size:16px;font-weight:600;color:var(--heading-color,#111827)}
+.bwp-back-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border-color,#d1d5db);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}
+.bwp-back-btn:hover{border-color:#21759b;color:#21759b}
+.bwp-detail-tabs{display:flex;gap:0;padding:0 22px;border-bottom:1px solid var(--border-color,#f3f4f6);position:sticky;top:60px;background:var(--card-bg,#fff);z-index:1}
+.bwp-tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s}
+.bwp-tab:hover{color:var(--heading-color,#111827)}
+.bwp-tab.active{color:#21759b;border-bottom-color:#21759b}
+.bwp-detail-body{padding:0}
+.bwp-tab-content{display:none;padding:20px 22px}
+.bwp-tab-content.active{display:block}
+.bwp-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.bwp-stat{padding:14px 16px;background:var(--input-bg,#f9fafb);border-radius:10px;border:1px solid var(--border-color,#f3f4f6)}
+.bwp-stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted,#9ca3af);margin:0 0 4px}
+.bwp-stat-value{font-size:15px;font-weight:600;color:var(--heading-color,#111827);margin:0;word-break:break-all}
+.bwp-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.bwp-item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color,#f3f4f6)}
+.bwp-item-row:last-child{border-bottom:none}
+.bwp-item-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.bwp-item-icon.plugin{background:rgba(10,94,211,.08);color:#0a5ed3}
+.bwp-item-icon.theme{background:rgba(124,58,237,.08);color:#7c3aed}
+.bwp-item-info{flex:1;min-width:0}
+.bwp-item-name{font-size:13px;font-weight:600;color:var(--heading-color,#111827);margin:0}
+.bwp-item-detail{font-size:11px;color:var(--text-muted,#6b7280);margin:2px 0 0}
+.bwp-item-actions{display:flex;gap:4px;flex-shrink:0}
+.bwp-item-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s}
+.bwp-item-btn:hover{border-color:#21759b;color:#21759b}
+.bwp-item-btn.active-state{color:#059669;border-color:#059669}
+.bwp-item-btn.inactive-state{color:#d97706;border-color:#d97706}
+.bwp-item-btn.update{color:#0a5ed3;border-color:#0a5ed3}
+.bwp-item-btn.delete{color:#ef4444;border-color:#ef4444}
+.bwp-item-btn:disabled{opacity:.5;cursor:not-allowed}
+.bwp-status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.bwp-status-badge.active{background:rgba(5,150,101,.08);color:#059669}
+.bwp-status-badge.inactive{background:rgba(217,119,6,.08);color:#d97706}
+.bwp-status-badge.update-available{background:rgba(10,94,211,.08);color:#0a5ed3}
+.bwp-security-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-color,#f3f4f6)}
+.bwp-security-item:last-child{border-bottom:none}
+.bwp-sec-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.bwp-sec-icon.ok{background:rgba(5,150,101,.08);color:#059669}
+.bwp-sec-icon.warning{background:rgba(217,119,6,.08);color:#d97706}
+.bwp-sec-icon.danger{background:rgba(239,68,68,.08);color:#ef4444}
+.bwp-sec-info{flex:1}
+.bwp-sec-label{font-size:13px;font-weight:600;color:var(--heading-color,#111827);margin:0}
+.bwp-sec-detail{font-size:12px;color:var(--text-muted,#6b7280);margin:2px 0 0}
+.bwp-sec-value{font-size:12px;font-weight:600;flex-shrink:0}
+.bwp-sec-value.ok{color:#059669}
+.bwp-sec-value.warning{color:#d97706}
+.bwp-sec-value.danger{color:#ef4444}
+.bwp-msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.bwp-msg.success{background:rgba(5,150,101,.08);color:#059669}
+.bwp-msg.error{background:rgba(239,68,68,.08);color:#ef4444}
+.bwp-msg.info{background:rgba(10,94,211,.08);color:#0a5ed3}
+@media(max-width:600px){.bwp-overview-grid{grid-template-columns:1fr}.bwp-detail-panel{max-width:100%}.bwp-site-actions{flex-direction:column}}
 </style>
 
 <script>
@@ -608,6 +696,336 @@ function broodle_tools_shared_script()
         });
     }
 
+    /* ─── WordPress Toolkit ─── */
+    var wpAjaxUrl="modules/addons/broodle_whmcs_tools/ajax_wordpress.php";
+    var wpInstances=[];
+    var currentWpInstance=null;
+
+    function bwpInit(){
+        var wpSrc=document.getElementById("broodle-wp-source");
+        if(!wpSrc) return;
+        var wpServiceId=wpSrc.getAttribute("data-service-id")||0;
+        wpSrc.style.display="block";
+        wpSrc.style.margin="20px 0";
+
+        // Insert WP section into the page
+        var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
+        if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
+        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
+
+        if(tabNav){
+            var li=document.createElement("li");
+            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress</a>";
+            tabNav.appendChild(li);
+            var tabContent=panel?panel.querySelector(".tab-content"):null;
+            if(tabContent){
+                var tp=document.createElement("div");
+                tp.className="panel-body tab-pane";tp.id="broodleWpInfo";
+                tp.innerHTML=wpSrc.innerHTML;
+                wpSrc.parentNode.removeChild(wpSrc);
+                tabContent.appendChild(tp);
+                bwpBindEvents(tp,wpServiceId);
+                bwpLoadInstances(wpServiceId);
+            }
+        }
+    }
+
+    function bwpBindEvents(container,sid){
+        var scanBtn=container.querySelector("#bwpScanBtn");
+        if(scanBtn) scanBtn.addEventListener("click",function(){bwpScan(sid);});
+
+        // Detail panel events
+        var overlay=document.getElementById("bwpDetailOverlay");
+        if(overlay){
+            overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.style.display="none";});
+            var backBtn=document.getElementById("bwpBackBtn");
+            if(backBtn) backBtn.addEventListener("click",function(){overlay.style.display="none";});
+            var closeBtn=document.getElementById("bwpDetailClose");
+            if(closeBtn) closeBtn.addEventListener("click",function(){overlay.style.display="none";});
+
+            // Tab switching
+            overlay.querySelectorAll(".bwp-tab").forEach(function(tab){
+                tab.addEventListener("click",function(){
+                    overlay.querySelectorAll(".bwp-tab").forEach(function(t){t.classList.remove("active");});
+                    overlay.querySelectorAll(".bwp-tab-content").forEach(function(c){c.classList.remove("active");});
+                    tab.classList.add("active");
+                    var target=tab.getAttribute("data-tab");
+                    var content=document.getElementById("bwpTab"+target.charAt(0).toUpperCase()+target.slice(1));
+                    if(content) content.classList.add("active");
+
+                    // Lazy load tab content
+                    if(target==="plugins"&&currentWpInstance) bwpLoadPlugins(sid);
+                    if(target==="themes"&&currentWpInstance) bwpLoadThemes(sid);
+                    if(target==="security"&&currentWpInstance) bwpLoadSecurity(sid);
+                });
+            });
+        }
+    }
+
+    function bwpAjax(data,sid,cb){
+        var fd=new FormData();
+        for(var k in data) fd.append(k,data[k]);
+        fd.append("service_id",sid);
+        var x=new XMLHttpRequest();x.open("POST",wpAjaxUrl,true);
+        x.onload=function(){try{cb(JSON.parse(x.responseText));}catch(e){cb({success:false,message:"Invalid response"});}};
+        x.onerror=function(){cb({success:false,message:"Network error"});};
+        x.send(fd);
+    }
+
+    function bwpLoadInstances(sid){
+        var loading=document.getElementById("bwpLoading");
+        var list=document.getElementById("bwpList");
+        var empty=document.getElementById("bwpEmpty");
+        if(loading) loading.style.display="flex";
+        if(list) list.style.display="none";
+        if(empty) empty.style.display="none";
+
+        bwpAjax({action:"get_wp_instances"},sid,function(r){
+            if(loading) loading.style.display="none";
+            if(r.success&&r.instances&&r.instances.length>0){
+                wpInstances=r.instances;
+                if(list){
+                    list.style.display="block";
+                    var html="";
+                    r.instances.forEach(function(inst){
+                        var path=inst.rel_path?"/"+inst.rel_path:"/";
+                        var date=inst.created_on?new Date(inst.created_on*1000).toLocaleDateString():"";
+                        html+="<div class=\"bwp-site\" data-id=\""+bwpEsc(inst.id)+"\" data-path=\""+bwpEsc(inst.full_path)+"\">"
+                            +"<div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z\"/></svg></div>"
+                            +"<div class=\"bwp-site-info\">"
+                            +"<p class=\"bwp-site-domain\">"+bwpEsc(inst.site_url||inst.domain)+"</p>"
+                            +"<div class=\"bwp-site-meta\">"
+                            +"<span>WP "+bwpEsc(inst.current_version)+"</span>"
+                            +"<span>"+bwpEsc(path)+"</span>"
+                            +(date?"<span>"+date+"</span>":"")
+                            +"</div></div>"
+                            +"<div class=\"bwp-site-actions\">"
+                            +"<button type=\"button\" class=\"bwp-action-btn primary bwp-login-btn\" data-id=\""+bwpEsc(inst.id)+"\">Login</button>"
+                            +"<button type=\"button\" class=\"bwp-action-btn bwp-manage-btn\" data-id=\""+bwpEsc(inst.id)+"\">Manage</button>"
+                            +"</div></div>";
+                    });
+                    list.innerHTML=html;
+
+                    // Bind click events
+                    list.querySelectorAll(".bwp-login-btn").forEach(function(btn){
+                        btn.addEventListener("click",function(e){
+                            e.stopPropagation();
+                            bwpAutoLogin(this.getAttribute("data-id"),sid);
+                        });
+                    });
+                    list.querySelectorAll(".bwp-manage-btn").forEach(function(btn){
+                        btn.addEventListener("click",function(e){
+                            e.stopPropagation();
+                            bwpOpenDetail(this.getAttribute("data-id"),sid);
+                        });
+                    });
+                    list.querySelectorAll(".bwp-site").forEach(function(site){
+                        site.addEventListener("click",function(){
+                            bwpOpenDetail(this.getAttribute("data-id"),sid);
+                        });
+                    });
+                }
+            } else {
+                if(empty) empty.style.display="flex";
+            }
+        });
+    }
+
+    function bwpEsc(s){if(!s)return"";var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+
+    function bwpScan(sid){
+        var btn=document.getElementById("bwpScanBtn");
+        if(btn){btn.disabled=true;btn.innerHTML="Scanning...";}
+        bwpAjax({action:"wp_scan"},sid,function(r){
+            if(btn){btn.disabled=false;btn.innerHTML="<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21.21 15.89A10 10 0 1 1 8 2.83\"/><path d=\"M22 12A10 10 0 0 0 12 2v10z\"/></svg> Scan";}
+            if(r.success){setTimeout(function(){bwpLoadInstances(sid);},3000);}
+            else{alert(r.message||"Scan failed");}
+        });
+    }
+
+    function bwpAutoLogin(instId,sid){
+        bwpAjax({action:"wp_autologin",instance_id:instId},sid,function(r){
+            if(r.success&&r.cpanel_url){window.open(r.cpanel_url,"_blank");}
+            else{alert(r.message||"Could not create login session");}
+        });
+    }
+
+    function bwpOpenDetail(instId,sid){
+        var inst=null;
+        for(var i=0;i<wpInstances.length;i++){if(wpInstances[i].id===instId){inst=wpInstances[i];break;}}
+        if(!inst) return;
+        currentWpInstance=inst;
+
+        var overlay=document.getElementById("bwpDetailOverlay");
+        if(!overlay) return;
+        overlay.style.display="flex";
+
+        document.getElementById("bwpDetailTitle").textContent=inst.site_url||inst.domain;
+
+        // Reset tabs
+        overlay.querySelectorAll(".bwp-tab").forEach(function(t,i){t.classList.toggle("active",i===0);});
+        overlay.querySelectorAll(".bwp-tab-content").forEach(function(c,i){c.classList.toggle("active",i===0);});
+
+        // Build overview
+        var ov=document.getElementById("bwpTabOverview");
+        var path=inst.rel_path?"/"+inst.rel_path:"/";
+        ov.innerHTML="<div class=\"bwp-overview-grid\">"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Domain</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.domain)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.current_version)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.full_path)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Database</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.db_name)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Admin User</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.admin_username)+"</p></div>"
+            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Type</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.addon_type)+"</p></div>"
+            +"</div>"
+            +"<div class=\"bwp-quick-actions\">"
+            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\">WP Admin Login</button>"
+            +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+bwpEsc("https://"+inst.site_url)+"\\x27,\\x27_blank\\x27)\">Visit Site</button>"
+            +"</div>";
+
+        // Reset other tabs to loading state
+        document.getElementById("bwpTabPlugins").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
+        document.getElementById("bwpTabThemes").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
+        document.getElementById("bwpTabSecurity").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
+    }
+
+    window.bwpDoLogin=function(){
+        if(currentWpInstance){
+            var sid=document.getElementById("broodleWpInfo")?document.getElementById("broodleWpInfo").querySelector("[data-service-id]"):null;
+            var svcId=sid?sid.getAttribute("data-service-id"):(serviceId||0);
+            bwpAutoLogin(currentWpInstance.id,svcId);
+        }
+    };
+
+    function bwpLoadPlugins(sid){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabPlugins");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
+
+        bwpAjax({action:"wp_list_plugins",wp_path:currentWpInstance.full_path},sid,function(r){
+            if(r.success&&r.plugins){
+                var html="";
+                r.plugins.forEach(function(p){
+                    var statusClass=p.status==="active"?"active":"inactive";
+                    var toggleAction=p.status==="active"?"deactivate":"activate";
+                    var toggleLabel=p.status==="active"?"Deactivate":"Activate";
+                    var hasUpdate=p.update&&p.update!=="none";
+                    html+="<div class=\"bwp-item-row\">"
+                        +"<div class=\"bwp-item-icon plugin\">&#128268;</div>"
+                        +"<div class=\"bwp-item-info\">"
+                        +"<p class=\"bwp-item-name\">"+bwpEsc(p.name)+" <span class=\"bwp-status-badge "+statusClass+"\">"+bwpEsc(p.status)+"</span>"
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
+                        +"</p>"
+                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(p.version)+(hasUpdate?" &rarr; "+bwpEsc(p.update):"")+"</p>"
+                        +"</div>"
+                        +"<div class=\"bwp-item-actions\">"
+                        +"<button class=\"bwp-item-btn "+statusClass+"-state\" onclick=\"bwpTogglePlugin(\\x27"+bwpEsc(p.name)+"\\x27,\\x27"+toggleAction+"\\x27,"+sid+")\">"+toggleLabel+"</button>"
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" onclick=\"bwpUpdatePlugin(\\x27"+bwpEsc(p.name)+"\\x27,"+sid+")\">Update</button>":"")
+                        +"<button class=\"bwp-item-btn delete\" onclick=\"bwpDeletePlugin(\\x27"+bwpEsc(p.name)+"\\x27,"+sid+")\">Delete</button>"
+                        +"</div></div>";
+                });
+                container.innerHTML=html||"<div class=\"bwp-empty\"><span>No plugins found</span></div>";
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load plugins. WP-CLI may not be available on this server.")+"</div>";
+            }
+        });
+    }
+
+    window.bwpTogglePlugin=function(slug,action,sid){
+        bwpAjax({action:"wp_toggle_plugin",wp_path:currentWpInstance.full_path,plugin:slug,plugin_action:action},sid,function(r){
+            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+    window.bwpUpdatePlugin=function(slug,sid){
+        bwpAjax({action:"wp_update_plugin",wp_path:currentWpInstance.full_path,plugin:slug},sid,function(r){
+            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+    window.bwpDeletePlugin=function(slug,sid){
+        if(!confirm("Delete plugin "+slug+"?")) return;
+        bwpAjax({action:"wp_delete_plugin",wp_path:currentWpInstance.full_path,plugin:slug},sid,function(r){
+            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+
+    function bwpLoadThemes(sid){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabThemes");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
+
+        bwpAjax({action:"wp_list_themes",wp_path:currentWpInstance.full_path},sid,function(r){
+            if(r.success&&r.themes){
+                var html="";
+                r.themes.forEach(function(t){
+                    var isActive=t.status==="active";
+                    var hasUpdate=t.update&&t.update!=="none";
+                    html+="<div class=\"bwp-item-row\">"
+                        +"<div class=\"bwp-item-icon theme\">&#127912;</div>"
+                        +"<div class=\"bwp-item-info\">"
+                        +"<p class=\"bwp-item-name\">"+bwpEsc(t.name)+" <span class=\"bwp-status-badge "+(isActive?"active":"inactive")+"\">"+(isActive?"Active":"Inactive")+"</span>"
+                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
+                        +"</p>"
+                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(t.version)+(hasUpdate?" &rarr; "+bwpEsc(t.update):"")+"</p>"
+                        +"</div>"
+                        +"<div class=\"bwp-item-actions\">"
+                        +(!isActive?"<button class=\"bwp-item-btn active-state\" onclick=\"bwpActivateTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Activate</button>":"")
+                        +(hasUpdate?"<button class=\"bwp-item-btn update\" onclick=\"bwpUpdateTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Update</button>":"")
+                        +(!isActive?"<button class=\"bwp-item-btn delete\" onclick=\"bwpDeleteTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Delete</button>":"")
+                        +"</div></div>";
+                });
+                container.innerHTML=html||"<div class=\"bwp-empty\"><span>No themes found</span></div>";
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load themes.")+"</div>";
+            }
+        });
+    }
+
+    window.bwpActivateTheme=function(slug,sid){
+        bwpAjax({action:"wp_toggle_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
+            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+    window.bwpUpdateTheme=function(slug,sid){
+        bwpAjax({action:"wp_update_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
+            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+    window.bwpDeleteTheme=function(slug,sid){
+        if(!confirm("Delete theme "+slug+"?")) return;
+        bwpAjax({action:"wp_delete_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
+            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
+        });
+    };
+
+    function bwpLoadSecurity(sid){
+        if(!currentWpInstance) return;
+        var container=document.getElementById("bwpTabSecurity");
+        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
+
+        bwpAjax({action:"wp_security_scan",wp_path:currentWpInstance.full_path},sid,function(r){
+            if(r.success&&r.security){
+                var icons={ok:"&#10003;",warning:"&#9888;",danger:"&#10007;"};
+                var html="";
+                r.security.forEach(function(item){
+                    html+="<div class=\"bwp-security-item\">"
+                        +"<div class=\"bwp-sec-icon "+item.status+"\">"+icons[item.status]+"</div>"
+                        +"<div class=\"bwp-sec-info\">"
+                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.label)+"</p>"
+                        +"<p class=\"bwp-sec-detail\">"+bwpEsc(item.detail)+"</p>"
+                        +"</div>"
+                        +"<span class=\"bwp-sec-value "+item.status+"\">"+bwpEsc(item.value)+"</span>"
+                        +"</div>";
+                });
+                container.innerHTML=html;
+            } else {
+                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Security scan failed.")+"</div>";
+            }
+        });
+    }
+
+    // Initialize WP toolkit after main init
+    var origInit=broodleInit;
+    broodleInit=function(){origInit();bwpInit();};
+
     if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",broodleInit);}
     else{setTimeout(broodleInit,150);}
 })();
@@ -675,80 +1093,4 @@ function broodle_tools_build_wp_output($serviceId)
     </div>
   </div>
 </div>';
-}
-
-function broodle_tools_shared_script()
-{
-    return '
-<style>
-.bns-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.bns-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
-.bns-card-head-left{display:flex;align-items:center;gap:12px}
-.bns-icon-circle{width:38px;height:38px;background:#0a5ed3;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
-.bns-card-head h5{margin:0;font-size:15px;font-weight:600;color:var(--heading-color,#111827)}
-.bns-card-head p{margin:2px 0 0;font-size:12px;color:var(--text-muted,#6b7280)}
-.bns-list{padding:8px 10px}
-.bns-row,.bem-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:9px;transition:background .15s}
-.bns-row:hover,.bem-row:hover{background:var(--input-bg,#f9fafb)}
-.bns-row+.bns-row,.bem-row+.bem-row{border-top:1px solid var(--border-color,#f3f4f6)}
-.bns-badge{width:38px;height:28px;background:rgba(10,94,211,.08);color:#0a5ed3;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
-.bns-host{flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
-.bns-copy{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color,#e5e7eb);border-radius:7px;background:var(--card-bg,#fff);color:var(--text-muted,#9ca3af);cursor:pointer;transition:all .15s;flex-shrink:0}
-.bns-copy:hover{color:#0a5ed3;border-color:#0a5ed3}
-.bns-copy.copied{color:#fff;background:#059669;border-color:#059669}
-.bem-avatar{width:34px;height:34px;border-radius:50%;background:rgba(124,58,237,.08);color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-.bem-email{flex:1;font-size:14px;font-weight:500;color:var(--heading-color,#111827);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bem-empty{padding:30px 22px;text-align:center;color:var(--text-muted,#9ca3af);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
-.bem-empty svg{opacity:.4}
-.bem-actions{display:flex;gap:6px;flex-shrink:0}
-.bem-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);transition:all .15s;white-space:nowrap}
-.bem-btn span{display:none}
-.bem-btn:hover span{display:inline}
-.bem-btn-login{color:#0a5ed3}.bem-btn-login:hover{background:rgba(10,94,211,.06);border-color:#0a5ed3}
-.bem-btn-pass{color:#d97706}.bem-btn-pass:hover{background:rgba(217,119,6,.06);border-color:#d97706}
-.bem-btn-del{color:#ef4444}.bem-btn-del:hover{background:rgba(239,68,68,.06);border-color:#ef4444}
-.bem-create-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:#7c3aed;color:#fff;transition:background .15s}
-.bem-create-btn:hover{background:#6d28d9}
-.bem-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;animation:bemFadeIn .2s}
-@keyframes bemFadeIn{from{opacity:0}to{opacity:1}}
-.bem-modal{background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:bemSlideUp .25s}
-.bem-modal-sm{max-width:380px}
-@keyframes bemSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.bem-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-color,#f3f4f6)}
-.bem-modal-head h5{margin:0;font-size:16px;font-weight:600;color:var(--heading-color,#111827)}
-.bem-modal-close{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:none;font-size:20px;color:var(--text-muted,#9ca3af);cursor:pointer;border-radius:6px}
-.bem-modal-close:hover{background:var(--input-bg,#f3f4f6);color:var(--heading-color,#111827)}
-.bem-modal-body{padding:20px 22px}
-.bem-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid var(--border-color,#f3f4f6)}
-.bem-field{margin-bottom:16px}
-.bem-field:last-child{margin-bottom:0}
-.bem-field label{display:block;font-size:12px;font-weight:600;color:var(--text-muted,#6b7280);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
-.bem-field input,.bem-field select{width:100%;padding:9px 12px;border:1px solid var(--border-color,#d1d5db);border-radius:8px;font-size:14px;color:var(--heading-color,#111827);background:var(--input-bg,#fff);outline:none;transition:border-color .15s}
-.bem-field input:focus,.bem-field select:focus{border-color:#0a5ed3;box-shadow:0 0 0 3px rgba(10,94,211,.1)}
-.bem-field input[readonly]{background:var(--input-bg,#f9fafb);color:var(--text-muted,#6b7280)}
-.bem-input-group{display:flex;align-items:center;border:1px solid var(--border-color,#d1d5db);border-radius:8px;overflow:hidden;transition:border-color .15s}
-.bem-input-group:focus-within{border-color:#0a5ed3;box-shadow:0 0 0 3px rgba(10,94,211,.1)}
-.bem-input-group input{border:none;border-radius:0;flex:1;min-width:0}
-.bem-input-group input:focus{box-shadow:none}
-.bem-at{padding:0 8px;font-size:14px;color:var(--text-muted,#9ca3af);font-weight:600;background:var(--input-bg,#f9fafb);border-left:1px solid var(--border-color,#e5e7eb);border-right:1px solid var(--border-color,#e5e7eb);height:100%;display:flex;align-items:center}
-.bem-input-group select{border:none;border-radius:0;flex:1;min-width:0}
-.bem-input-group select:focus{box-shadow:none}
-.bem-pass-wrap{position:relative}
-.bem-pass-wrap input{width:100%;padding-right:40px}
-.bem-pass-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted,#9ca3af);cursor:pointer;padding:4px}
-.bem-pass-toggle:hover{color:var(--heading-color,#111827)}
-.bem-mbtn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
-.bem-mbtn-cancel{background:var(--input-bg,#f3f4f6);color:var(--heading-color,#374151)}
-.bem-mbtn-cancel:hover{background:#e5e7eb}
-.bem-mbtn-primary{background:#0a5ed3;color:#fff}
-.bem-mbtn-primary:hover{background:#0950b3}
-.bem-mbtn-danger{background:#ef4444;color:#fff}
-.bem-mbtn-danger:hover{background:#dc2626}
-.bem-mbtn:disabled{opacity:.5;cursor:not-allowed}
-.bem-modal-msg{margin-top:12px;padding:8px 12px;border-radius:6px;font-size:13px;display:none}
-.bem-modal-msg.success{display:block;background:rgba(5,150,105,.08);color:#059669}
-.bem-modal-msg.error{display:block;background:rgba(239,68,68,.08);color:#ef4444}
-@media(max-width:600px){.bem-btn span{display:none!important}.bem-actions{gap:4px}.bem-btn{padding:5px 7px}}
-</style>
-';
 }
