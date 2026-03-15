@@ -914,7 +914,7 @@ function broodle_tools_css_responsive()
 
 function broodle_tools_shared_script()
 {
-    return '
+    return <<<'BTSCRIPT'
 <script>
 (function(){
 "use strict";
@@ -2427,5 +2427,6 @@ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded"
 else init();
 
 })();
-</script>';
+</script>
+BTSCRIPT;
 }
