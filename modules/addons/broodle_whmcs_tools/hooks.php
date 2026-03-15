@@ -256,13 +256,39 @@ function broodle_tools_gather_data($vars)
 
 /* Single hook: inject everything via ClientAreaProductDetailsOutput */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+    // DEBUG: Always output diagnostic info so we can see what's happening
+    $serviceId = broodle_tools_get_service_id($vars);
+    $cpData = $serviceId ? broodle_tools_get_cpanel_service($serviceId) : null;
+
+    $debug  = '<div style="padding:15px;margin:10px 0;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;font-family:monospace;font-size:13px;">';
+    $debug .= '<strong>🔧 Broodle Debug v3.10.2</strong><br>';
+    $debug .= 'vars keys: ' . htmlspecialchars(implode(', ', array_keys($vars))) . '<br>';
+    $debug .= 'vars[serviceid]: ' . htmlspecialchars($vars['serviceid'] ?? 'NOT SET') . '<br>';
+    $debug .= 'vars[id]: ' . htmlspecialchars($vars['id'] ?? 'NOT SET') . '<br>';
+    $debug .= '$_GET[id]: ' . htmlspecialchars($_GET['id'] ?? 'NOT SET') . '<br>';
+    $debug .= 'Resolved serviceId: ' . ($serviceId ?: 'NONE') . '<br>';
+    $debug .= 'cpData found: ' . ($cpData ? 'YES (server=' . ($cpData['server']->hostname ?? '?') . ')' : 'NO') . '<br>';
+
+    try {
+        $settingsExist = \WHMCS\Database\Capsule::schema()->hasTable('mod_broodle_tools_settings');
+        $debug .= 'Settings table: ' . ($settingsExist ? 'EXISTS' : 'MISSING') . '<br>';
+    } catch (\Exception $e) {
+        $debug .= 'Settings table check error: ' . htmlspecialchars($e->getMessage()) . '<br>';
+    }
+
+    $debug .= '</div>';
+
+    // Now try the real output
     $data = broodle_tools_gather_data($vars);
-    if (!$data) return '';
+    if (!$data) {
+        return $debug . '<div style="padding:15px;margin:10px 0;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;font-family:monospace;font-size:13px;"><strong>❌ gather_data returned false</strong> — hook output stopped here</div>';
+    }
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     // Build complete output: CSS + config + modals + JS
-    $output  = broodle_tools_shared_styles();
+    $output  = $debug;
+    $output .= broodle_tools_shared_styles();
     $output .= '<script>window.__btConfig=' . $jsData . ';</script>';
     $output .= '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
     $output .= broodle_tools_modals();
