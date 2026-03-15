@@ -205,7 +205,40 @@ function broodle_tools_parse_email_response($json, $username)
 
 /* ─── Main Output Hook ────────────────────────────────────── */
 
+/** Ensure all default settings exist (handles upgrades without re-activation). */
+function broodle_tools_ensure_defaults()
+{
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        if (!Capsule::schema()->hasTable('mod_broodle_tools_settings')) return;
+        $defaults = [
+            'tweak_nameservers_tab'   => '1',
+            'tweak_email_list'        => '1',
+            'tweak_wordpress_toolkit' => '0',
+            'tweak_domain_management' => '1',
+            'auto_update_enabled'     => '0',
+        ];
+        foreach ($defaults as $key => $value) {
+            $exists = Capsule::table('mod_broodle_tools_settings')
+                ->where('setting_key', $key)->exists();
+            if (!$exists) {
+                Capsule::table('mod_broodle_tools_settings')->insert([
+                    'setting_key'   => $key,
+                    'setting_value' => $value,
+                    'created_at'    => date('Y-m-d H:i:s'),
+                    'updated_at'    => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
+    } catch (\Exception $e) {
+        // Silently fail
+    }
+}
+
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+    broodle_tools_ensure_defaults();
     $serviceId = broodle_tools_get_service_id($vars);
     if (!$serviceId) return '';
 
@@ -852,332 +885,6 @@ function broodle_tools_shared_script()
             btn.disabled=false;btn.textContent="Delete";
             if(r.success){showMsg(msg,r.message,true);var row=document.querySelector(".bdm-row[data-domain=\""+domDelTarget+"\"]");if(row)row.style.display="none";setTimeout(function(){location.reload();},1200);}
             else{showMsg(msg,r.message,false);}
-        });
-    }
-
-    /* ─── WordPress Toolkit ─── */
-    var wpAjaxUrl="modules/addons/broodle_whmcs_tools/ajax_wordpress.php";
-    var wpInstances=[];
-    var currentWpInstance=null;
-
-    function bwpInit(){
-        var wpSrc=document.getElementById("broodle-wp-source");
-        if(!wpSrc) return;
-        var wpServiceId=wpSrc.getAttribute("data-service-id")||0;
-        wpSrc.style.display="block";
-        wpSrc.style.margin="20px 0";
-
-        // Insert WP section into the page
-        var tabNav=document.querySelector("ul.panel-tabs.nav.nav-tabs");
-        if(!tabNav) tabNav=document.querySelector(".section-body ul.nav.nav-tabs");
-        var panel=tabNav?(tabNav.closest(".panel")||tabNav.parentNode):null;
-
-        if(tabNav){
-            var li=document.createElement("li");
-            li.innerHTML="<a href=\"#broodleWpInfo\" data-toggle=\"tab\"><i class=\"fab fa-wordpress\"></i> WordPress Manager</a>";
-            tabNav.appendChild(li);
-            var tabContent=panel?panel.querySelector(".tab-content"):null;
-            if(tabContent){
-                var tp=document.createElement("div");
-                tp.className="panel-body tab-pane";tp.id="broodleWpInfo";
-                tp.innerHTML=wpSrc.innerHTML;
-                wpSrc.parentNode.removeChild(wpSrc);
-                tabContent.appendChild(tp);
-                bwpBindEvents(tp,wpServiceId);
-                bwpLoadInstances(wpServiceId);
-            }
-        }
-    }
-
-    function bwpBindEvents(container,sid){
-        var scanBtn=container.querySelector("#bwpScanBtn");
-        if(scanBtn) scanBtn.addEventListener("click",function(){bwpScan(sid);});
-
-        // Detail panel events
-        var overlay=document.getElementById("bwpDetailOverlay");
-        if(overlay){
-            overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.style.display="none";});
-            var backBtn=document.getElementById("bwpBackBtn");
-            if(backBtn) backBtn.addEventListener("click",function(){overlay.style.display="none";});
-            var closeBtn=document.getElementById("bwpDetailClose");
-            if(closeBtn) closeBtn.addEventListener("click",function(){overlay.style.display="none";});
-
-            // Tab switching
-            overlay.querySelectorAll(".bwp-tab").forEach(function(tab){
-                tab.addEventListener("click",function(){
-                    overlay.querySelectorAll(".bwp-tab").forEach(function(t){t.classList.remove("active");});
-                    overlay.querySelectorAll(".bwp-tab-content").forEach(function(c){c.classList.remove("active");});
-                    tab.classList.add("active");
-                    var target=tab.getAttribute("data-tab");
-                    var content=document.getElementById("bwpTab"+target.charAt(0).toUpperCase()+target.slice(1));
-                    if(content) content.classList.add("active");
-
-                    // Lazy load tab content
-                    if(target==="plugins"&&currentWpInstance) bwpLoadPlugins(sid);
-                    if(target==="themes"&&currentWpInstance) bwpLoadThemes(sid);
-                    if(target==="security"&&currentWpInstance) bwpLoadSecurity(sid);
-                });
-            });
-        }
-    }
-
-    function bwpAjax(data,sid,cb){
-        var fd=new FormData();
-        for(var k in data) fd.append(k,data[k]);
-        fd.append("service_id",sid);
-        var x=new XMLHttpRequest();x.open("POST",wpAjaxUrl,true);
-        x.onload=function(){try{cb(JSON.parse(x.responseText));}catch(e){cb({success:false,message:"Invalid response"});}};
-        x.onerror=function(){cb({success:false,message:"Network error"});};
-        x.send(fd);
-    }
-
-    function bwpLoadInstances(sid){
-        var loading=document.getElementById("bwpLoading");
-        var list=document.getElementById("bwpList");
-        var empty=document.getElementById("bwpEmpty");
-        if(loading) loading.style.display="flex";
-        if(list) list.style.display="none";
-        if(empty) empty.style.display="none";
-
-        bwpAjax({action:"get_wp_instances"},sid,function(r){
-            if(loading) loading.style.display="none";
-            if(r.success&&r.instances&&r.instances.length>0){
-                wpInstances=r.instances;
-                if(list){
-                    list.style.display="block";
-                    var html="";
-                    r.instances.forEach(function(inst){
-                        var path=inst.rel_path?"/"+inst.rel_path:"/";
-                        var date=inst.created_on?new Date(inst.created_on*1000).toLocaleDateString():"";
-                        html+="<div class=\"bwp-site\" data-id=\""+bwpEsc(inst.id)+"\" data-path=\""+bwpEsc(inst.full_path)+"\">"
-                            +"<div class=\"bwp-site-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z\"/></svg></div>"
-                            +"<div class=\"bwp-site-info\">"
-                            +"<p class=\"bwp-site-domain\">"+bwpEsc(inst.site_url||inst.domain)+"</p>"
-                            +"<div class=\"bwp-site-meta\">"
-                            +"<span>WP "+bwpEsc(inst.current_version)+"</span>"
-                            +"<span>"+bwpEsc(path)+"</span>"
-                            +(date?"<span>"+date+"</span>":"")
-                            +"</div></div>"
-                            +"<div class=\"bwp-site-actions\">"
-                            +"<button type=\"button\" class=\"bwp-action-btn primary bwp-login-btn\" data-id=\""+bwpEsc(inst.id)+"\">Login</button>"
-                            +"<button type=\"button\" class=\"bwp-action-btn bwp-manage-btn\" data-id=\""+bwpEsc(inst.id)+"\">Manage</button>"
-                            +"</div></div>";
-                    });
-                    list.innerHTML=html;
-
-                    // Bind click events
-                    list.querySelectorAll(".bwp-login-btn").forEach(function(btn){
-                        btn.addEventListener("click",function(e){
-                            e.stopPropagation();
-                            bwpAutoLogin(this.getAttribute("data-id"),sid);
-                        });
-                    });
-                    list.querySelectorAll(".bwp-manage-btn").forEach(function(btn){
-                        btn.addEventListener("click",function(e){
-                            e.stopPropagation();
-                            bwpOpenDetail(this.getAttribute("data-id"),sid);
-                        });
-                    });
-                    list.querySelectorAll(".bwp-site").forEach(function(site){
-                        site.addEventListener("click",function(){
-                            bwpOpenDetail(this.getAttribute("data-id"),sid);
-                        });
-                    });
-                }
-            } else {
-                if(empty) empty.style.display="flex";
-            }
-        });
-    }
-
-    function bwpEsc(s){if(!s)return"";var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
-
-    function bwpScan(sid){
-        var btn=document.getElementById("bwpScanBtn");
-        if(btn){btn.disabled=true;btn.innerHTML="Scanning...";}
-        bwpAjax({action:"wp_scan"},sid,function(r){
-            if(btn){btn.disabled=false;btn.innerHTML="<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21.21 15.89A10 10 0 1 1 8 2.83\"/><path d=\"M22 12A10 10 0 0 0 12 2v10z\"/></svg> Scan";}
-            if(r.success){setTimeout(function(){bwpLoadInstances(sid);},3000);}
-            else{alert(r.message||"Scan failed");}
-        });
-    }
-
-    function bwpAutoLogin(instId,sid){
-        bwpAjax({action:"wp_autologin",instance_id:instId},sid,function(r){
-            if(r.success&&r.cpanel_url){window.open(r.cpanel_url,"_blank");}
-            else{alert(r.message||"Could not create login session");}
-        });
-    }
-
-    function bwpOpenDetail(instId,sid){
-        var inst=null;
-        for(var i=0;i<wpInstances.length;i++){if(wpInstances[i].id===instId){inst=wpInstances[i];break;}}
-        if(!inst) return;
-        currentWpInstance=inst;
-
-        var overlay=document.getElementById("bwpDetailOverlay");
-        if(!overlay) return;
-        overlay.style.display="flex";
-
-        document.getElementById("bwpDetailTitle").textContent=inst.site_url||inst.domain;
-
-        // Reset tabs
-        overlay.querySelectorAll(".bwp-tab").forEach(function(t,i){t.classList.toggle("active",i===0);});
-        overlay.querySelectorAll(".bwp-tab-content").forEach(function(c,i){c.classList.toggle("active",i===0);});
-
-        // Build overview
-        var ov=document.getElementById("bwpTabOverview");
-        var path=inst.rel_path?"/"+inst.rel_path:"/";
-        ov.innerHTML="<div class=\"bwp-overview-grid\">"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Domain</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.domain)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">WP Version</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.current_version)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Path</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.full_path)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Database</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.db_name)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Admin User</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.admin_username)+"</p></div>"
-            +"<div class=\"bwp-stat\"><p class=\"bwp-stat-label\">Type</p><p class=\"bwp-stat-value\">"+bwpEsc(inst.addon_type)+"</p></div>"
-            +"</div>"
-            +"<div class=\"bwp-quick-actions\">"
-            +"<button type=\"button\" class=\"bwp-action-btn primary\" onclick=\"bwpDoLogin()\">WP Admin Login</button>"
-            +"<button type=\"button\" class=\"bwp-action-btn\" onclick=\"window.open(\\x27"+bwpEsc("https://"+inst.site_url)+"\\x27,\\x27_blank\\x27)\">Visit Site</button>"
-            +"</div>";
-
-        // Reset other tabs to loading state
-        document.getElementById("bwpTabPlugins").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
-        document.getElementById("bwpTabThemes").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
-        document.getElementById("bwpTabSecurity").innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
-    }
-
-    window.bwpDoLogin=function(){
-        if(currentWpInstance){
-            var sid=document.getElementById("broodleWpInfo")?document.getElementById("broodleWpInfo").querySelector("[data-service-id]"):null;
-            var svcId=sid?sid.getAttribute("data-service-id"):(serviceId||0);
-            bwpAutoLogin(currentWpInstance.id,svcId);
-        }
-    };
-
-    function bwpLoadPlugins(sid){
-        if(!currentWpInstance) return;
-        var container=document.getElementById("bwpTabPlugins");
-        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading plugins...</span></div>";
-
-        bwpAjax({action:"wp_list_plugins",wp_path:currentWpInstance.full_path},sid,function(r){
-            if(r.success&&r.plugins){
-                var html="";
-                r.plugins.forEach(function(p){
-                    var statusClass=p.status==="active"?"active":"inactive";
-                    var toggleAction=p.status==="active"?"deactivate":"activate";
-                    var toggleLabel=p.status==="active"?"Deactivate":"Activate";
-                    var hasUpdate=p.update&&p.update!=="none";
-                    html+="<div class=\"bwp-item-row\">"
-                        +"<div class=\"bwp-item-icon plugin\">&#128268;</div>"
-                        +"<div class=\"bwp-item-info\">"
-                        +"<p class=\"bwp-item-name\">"+bwpEsc(p.name)+" <span class=\"bwp-status-badge "+statusClass+"\">"+bwpEsc(p.status)+"</span>"
-                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
-                        +"</p>"
-                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(p.version)+(hasUpdate?" &rarr; "+bwpEsc(p.update):"")+"</p>"
-                        +"</div>"
-                        +"<div class=\"bwp-item-actions\">"
-                        +"<button class=\"bwp-item-btn "+statusClass+"-state\" onclick=\"bwpTogglePlugin(\\x27"+bwpEsc(p.name)+"\\x27,\\x27"+toggleAction+"\\x27,"+sid+")\">"+toggleLabel+"</button>"
-                        +(hasUpdate?"<button class=\"bwp-item-btn update\" onclick=\"bwpUpdatePlugin(\\x27"+bwpEsc(p.name)+"\\x27,"+sid+")\">Update</button>":"")
-                        +"<button class=\"bwp-item-btn delete\" onclick=\"bwpDeletePlugin(\\x27"+bwpEsc(p.name)+"\\x27,"+sid+")\">Delete</button>"
-                        +"</div></div>";
-                });
-                container.innerHTML=html||"<div class=\"bwp-empty\"><span>No plugins found</span></div>";
-            } else {
-                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load plugins. WP-CLI may not be available on this server.")+"</div>";
-            }
-        });
-    }
-
-    window.bwpTogglePlugin=function(slug,action,sid){
-        bwpAjax({action:"wp_toggle_plugin",wp_path:currentWpInstance.full_path,plugin:slug,plugin_action:action},sid,function(r){
-            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-    window.bwpUpdatePlugin=function(slug,sid){
-        bwpAjax({action:"wp_update_plugin",wp_path:currentWpInstance.full_path,plugin:slug},sid,function(r){
-            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-    window.bwpDeletePlugin=function(slug,sid){
-        if(!confirm("Delete plugin "+slug+"?")) return;
-        bwpAjax({action:"wp_delete_plugin",wp_path:currentWpInstance.full_path,plugin:slug},sid,function(r){
-            if(r.success){bwpLoadPlugins(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-
-    function bwpLoadThemes(sid){
-        if(!currentWpInstance) return;
-        var container=document.getElementById("bwpTabThemes");
-        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Loading themes...</span></div>";
-
-        bwpAjax({action:"wp_list_themes",wp_path:currentWpInstance.full_path},sid,function(r){
-            if(r.success&&r.themes){
-                var html="";
-                r.themes.forEach(function(t){
-                    var isActive=t.status==="active";
-                    var hasUpdate=t.update&&t.update!=="none";
-                    html+="<div class=\"bwp-item-row\">"
-                        +"<div class=\"bwp-item-icon theme\">&#127912;</div>"
-                        +"<div class=\"bwp-item-info\">"
-                        +"<p class=\"bwp-item-name\">"+bwpEsc(t.name)+" <span class=\"bwp-status-badge "+(isActive?"active":"inactive")+"\">"+(isActive?"Active":"Inactive")+"</span>"
-                        +(hasUpdate?" <span class=\"bwp-status-badge update-available\">Update</span>":"")
-                        +"</p>"
-                        +"<p class=\"bwp-item-detail\">v"+bwpEsc(t.version)+(hasUpdate?" &rarr; "+bwpEsc(t.update):"")+"</p>"
-                        +"</div>"
-                        +"<div class=\"bwp-item-actions\">"
-                        +(!isActive?"<button class=\"bwp-item-btn active-state\" onclick=\"bwpActivateTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Activate</button>":"")
-                        +(hasUpdate?"<button class=\"bwp-item-btn update\" onclick=\"bwpUpdateTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Update</button>":"")
-                        +(!isActive?"<button class=\"bwp-item-btn delete\" onclick=\"bwpDeleteTheme(\\x27"+bwpEsc(t.name)+"\\x27,"+sid+")\">Delete</button>":"")
-                        +"</div></div>";
-                });
-                container.innerHTML=html||"<div class=\"bwp-empty\"><span>No themes found</span></div>";
-            } else {
-                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Could not load themes.")+"</div>";
-            }
-        });
-    }
-
-    window.bwpActivateTheme=function(slug,sid){
-        bwpAjax({action:"wp_toggle_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
-            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-    window.bwpUpdateTheme=function(slug,sid){
-        bwpAjax({action:"wp_update_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
-            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-    window.bwpDeleteTheme=function(slug,sid){
-        if(!confirm("Delete theme "+slug+"?")) return;
-        bwpAjax({action:"wp_delete_theme",wp_path:currentWpInstance.full_path,theme:slug},sid,function(r){
-            if(r.success){bwpLoadThemes(sid);}else{alert(r.message||"Failed");}
-        });
-    };
-
-    function bwpLoadSecurity(sid){
-        if(!currentWpInstance) return;
-        var container=document.getElementById("bwpTabSecurity");
-        container.innerHTML="<div class=\"bwp-loading\"><div class=\"bwp-spinner\"></div><span>Running security scan...</span></div>";
-
-        bwpAjax({action:"wp_security_scan",wp_path:currentWpInstance.full_path},sid,function(r){
-            if(r.success&&r.security){
-                var icons={ok:"&#10003;",warning:"&#9888;",danger:"&#10007;"};
-                var html="";
-                r.security.forEach(function(item){
-                    html+="<div class=\"bwp-security-item\">"
-                        +"<div class=\"bwp-sec-icon "+item.status+"\">"+icons[item.status]+"</div>"
-                        +"<div class=\"bwp-sec-info\">"
-                        +"<p class=\"bwp-sec-label\">"+bwpEsc(item.label)+"</p>"
-                        +"<p class=\"bwp-sec-detail\">"+bwpEsc(item.detail)+"</p>"
-                        +"</div>"
-                        +"<span class=\"bwp-sec-value "+item.status+"\">"+bwpEsc(item.value)+"</span>"
-                        +"</div>";
-                });
-                container.innerHTML=html;
-            } else {
-                container.innerHTML="<div class=\"bwp-msg error\">"+(r.message||"Security scan failed.")+"</div>";
-            }
         });
     }
 
