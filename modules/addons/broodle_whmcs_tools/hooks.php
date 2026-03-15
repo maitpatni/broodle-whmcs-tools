@@ -686,16 +686,41 @@ function broodle_tools_shared_script()
             }
         }
 
-        // Domains → tab (before WordPress)
+        // Domains → replace default WHMCS Domains tab
         var dmSrc=document.getElementById("broodle-domain-source");
         if(dmSrc){
             if(!serviceId) serviceId=dmSrc.getAttribute("data-service-id")||0;
             var dmHtml=dmSrc.innerHTML;dmSrc.parentNode.removeChild(dmSrc);
             if(!document.getElementById("broodleDomainInfo")){
                 if(tabNav&&tabContent){
+                    // Find and hide the default WHMCS Domains tab
+                    var defaultDomainTab=null;
+                    var defaultDomainPane=null;
+                    var tabLinks=tabNav.querySelectorAll("li");
+                    for(var i=0;i<tabLinks.length;i++){
+                        var a=tabLinks[i].querySelector("a");
+                        if(a){
+                            var href=a.getAttribute("href")||"";
+                            var txt=(a.textContent||"").toLowerCase().trim();
+                            if(href==="#tabDomains"||txt==="domains"||txt.indexOf("domain")!==-1){
+                                defaultDomainTab=tabLinks[i];
+                                var paneId=href.replace("#","");
+                                if(paneId) defaultDomainPane=tabContent.querySelector("#"+paneId);
+                                break;
+                            }
+                        }
+                    }
+                    // Create our replacement tab
                     var dLi=document.createElement("li");
                     dLi.innerHTML="<a href=\"#broodleDomainInfo\" data-toggle=\"tab\"><i class=\"fas fa-sitemap\"></i> Domains</a>";
-                    tabNav.appendChild(dLi);
+                    // Insert in place of default, or append
+                    if(defaultDomainTab){
+                        defaultDomainTab.parentNode.insertBefore(dLi,defaultDomainTab);
+                        defaultDomainTab.style.display="none";
+                        if(defaultDomainPane) defaultDomainPane.style.display="none";
+                    }else{
+                        tabNav.appendChild(dLi);
+                    }
                     var dP=document.createElement("div");
                     dP.className="panel-body tab-pane";dP.id="broodleDomainInfo";dP.innerHTML=dmHtml;
                     tabContent.appendChild(dP);bindDomainActions(dP);
