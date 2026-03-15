@@ -212,7 +212,24 @@ function broodle_tools_get_domains_detailed($serviceId)
 
 /* ─── Main Output Hook ────────────────────────────────────── */
 
-add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+/*
+ * Use ClientAreaFooterOutput instead of ClientAreaProductDetailsOutput.
+ * The latter renders inside {foreach $hookOutput} which can be silently
+ * discarded when another hook on the same point (e.g. MarketConnect)
+ * throws an error.  ClientAreaFooterOutput renders via {$footeroutput}
+ * in the footer template — unconditionally on every page.
+ */
+add_hook('ClientAreaFooterOutput', 1, function ($vars) {
+    // Only run on the product details page
+    $filename = $vars['filename'] ?? ($vars['templatefile'] ?? '');
+    if ($filename !== 'clientareaproductdetails') {
+        // Fallback: check the request URI
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($uri, 'clientarea.php') === false || empty($_GET['action']) || $_GET['action'] !== 'productdetails') {
+            return '';
+        }
+    }
+
     broodle_tools_ensure_defaults();
     $serviceId = broodle_tools_get_service_id($vars);
     if (!$serviceId) return '';
