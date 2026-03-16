@@ -1,9 +1,13 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.43");
-var ajaxUrl="modules/addons/broodle_whmcs_tools/ajax.php";
-var wpAjaxUrl="modules/addons/broodle_whmcs_tools/ajax_wordpress.php";
+console.log("[BT] bt_client.js loaded successfully, version 3.10.44");
+/* Detect base path: if loaded from managev2.php (same dir), use relative; otherwise use full path */
+var btScripts=document.querySelectorAll('script[src*="bt_client.js"]');
+var btBasePath="modules/addons/broodle_whmcs_tools/";
+if(btScripts.length){var src=btScripts[btScripts.length-1].getAttribute("src")||"";if(src.indexOf("/")===-1||src.indexOf("bt_client.js")===0) btBasePath="";}
+var ajaxUrl=btBasePath+"ajax.php";
+var wpAjaxUrl=btBasePath+"ajax_wordpress.php";
 var C={};
 var wpInstances=[];var currentWpInstance=null;
 
@@ -325,73 +329,9 @@ function init(){
         C=window.__btConfig;
     }else{return;}
 
-    /* ── Find .main-content ── */
-    var mainContent=document.querySelector(".main-content");
-    if(!mainContent){mainContent=document.querySelector(".content-padded,.container-fluid>.row");if(!mainContent)return;}
-
-    /* ── Clone elements we want to preserve BEFORE nuking ── */
-    /* 1. Product icon card (the big card at top with product name, domain, status) */
-    var productCard=mainContent.querySelector(".product-icon,.product-details-header,.service-details-header");
-    var productCardClone=productCard?productCard.cloneNode(true):null;
-
-    /* 2. Usage stats (disk, bandwidth bars) */
-    var usageStats=mainContent.querySelector(".server-status,.usage-stats-container,.stats-container,[class*=server-status]");
-    var usageStatsClone=usageStats?usageStats.cloneNode(true):null;
-
-    /* 3. Quick Shortcuts section */
-    var quickShortcuts=null;
-    mainContent.querySelectorAll(".section,.panel,.card,.quick-shortcuts").forEach(function(sec){
-        var title=sec.querySelector(".section-title,h2,h3,h4,.panel-heading,.card-header");
-        if(title&&(title.textContent||"").toLowerCase().indexOf("quick shortcut")!==-1){
-            quickShortcuts=sec.cloneNode(true);
-        }
-    });
-
-    /* 4. cPanel SSO link — preserve data attributes for Lagom2 SSO handler */
-    var cpanelLinks=document.querySelectorAll('a[data-identifier="cpanel"],a[data-identifier="cPanel"],.list-group-item[data-identifier="cpanel"]');
-    cpanelLinks.forEach(function(link){
-        if(!savedCpanelLink){
-            savedCpanelLink={
-                href:link.getAttribute("href")||"#",
-                dataActive:link.getAttribute("data-active")||"",
-                dataIdentifier:link.getAttribute("data-identifier")||"",
-                dataServiceid:link.getAttribute("data-serviceid")||link.getAttribute("data-serviceid")||""
-            };
-        }
-    });
-    /* Also try to find it from sidebar */
-    if(!savedCpanelLink){
-        document.querySelectorAll(".list-group-item").forEach(function(item){
-            var t=(item.textContent||"").toLowerCase().trim();
-            if(t.indexOf("cpanel")!==-1&&!savedCpanelLink){
-                savedCpanelLink={
-                    href:item.getAttribute("href")||"#",
-                    dataActive:item.getAttribute("data-active")||"",
-                    dataIdentifier:item.getAttribute("data-identifier")||"",
-                    dataServiceid:item.getAttribute("data-serviceid")||""
-                };
-            }
-        });
-    }
-
-    /* 5. Change Password pane */
-    var changePwEl=document.getElementById("Changepw");
-    if(changePwEl) savedChangePwPane=changePwEl.cloneNode(true);
-
-    /* ── Find the sidebar container ── */
-    var mainSidebar=document.querySelector(".main-sidebar,.sidebar-sticky");
-    var sidebarParent=mainSidebar?mainSidebar.parentElement:null;
-
-    /* ── NUKE the main content and sidebar ── */
-    mainContent.innerHTML="";
-    if(sidebarParent&&sidebarParent!==mainContent){
-        sidebarParent.innerHTML="";
-    }
-
-    /* ── Build our page layout ── */
-    var pageWrap=document.createElement("div");
-    pageWrap.className="bt-page-wrap";
-    pageWrap.id="bt-page-wrap";
+    /* ── Standalone page mode: #bt-page-wrap already exists in managev2.php ── */
+    var pageWrap=$("bt-page-wrap");
+    if(!pageWrap) return;
 
     /* ── Build sidebar ── */
     var sidebar=document.createElement("div");
@@ -403,14 +343,6 @@ function init(){
     var mainArea=document.createElement("div");
     mainArea.className="bt-main-area";
     mainArea.id="bt-main-area";
-
-    /* ── Insert preserved content into main area ── */
-    var preserved=document.createElement("div");
-    preserved.className="bt-preserved-content";
-    if(productCardClone) preserved.appendChild(productCardClone);
-    if(usageStatsClone) preserved.appendChild(usageStatsClone);
-    if(quickShortcuts) preserved.appendChild(quickShortcuts);
-    if(preserved.children.length) mainArea.appendChild(preserved);
 
     /* ── Tabs container ── */
     var tabsWrap=document.createElement("div");
@@ -427,30 +359,11 @@ function init(){
     var changePwPage=document.createElement("div");
     changePwPage.id="bt-changepw-page";
     changePwPage.style.display="none";
-    if(savedChangePwPane){
-        changePwPage.appendChild(savedChangePwPane);
-    }
     mainArea.appendChild(changePwPage);
 
     /* ── Assemble layout ── */
     pageWrap.appendChild(sidebar);
     pageWrap.appendChild(mainArea);
-
-    /* ── Place into DOM ── */
-    if(sidebarParent&&sidebarParent!==mainContent){
-        /* Lagom2: .main-content and .main-sidebar are siblings inside a .row */
-        var row=mainContent.parentElement;
-        if(row){
-            /* Remove the old column classes and replace with our layout */
-            row.innerHTML="";
-            row.style.display="block";
-            row.appendChild(pageWrap);
-        }else{
-            mainContent.appendChild(pageWrap);
-        }
-    }else{
-        mainContent.appendChild(pageWrap);
-    }
 
     /* ── Build modals ── */
     if(!$("bemCreateModal")&&C.serviceId){
@@ -482,18 +395,13 @@ function buildSidebarHtml(){
 
     /* Actions panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Actions</div>';
-    /* cPanel login */
-    var cpHref=savedCpanelLink?savedCpanelLink.href:"#";
-    var cpAttrs='';
-    if(savedCpanelLink){
-        if(savedCpanelLink.dataActive) cpAttrs+=' data-active="'+esc(savedCpanelLink.dataActive)+'"';
-        if(savedCpanelLink.dataIdentifier) cpAttrs+=' data-identifier="'+esc(savedCpanelLink.dataIdentifier)+'"';
-        if(savedCpanelLink.dataServiceid) cpAttrs+=' data-serviceid="'+esc(savedCpanelLink.dataServiceid)+'"';
-    }
-    html+='<a class="bt-sidebar-item" href="'+esc(cpHref)+'"'+cpAttrs+' id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);color:#ff6a13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="bt-si-label">cPanel<span>Control Panel</span></div></a>';
-    html+='<a class="bt-sidebar-item" data-page="changepw"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
-    html+='<a class="bt-sidebar-item" href="upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
-    html+='<a class="bt-sidebar-item" href="clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
+    /* cPanel login — link to WHMCS product details page which has the SSO handler */
+    var cpHref=btBasePath?"clientarea.php?action=productdetails&id="+C.serviceId+"&dosinglesignon=1":"../../../clientarea.php?action=productdetails&id="+C.serviceId+"&dosinglesignon=1";
+    html+='<a class="bt-sidebar-item" href="'+esc(cpHref)+'" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);color:#ff6a13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="bt-si-label">cPanel<span>Control Panel</span></div></a>';
+    var whmcsBase=btBasePath?"":"../../../";
+    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
     html+='</div>';
     return html;
 }

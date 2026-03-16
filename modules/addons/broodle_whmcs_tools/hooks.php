@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.43');
+    define('BROODLE_TOOLS_VERSION', '3.10.44');
 }
 
 if (!defined('WHMCS')) {
@@ -272,30 +272,15 @@ function broodle_tools_gather_data($vars)
     return $cache;
 }
 
-/* Secondary hook: inject via ClientAreaProductDetailsOutput (works in default WHMCS themes).
-   Lagom2 may NOT render this hook's output, so ClientAreaFooterOutput is the primary method. */
+/* ─── Manage V2 button: inject via ClientAreaProductDetailsOutput ─── */
+/* This adds a small "Manage V2" link on the default product details page */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
-    try {
-        $data = broodle_tools_gather_data($vars);
-    } catch (\Exception $e) {
-        return '';
-    }
-
-    if (!$data) {
-        return '';
-    }
-
-    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
-    $version = BROODLE_TOOLS_VERSION;
-    $ts = time();
-
-    $out  = '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
-
-    // Method 1: img onload (bypasses Smarty script filtering)
-    // Build URL with string concat to avoid & being stripped from onload attribute
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="if(!window.__btClientLoaded){var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=' . $version . '\'+String.fromCharCode(38)+\'t=' . $ts . '\';document.head.appendChild(s);}" style="display:none!important" alt="">';
-
-    return $out;
+    $serviceId = broodle_tools_get_service_id($vars);
+    if (!$serviceId) return '';
+    $cpData = broodle_tools_get_cpanel_service($serviceId);
+    if (!$cpData) return '';
+    $url = 'modules/addons/broodle_whmcs_tools/managev2.php?id=' . $serviceId;
+    return '<div style="margin:10px 0"><a href="' . $url . '" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Manage V2</a></div>';
 });
 
 /* ─── Remove Webmail sidebar button ───────────────────────── */
@@ -327,6 +312,21 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
             $overview->removeChild('Webmail Login');
             $overview->removeChild('Webmail');
             $overview->removeChild('webmail');
+        }
+    } catch (\Exception $e) {}
+
+    // Add "Manage V2" link to sidebar
+    try {
+        $serviceId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($serviceId) {
+            $actions = $primarySidebar->getChild('Service Details Actions');
+            if ($actions) {
+                $actions->addChild('Manage V2')
+                    ->setLabel('Manage V2')
+                    ->setUri('modules/addons/broodle_whmcs_tools/managev2.php?id=' . $serviceId)
+                    ->setOrder(1)
+                    ->setIcon('fa-th-large');
+            }
         }
     } catch (\Exception $e) {}
 });
@@ -2431,48 +2431,35 @@ function broodle_tools_shared_script()
 
 /* ─── Upgrade Page List Layout ────────────────────────────── */
 
-/* PRIMARY injection: ClientAreaFooterOutput is universally supported by all themes including Lagom2.
-   We inject the bt-data config div + bt_client.js here because some themes (e.g. Lagom2) may not
-   render ClientAreaProductDetailsOutput hook output at all. */
+/* ─── Manage V2 button: also inject via ClientAreaFooterOutput for Lagom2 ─── */
+/* Lagom2 may not render ClientAreaProductDetailsOutput, so we add the button here too */
 add_hook('ClientAreaFooterOutput', 1, function ($vars) {
-    // Only run on product details pages
     $filename = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
     $action = $_GET['action'] ?? '';
     $isProductDetails = ($filename === 'clientarea.php' && $action === 'productdetails')
                      || (isset($vars['templatefile']) && strpos($vars['templatefile'], 'clientareaproductdetails') !== false);
     if (!$isProductDetails) return '';
 
-    try {
-        $data = broodle_tools_gather_data($vars);
-    } catch (\Exception $e) {
-        return '';
-    }
+    $serviceId = broodle_tools_get_service_id($vars);
+    if (!$serviceId) return '';
+    $cpData = broodle_tools_get_cpanel_service($serviceId);
+    if (!$cpData) return '';
 
-    if (!$data) {
-        return '';
-    }
-
-    $version = BROODLE_TOOLS_VERSION;
-    $ts = time();
-    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
-
-    $out = '';
-    // Only inject bt-data if not already present (ClientAreaProductDetailsOutput may have done it)
-    $out .= '<script>
-if(!document.getElementById("bt-data")){
-    var d=document.createElement("div");
-    d.id="bt-data";
-    d.style.display="none";
-    d.setAttribute("data-config",' . json_encode($jsData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) . ');
-    document.body.appendChild(d);
-}
-if(!window.__btClientLoaded){
-    var s=document.createElement("script");
-    s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=' . $version . '&t=' . $ts . '";
-    document.head.appendChild(s);
-}
+    $url = 'modules/addons/broodle_whmcs_tools/managev2.php?id=' . $serviceId;
+    /* Inject a floating "Manage V2" button via JS (works even if Lagom2 blocks hook output) */
+    return '<script>
+(function(){
+    if(document.getElementById("bt-managev2-btn")) return;
+    var btn=document.createElement("a");
+    btn.id="bt-managev2-btn";
+    btn.href="' . $url . '";
+    btn.innerHTML=\'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Manage V2\';
+    btn.style.cssText="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#0a5ed3;color:#fff;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;position:fixed;bottom:24px;right:24px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);transition:transform .15s";
+    btn.onmouseenter=function(){this.style.transform="translateY(-2px)"};
+    btn.onmouseleave=function(){this.style.transform=""};
+    document.body.appendChild(btn);
+})();
 </script>';
-    return $out;
 });
 
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
