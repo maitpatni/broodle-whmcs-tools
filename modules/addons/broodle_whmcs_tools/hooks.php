@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.47');
+    define('BROODLE_TOOLS_VERSION', '3.10.48');
 }
 
 if (!defined('WHMCS')) {
@@ -289,7 +289,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     if (!$serviceId) return '';
     $cpData = broodle_tools_get_cpanel_service($serviceId);
     if (!$cpData) return '';
-    $url = 'managev2.php?id=' . $serviceId;
+    $url = 'index.php?m=broodle_whmcs_tools&id=' . $serviceId;
     return '<div style="margin:10px 0"><a href="' . $url . '" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Manage V2</a></div>';
 });
 
@@ -333,7 +333,7 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
             if ($actions) {
                 $actions->addChild('Manage V2')
                     ->setLabel('Manage V2')
-                    ->setUri('managev2.php?id=' . $serviceId)
+                    ->setUri('index.php?m=broodle_whmcs_tools&id=' . $serviceId)
                     ->setOrder(1)
                     ->setIcon('fa-th-large');
             }
@@ -2455,8 +2455,7 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
     $cpData = broodle_tools_get_cpanel_service($serviceId);
     if (!$cpData) return '';
 
-    $url = 'managev2.php?id=' . $serviceId;
-    /* Inject a floating "Manage V2" button via JS (works even if Lagom2 blocks hook output) */
+    $url = 'index.php?m=broodle_whmcs_tools&id=' . $serviceId;
     return '<script>
 (function(){
     if(document.getElementById("bt-managev2-btn")) return;

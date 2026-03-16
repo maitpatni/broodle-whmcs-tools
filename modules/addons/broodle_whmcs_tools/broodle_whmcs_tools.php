@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.47');
+define('BROODLE_TOOLS_VERSION', '3.10.48');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -118,6 +118,78 @@ function broodle_whmcs_tools_deactivate()
     } catch (\Exception $e) {
         return ['status' => 'error', 'description' => 'Error: ' . $e->getMessage()];
     }
+}
+
+/**
+ * Admin area output.
+ */
+/**
+ * Client area output — renders the Manage V2 page.
+ * Accessed via: index.php?m=broodle_whmcs_tools&id=SERVICE_ID
+ */
+function broodle_whmcs_tools_clientarea($vars)
+{
+    $serviceId = (int) ($_GET['id'] ?? 0);
+    $clientId  = (int) ($_SESSION['uid'] ?? 0);
+
+    if (!$serviceId || !$clientId) {
+        return [
+            'pagetitle'    => 'Manage V2',
+            'breadcrumb'   => ['index.php?m=broodle_whmcs_tools' => 'Manage V2'],
+            'templatefile' => 'templates/error',
+            'requirelogin' => true,
+            'vars'         => ['error' => 'Missing service ID.'],
+        ];
+    }
+
+    $service = Capsule::table('tblhosting')
+        ->where('id', $serviceId)
+        ->where('userid', $clientId)
+        ->first();
+
+    if (!$service) {
+        return [
+            'pagetitle'    => 'Manage V2',
+            'breadcrumb'   => ['index.php?m=broodle_whmcs_tools' => 'Manage V2'],
+            'templatefile' => 'templates/error',
+            'requirelogin' => true,
+            'vars'         => ['error' => 'Service not found or access denied.'],
+        ];
+    }
+
+    // Gather data
+    require_once __DIR__ . '/hooks.php';
+    $data = broodle_tools_gather_data(['serviceid' => $serviceId, 'userid' => $clientId]);
+
+    if (!$data) {
+        return [
+            'pagetitle'    => 'Manage V2',
+            'breadcrumb'   => ['index.php?m=broodle_whmcs_tools' => 'Manage V2'],
+            'templatefile' => 'templates/error',
+            'requirelogin' => true,
+            'vars'         => ['error' => 'Could not load service data. This service may not be a cPanel product.'],
+        ];
+    }
+
+    $product     = Capsule::table('tblproducts')->where('id', $service->packageid)->first();
+    $productName = $product ? $product->name : 'Service';
+    $version     = BROODLE_TOOLS_VERSION;
+    $ts          = time();
+
+    return [
+        'pagetitle'    => htmlspecialchars($productName) . ' — Manage V2',
+        'breadcrumb'   => [
+            'clientarea.php?action=productdetails&id=' . $serviceId => htmlspecialchars($productName),
+            'index.php?m=broodle_whmcs_tools&id=' . $serviceId      => 'Manage V2',
+        ],
+        'templatefile' => 'templates/managev2',
+        'requirelogin' => true,
+        'vars'         => [
+            'bt_config_b64' => base64_encode(json_encode($data)),
+            'bt_js_url'     => 'modules/addons/broodle_whmcs_tools/bt_client.js?v=' . $version . '&t=' . $ts,
+            'serviceId'     => $serviceId,
+        ],
+    ];
 }
 
 /**
