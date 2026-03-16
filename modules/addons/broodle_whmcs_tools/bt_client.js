@@ -280,7 +280,6 @@ function buildTabs(){
         {id:"cronjobs",icon:"<svg viewBox=\x270 0 24 24\x27 fill=\x27none\x27 stroke=\x27currentColor\x27 stroke-width=\x272\x27><circle cx=\x2712\x27 cy=\x2712\x27 r=\x2710\x27/><polyline points=\x2712 6 12 12 16 14\x27/></svg>",label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:"<svg viewBox=\x270 0 24 24\x27 fill=\x27none\x27 stroke=\x27currentColor\x27 stroke-width=\x272\x27><polyline points=\x2716 18 22 12 16 6\x27/><polyline points=\x278 6 2 12 8 18\x27/><line x1=\x2714\x27 y1=\x274\x27 x2=\x2710\x27 y2=\x2720\x27/></svg>",label:"PHP",check:"phpEnabled"},
         {id:"errorlogs",icon:"<svg viewBox=\x270 0 24 24\x27 fill=\x27none\x27 stroke=\x27currentColor\x27 stroke-width=\x272\x27><path d=\x27M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\x27/><polyline points=\x2714 2 14 8 20 8\x27/><line x1=\x2716\x27 y1=\x2713\x27 x2=\x278\x27 y2=\x2713\x27/><line x1=\x2716\x27 y1=\x2717\x27 x2=\x278\x27 y2=\x2717\x27/></svg>",label:"Error Logs",check:"logsEnabled"},
-        {id:"wordpress",icon:wpIcon,label:"WordPress",check:"wpEnabled"}
     ];
 
     var nav=document.createElement("div");nav.className="bt-tabs-nav";
@@ -299,12 +298,11 @@ function buildTabs(){
             panes.querySelectorAll(".bt-tab-pane").forEach(function(p){p.classList.remove("active");});
             btn.classList.add("active");
             var pane=$("bt-pane-"+t.id);if(pane) pane.classList.add("active");
-            // Update URL hash for deep linking (e.g. #tabWordPress)
+            // Update URL hash for deep linking (e.g. #tabDns)
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
             if(history.replaceState) history.replaceState(null,null,"#"+hashName);
             else location.hash=hashName;
             if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
-            if(t.id==="wordpress"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadWpInstances();}
             if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
             if(t.id==="dns"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDnsDomains();}
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
@@ -319,6 +317,14 @@ function buildTabs(){
         panes.appendChild(pane);
         firstTab=false;
     });
+
+    // WordPress: hidden pane (sidebar-only access like Addons), not in tab bar
+    if(C.wpEnabled){
+        var wpPane=document.createElement("div");
+        wpPane.className="bt-tab-pane";
+        wpPane.id="bt-pane-wordpress";
+        panes.appendChild(wpPane);
+    }
 
     wrap.appendChild(nav);wrap.appendChild(panes);
     if(insertMode==="append"&&insertTarget){
@@ -366,6 +372,23 @@ function activateTabFromHash(){
         "addons":"overview","addonsextras":"overview"
     };
     var targetId=hashMap[tabName]||tabName;
+
+    // WordPress is sidebar-only (no tab button), handle specially
+    if(targetId==="wordpress"){
+        var nav=document.querySelector(".bt-tabs-nav");
+        if(nav) nav.querySelectorAll(".bt-tab-btn").forEach(function(b){b.classList.remove("active");});
+        var allPanes=document.querySelectorAll(".bt-tab-pane");
+        allPanes.forEach(function(p){p.classList.remove("active");});
+        var wpPane=$("bt-pane-wordpress");
+        if(wpPane){
+            wpPane.classList.add("active");
+            if(!wpPane.dataset.loaded){wpPane.dataset.loaded="1";loadWpInstances();}
+        }
+        var btWrap=document.getElementById("bt-wrap");
+        if(btWrap) setTimeout(function(){btWrap.scrollIntoView({behavior:"smooth",block:"start"});},100);
+        return;
+    }
+
     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
     if(tabBtn){
         tabBtn.click();
