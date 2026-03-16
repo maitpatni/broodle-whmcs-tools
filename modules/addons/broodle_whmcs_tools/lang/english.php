@@ -76,3 +76,6 @@ $_ADDONLANG['dns_record_name']    = 'Name';
 $_ADDONLANG['dns_record_value']   = 'Value';
 $_ADDONLANG['dns_record_ttl']     = 'TTL';
 $_ADDONLANG['dns_select_domain']  = 'Select a domain to manage DNS records';
+
+// Upgrade Page
+$_ADDONLANG['upgrade_list_layout'] = 'Upgrade Page List Layout';

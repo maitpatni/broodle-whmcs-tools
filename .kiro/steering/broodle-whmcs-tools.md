@@ -55,6 +55,7 @@ Created on activation, dropped on deactivation.
 | `tweak_email_list` | `1` | Show Email Accounts section on cPanel service details |
 | `tweak_wordpress_toolkit` | `0` | Show WordPress Toolkit tab on cPanel service details |
 | `tweak_domain_management` | `1` | Show Domains tab with addon/sub/parked domain management |
+| `tweak_upgrade_list_layout` | `0` | Convert upgrade page from grid boxes to list layout |
 | `auto_update_enabled` | `0` | Enable auto-update checks from GitHub |
 
 Use `broodle_tools_get_setting($key, $default)` to read settings. Use `broodle_tools_setting_enabled($key)` for boolean checks.

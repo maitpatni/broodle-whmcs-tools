@@ -162,6 +162,7 @@ function broodle_tools_ensure_defaults()
             'tweak_cron_management'    => '1',
             'tweak_php_version'        => '1',
             'tweak_error_logs'         => '1',
+            'tweak_upgrade_list_layout'=> '0',
             'auto_update_enabled'      => '0',
         ];
         foreach ($defaults as $key => $value) {
@@ -283,7 +284,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.33\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.34\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -548,7 +549,8 @@ function broodle_tools_css_modals()
 .bt-btn-primary:hover{background:#0950b3}
 .bt-btn-danger{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:#ef4444;color:#fff;transition:all .15s}
 .bt-btn-danger:hover{background:#dc2626}
-.bt-btn-primary:disabled,.bt-btn-danger:disabled,.bt-btn-add:disabled{opacity:.5;cursor:not-allowed}
+.bt-btn-primary:disabled,.bt-btn-danger:disabled,.bt-btn-add:disabled,.bt-btn-outline:disabled,.bt-row-btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+.bt-btn-spin{display:inline-block;vertical-align:middle}
 .bt-msg{margin-top:12px;padding:8px 12px;border-radius:6px;font-size:13px;display:none}
 .bt-msg.success{display:block;background:rgba(5,150,105,.08);color:#059669}
 .bt-msg.error{display:block;background:rgba(239,68,68,.08);color:#ef4444}
@@ -2380,3 +2382,329 @@ function broodle_tools_shared_script()
 {
     return '<script>' . broodle_tools_shared_script_raw() . '</script>';
 }
+
+/* ─── Upgrade Page List Layout ────────────────────────────── */
+add_hook('ClientAreaHeadOutput', 1, function ($vars) {
+    if (!broodle_tools_upgrade_list_enabled()) {
+        return '';
+    }
+
+    // Only run on upgrade.php with type=package
+    $filename = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
+    if ($filename !== 'upgrade.php') {
+        return '';
+    }
+    $type = $_GET['type'] ?? '';
+    if ($type !== 'package') {
+        return '';
+    }
+
+    $css = '
+<style id="bt-upgrade-list">
+/* ── Broodle: Upgrade page list layout ── */
+
+/* Reset any grid/flex card layout Lagom2 applies to upgrade packages */
+.upgrade-products,
+.products-boxes,
+.product-boxes,
+.row:has(> [class*="col"] form[action*="upgrade"]),
+.row:has(> [class*="col"] input[name="pid"]),
+.content-padded .row:has(> div > .panel),
+.main-content .row:has(> div > .product-box) {
+    display: block !important;
+}
+
+/* Force full-width on each package column */
+.upgrade-products > [class*="col"],
+.products-boxes > [class*="col"],
+.product-boxes > [class*="col"],
+.row > [class*="col"]:has(form[action*="upgrade"]),
+.row > [class*="col"]:has(input[name="pid"]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* ── List-row styling for each package card ── */
+.bt-upgrade-list-row {
+    display: flex !important;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--card-bg, #fff);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-height: 0 !important;
+    text-align: left !important;
+}
+.bt-upgrade-list-row:hover {
+    border-color: var(--primary-color, #0a5ed3);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* Package info takes remaining space */
+.bt-upgrade-list-row .bt-upg-info {
+    flex: 1;
+    min-width: 0;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--heading-color, #111827);
+    margin: 0 0 2px;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc {
+    font-size: 13px;
+    color: var(--text-muted, #6b7280);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Pricing + button area */
+.bt-upgrade-list-row .bt-upg-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.bt-upgrade-list-row .bt-upg-action select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--input-bg, #fff);
+    color: var(--heading-color, #111827);
+    min-width: 160px;
+}
+.bt-upgrade-list-row .bt-upg-action .bt-upg-price {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--heading-color, #111827);
+    white-space: nowrap;
+}
+.bt-upgrade-list-row .bt-upg-action button,
+.bt-upgrade-list-row .bt-upg-action input[type="submit"],
+.bt-upgrade-list-row .bt-upg-action .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Dark mode */
+[data-theme="dark"] .bt-upgrade-list-row,
+.dark-mode .bt-upgrade-list-row {
+    border-color: var(--border-color, #374151);
+    background: var(--card-bg, #1f2937);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .bt-upgrade-list-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .bt-upgrade-list-row .bt-upg-action {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+}
+</style>';
+
+    $js = '
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Detect upgrade page forms
+    var forms = document.querySelectorAll("form");
+    var upgradeForms = [];
+    forms.forEach(function(f) {
+        var pidInput = f.querySelector("input[name=pid]");
+        var typeInput = f.querySelector("input[name=type][value=package]");
+        if (pidInput && typeInput) {
+            upgradeForms.push(f);
+        }
+    });
+
+    if (!upgradeForms.length) return;
+
+    upgradeForms.forEach(function(form) {
+        // Walk up to find the card/box container
+        var container = form.closest("[class*=col]") || form.closest(".product-box") || form.closest(".panel") || form.closest("td") || form.parentElement;
+        if (!container) return;
+
+        // Extract package name
+        var nameEl = container.querySelector("h3, h4, h5, .product-name, .panel-title, strong");
+        var name = nameEl ? nameEl.textContent.trim() : "";
+
+        // Extract description — gather all visible text from the container
+        // that is NOT the package name, not inside the form, and not empty
+        var desc = "";
+        // Strategy 1: explicit description elements
+        var descEl = container.querySelector(".product-description, .product-desc, .product-info, .package-description, .card-text, .panel-body p, .product-details");
+        if (descEl && descEl.textContent.trim() && descEl.textContent.trim() !== name) {
+            desc = descEl.textContent.trim();
+        }
+        // Strategy 2: walk the container children outside the form for text/br content
+        if (!desc) {
+            var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+                acceptNode: function(node) {
+                    // Skip anything inside the form
+                    if (form.contains(node) && node !== container) return NodeFilter.FILTER_REJECT;
+                    // Skip the name element itself
+                    if (nameEl && nameEl.contains(node)) return NodeFilter.FILTER_REJECT;
+                    if (node.nodeType === 3) return NodeFilter.FILTER_ACCEPT;
+                    return NodeFilter.FILTER_SKIP;
+                }
+            });
+            var parts = [];
+            var tNode;
+            while (tNode = walker.nextNode()) {
+                var t = tNode.textContent.trim();
+                if (t && t !== name) parts.push(t);
+            }
+            desc = parts.join(" ").trim();
+        }
+        // Strategy 3: look for text after <br> inside the same parent as the name
+        if (!desc && nameEl) {
+            var sib = nameEl.nextSibling;
+            var parts2 = [];
+            while (sib) {
+                if (sib.nodeType === 1 && sib.tagName === "FORM") break;
+                if (sib.nodeType === 1 && (sib.tagName === "BR")) { sib = sib.nextSibling; continue; }
+                var txt = (sib.textContent || "").trim();
+                if (txt) parts2.push(txt);
+                sib = sib.nextSibling;
+            }
+            if (parts2.length) desc = parts2.join(" ").trim();
+        }
+        // Strategy 4: inside the form itself, look for text before the .form-group / select / submit
+        if (!desc) {
+            var formChildren = form.childNodes;
+            var parts3 = [];
+            for (var fi = 0; fi < formChildren.length; fi++) {
+                var fc = formChildren[fi];
+                // Stop at form controls
+                if (fc.nodeType === 1 && (fc.tagName === "INPUT" || fc.tagName === "SELECT" || fc.tagName === "BUTTON" || fc.classList.contains("form-group"))) continue;
+                if (fc.nodeType === 1 && fc.tagName === "BR") continue;
+                var ftxt = (fc.textContent || "").trim();
+                if (ftxt && ftxt !== name) parts3.push(ftxt);
+            }
+            if (parts3.length) desc = parts3.join(" ").trim();
+        }
+
+        // Build list row
+        var row = document.createElement("div");
+        row.className = "bt-upgrade-list-row";
+
+        var infoDiv = document.createElement("div");
+        infoDiv.className = "bt-upg-info";
+        if (name) {
+            var nameP = document.createElement("p");
+            nameP.className = "bt-upg-name";
+            nameP.textContent = name;
+            infoDiv.appendChild(nameP);
+        }
+        if (desc) {
+            var descP = document.createElement("p");
+            descP.className = "bt-upg-desc";
+            descP.innerHTML = desc;
+            infoDiv.appendChild(descP);
+        }
+
+        var actionDiv = document.createElement("div");
+        actionDiv.className = "bt-upg-action";
+
+        // Move select (billing cycle) if present
+        var select = form.querySelector("select[name=billingcycle]");
+        if (select) {
+            actionDiv.appendChild(select);
+        }
+
+        // Show static price for free/onetime
+        var hiddenCycle = form.querySelector("input[type=hidden][name=billingcycle]");
+        if (hiddenCycle) {
+            // Find price text in the form
+            var priceText = "";
+            var formTexts = form.childNodes;
+            for (var i = 0; i < formTexts.length; i++) {
+                var n = formTexts[i];
+                if (n.nodeType === 3 && n.textContent.trim()) {
+                    priceText += n.textContent.trim() + " ";
+                }
+            }
+            // Also check .form-group or parent for price text
+            var fg = form.querySelector(".form-group");
+            if (fg) {
+                var fgTexts = fg.childNodes;
+                for (var j = 0; j < fgTexts.length; j++) {
+                    var m = fgTexts[j];
+                    if (m.nodeType === 3 && m.textContent.trim()) {
+                        priceText += m.textContent.trim() + " ";
+                    }
+                }
+            }
+            priceText = priceText.trim();
+            if (priceText) {
+                var priceSpan = document.createElement("span");
+                priceSpan.className = "bt-upg-price";
+                priceSpan.textContent = priceText;
+                actionDiv.appendChild(priceSpan);
+            }
+            actionDiv.appendChild(hiddenCycle);
+        }
+
+        // Move submit button
+        var submit = form.querySelector("input[type=submit], button[type=submit]");
+        if (submit) {
+            actionDiv.appendChild(submit);
+        }
+
+        // Move hidden inputs into a hidden container inside the row
+        var hiddens = form.querySelectorAll("input[type=hidden]");
+        var hiddenWrap = document.createElement("div");
+        hiddenWrap.style.display = "none";
+        hiddens.forEach(function(h) { hiddenWrap.appendChild(h); });
+
+        row.appendChild(infoDiv);
+        row.appendChild(actionDiv);
+
+        // Replace form content
+        form.innerHTML = "";
+        form.appendChild(hiddenWrap);
+        form.appendChild(row);
+        form.style.margin = "0";
+        form.style.padding = "0";
+
+        // Reset container styling
+        if (container.classList) {
+            container.style.padding = "0";
+            container.style.margin = "0";
+            container.style.border = "none";
+            container.style.boxShadow = "none";
+            container.style.background = "none";
+        }
+    });
+
+    // Also hide any Lagom2 product-box specific wrappers
+    var boxes = document.querySelectorAll(".product-box, .panel.product-panel");
+    boxes.forEach(function(box) {
+        if (box.querySelector(".bt-upgrade-list-row")) {
+            box.style.border = "none";
+            box.style.boxShadow = "none";
+            box.style.background = "none";
+            box.style.padding = "0";
+            box.style.margin = "0";
+        }
+    });
+});
+</script>';
+
+    return $css . $js;
+});
