@@ -89,20 +89,6 @@ function styleSidebarActions(){
                     iconClass="bt-act-renew";
                 }
                 if(iconClass) item.classList.add(iconClass);
-                // Fix webmail SSO: Lagom2's customActionAjaxCall breaks for webmail
-                // Intercept click and do SSO redirect directly via WHMCS standard URL
-                if(iconClass==="bt-act-webmail" && C.serviceId && !item.getAttribute("data-bt-sso")){
-                    item.setAttribute("data-bt-sso","1");
-                    item.addEventListener("click",function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Show loading spinner if present
-                        var spinner=item.querySelector(".loading");
-                        if(spinner) spinner.classList.remove("w-hidden");
-                        // SSO via standard WHMCS URL
-                        window.location.href="clientarea.php?action=productdetails&id="+C.serviceId+"&dosinglesignon=1&app=webmail";
-                    },true);
-                }
             }else{
                 // Overview panel: safe to modify DOM (no SSO handlers)
                 var iconHtml="",color="",label="",sub="";
