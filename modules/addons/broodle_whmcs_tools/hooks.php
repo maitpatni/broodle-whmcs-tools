@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.44');
+    define('BROODLE_TOOLS_VERSION', '3.10.45');
 }
 
 if (!defined('WHMCS')) {
@@ -253,8 +253,18 @@ function broodle_tools_gather_data($vars)
     $emails = broodle_tools_email_enabled() ? broodle_tools_get_emails($serviceId) : [];
     $domains = broodle_tools_domain_enabled() ? broodle_tools_get_domains_detailed($serviceId) : null;
 
+    $service = $cpData['service'];
+    $product = $cpData['product'];
+
     $cache = [
         'serviceId' => $serviceId,
+        'productName' => $product->name ?? '',
+        'domain' => $service->domain ?? '',
+        'status' => ucfirst($service->domainstatus ?? ''),
+        'diskUsed' => (int) ($service->diskusage ?? 0),
+        'diskLimit' => (int) ($service->disklimit ?? 0),
+        'bwUsed' => (int) ($service->bwusage ?? 0),
+        'bwLimit' => (int) ($service->bwlimit ?? 0),
         'ns' => $nsData,
         'emails' => $emails,
         'domains' => $domains,

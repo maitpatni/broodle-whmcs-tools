@@ -1,11 +1,9 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.44");
-/* Detect base path: if loaded from managev2.php (same dir), use relative; otherwise use full path */
-var btScripts=document.querySelectorAll('script[src*="bt_client.js"]');
+console.log("[BT] bt_client.js loaded successfully, version 3.10.45");
+/* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
-if(btScripts.length){var src=btScripts[btScripts.length-1].getAttribute("src")||"";if(src.indexOf("/")===-1||src.indexOf("bt_client.js")===0) btBasePath="";}
 var ajaxUrl=btBasePath+"ajax.php";
 var wpAjaxUrl=btBasePath+"ajax_wordpress.php";
 var C={};
@@ -316,10 +314,43 @@ function injectStyles7(){
 
 /* Saved references for cPanel SSO and Change Password */
 var savedCpanelLink=null;
+
+/* ─── CSS Part 8: Service header + dark/light mode inheritance ─── */
+function injectStyles8(){
+    if(document.getElementById("bt-injected-styles8")) return;
+    var s=document.createElement("style");s.id="bt-injected-styles8";
+    s.textContent=[
+/* Service header */
+'.bt-service-header{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:20px 24px;margin-bottom:20px}',
+'.bt-sh-info{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}',
+'.bt-sh-icon{width:48px;height:48px;border-radius:12px;background:rgba(10,94,211,.08);color:#0a5ed3;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+'.bt-sh-plan{margin:0;font-size:18px;font-weight:700;color:var(--heading-color,#111827)}',
+'.bt-sh-domain{margin:2px 0 0;font-size:13px;color:var(--text-muted,#6b7280)}',
+'.bt-sh-status{margin-left:auto;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px}',
+'.bt-sh-status.active{background:#dcfce7;color:#166534}',
+'.bt-sh-status.suspended{background:#fef3c7;color:#92400e}',
+'.bt-sh-status.terminated,.bt-sh-status.cancelled{background:#fee2e2;color:#991b1b}',
+'.bt-sh-status.pending{background:#e0e7ff;color:#3730a3}',
+'.bt-sh-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}',
+'@media(max-width:640px){.bt-sh-stats{grid-template-columns:1fr}}',
+'.bt-sh-stat{background:var(--input-bg,#f9fafb);border-radius:10px;padding:14px 16px}',
+'.bt-sh-stat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--heading-color,#111827)}',
+'.bt-sh-stat-head svg{color:var(--text-muted,#6b7280)}',
+'.bt-sh-bar{height:8px;background:var(--border-color,#e5e7eb);border-radius:4px;overflow:hidden}',
+'.bt-sh-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}',
+'.bt-sh-stat-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-muted,#6b7280)}',
+/* Inherit Lagom2 dark mode via data-theme or class */
+'[data-theme="dark"] .bt-service-header,[data-theme="dark"] .bt-sh-stat{background:var(--card-bg,#1e293b);border-color:var(--border-color,#334155)}',
+'[data-theme="dark"] .bt-sh-status.active{background:rgba(5,150,105,.15);color:#34d399}',
+'[data-theme="dark"] .bt-sh-status.suspended{background:rgba(217,119,6,.15);color:#fbbf24}',
+'[data-theme="dark"] .bt-sh-status.terminated,[data-theme="dark"] .bt-sh-status.cancelled{background:rgba(239,68,68,.15);color:#f87171}',
+    ].join('\n');
+    document.head.appendChild(s);
+}
 var savedChangePwPane=null;
 
 function init(){
-    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();
+    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();
 
     /* ── Parse config ── */
     var dataEl=$("bt-data");
@@ -333,6 +364,20 @@ function init(){
     var pageWrap=$("bt-page-wrap");
     if(!pageWrap) return;
 
+    /* ── Build service header (plan name + usage bars) ── */
+    var headerHtml='<div class="bt-service-header">';
+    headerHtml+='<div class="bt-sh-info"><div class="bt-sh-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div><h2 class="bt-sh-plan">'+esc(C.productName||"Hosting Plan")+'</h2><p class="bt-sh-domain">'+esc(C.domain||"")+'</p></div><span class="bt-sh-status '+((C.status||"").toLowerCase())+'">'+esc(C.status||"Active")+'</span></div>';
+    headerHtml+='<div class="bt-sh-stats">';
+    /* Disk usage */
+    var diskPct=C.diskLimit>0?Math.min(100,Math.round(C.diskUsed/C.diskLimit*100)):0;
+    var diskColor=diskPct>90?"#ef4444":diskPct>70?"#d97706":"#0a5ed3";
+    headerHtml+='<div class="bt-sh-stat"><div class="bt-sh-stat-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>Disk Usage</span></div><div class="bt-sh-bar"><div class="bt-sh-bar-fill" style="width:'+diskPct+'%;background:'+diskColor+'"></div></div><div class="bt-sh-stat-foot"><span>'+C.diskUsed+' MB used</span><span>'+(C.diskLimit>0?C.diskLimit+' MB':'Unlimited')+'</span></div></div>';
+    /* Bandwidth usage */
+    var bwPct=C.bwLimit>0?Math.min(100,Math.round(C.bwUsed/C.bwLimit*100)):0;
+    var bwColor=bwPct>90?"#ef4444":bwPct>70?"#d97706":"#7c3aed";
+    headerHtml+='<div class="bt-sh-stat"><div class="bt-sh-stat-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Bandwidth</span></div><div class="bt-sh-bar"><div class="bt-sh-bar-fill" style="width:'+bwPct+'%;background:'+bwColor+'"></div></div><div class="bt-sh-stat-foot"><span>'+C.bwUsed+' MB used</span><span>'+(C.bwLimit>0?C.bwLimit+' MB':'Unlimited')+'</span></div></div>';
+    headerHtml+='</div></div>';
+
     /* ── Build sidebar ── */
     var sidebar=document.createElement("div");
     sidebar.className="bt-sidebar";
@@ -343,6 +388,11 @@ function init(){
     var mainArea=document.createElement("div");
     mainArea.className="bt-main-area";
     mainArea.id="bt-main-area";
+
+    /* ── Service header ── */
+    var headerDiv=document.createElement("div");
+    headerDiv.innerHTML=headerHtml;
+    mainArea.appendChild(headerDiv.firstChild);
 
     /* ── Tabs container ── */
     var tabsWrap=document.createElement("div");
@@ -395,13 +445,11 @@ function buildSidebarHtml(){
 
     /* Actions panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Actions</div>';
-    /* cPanel login — link to WHMCS product details page which has the SSO handler */
-    var cpHref=btBasePath?"clientarea.php?action=productdetails&id="+C.serviceId+"&dosinglesignon=1":"../../../clientarea.php?action=productdetails&id="+C.serviceId+"&dosinglesignon=1";
-    html+='<a class="bt-sidebar-item" href="'+esc(cpHref)+'" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);color:#ff6a13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="bt-si-label">cPanel<span>Control Panel</span></div></a>';
-    var whmcsBase=btBasePath?"":"../../../";
-    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
-    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
-    html+='<a class="bt-sidebar-item" href="'+whmcsBase+'clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
+    /* cPanel login */
+    html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);color:#ff6a13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="bt-si-label">cPanel<span>Control Panel</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
     html+='</div>';
     return html;
 }
