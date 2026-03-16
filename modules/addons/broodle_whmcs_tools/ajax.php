@@ -1658,6 +1658,40 @@ switch ($action) {
         echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'PHP version updated to ' . $version : $p['error']]);
         break;
 
+    // ── Debug API Test ──
+    case 'debug_api_test':
+        $testModule = isset($_POST['module']) ? trim($_POST['module']) : '';
+        $testFunc = isset($_POST['func']) ? trim($_POST['func']) : '';
+        $testApiVer = isset($_POST['apiver']) ? trim($_POST['apiver']) : '3';
+        $extraParams = isset($_POST['params']) ? trim($_POST['params']) : '';
+
+        if (empty($testModule) || empty($testFunc)) {
+            echo json_encode(['success' => false, 'message' => 'Missing module or func']);
+            exit;
+        }
+
+        $testUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=" . urlencode($testApiVer)
+             . "&cpanel_jsonapi_module=" . urlencode($testModule)
+             . "&cpanel_jsonapi_func=" . urlencode($testFunc);
+        if (!empty($extraParams)) $testUrl .= '&' . $extraParams;
+
+        $rTest = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $testUrl, 30);
+        $testJson = null;
+        if ($rTest['body']) $testJson = json_decode($rTest['body'], true);
+
+        echo json_encode([
+            'success' => true,
+            'http_code' => $rTest['code'],
+            'url' => $testUrl,
+            'response' => $testJson,
+            'raw_length' => strlen($rTest['body'] ?? ''),
+            'server' => $hostname . ':' . $port,
+            'user' => $cpUsername,
+        ]);
+        break;
+
     // ── Error Logs Actions ──
 
     case 'error_log_read':
@@ -1666,19 +1700,32 @@ switch ($action) {
         if ($lines < 10) $lines = 10;
         if ($lines > 500) $lines = 500;
 
-        // Get home directory
+        // Get home directory via cPanel API 2 Fileman::getdir
         $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_apiversion=2"
              . "&cpanel_jsonapi_module=Fileman"
-             . "&cpanel_jsonapi_func=get_homedir";
+             . "&cpanel_jsonapi_func=getdir";
 
         $rHome = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlHomedir);
         $homedir = '';
         if ($rHome['code'] === 200 && $rHome['body']) {
             $json = json_decode($rHome['body'], true);
-            $homedir = $json['result']['data'] ?? '';
-            if (is_array($homedir)) $homedir = $homedir[0] ?? '';
+            $dirData = $json['cpanelresult']['data'][0] ?? [];
+            $homedir = $dirData['homedir'] ?? ($dirData['dir'] ?? '');
+            if (empty($homedir)) {
+                // Try UAPI Variables::get_user_information for homedir
+                $urlVars = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                     . "&cpanel_jsonapi_apiversion=3"
+                     . "&cpanel_jsonapi_module=Variables"
+                     . "&cpanel_jsonapi_func=get_user_information";
+                $rVars = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlVars);
+                if ($rVars['code'] === 200 && $rVars['body']) {
+                    $jsonV = json_decode($rVars['body'], true);
+                    $homedir = $jsonV['result']['data']['home'] ?? '';
+                }
+            }
         }
         if (empty($homedir)) $homedir = '/home/' . $cpUsername;
 
@@ -1689,29 +1736,27 @@ switch ($action) {
         // Get the main domain for the account (needed for Stats::get_site_errors)
         $mainDomain = $domain;
         if (empty($mainDomain)) {
+            // Try DomainInfo::list_domains
             $urlDomain = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                  . "&cpanel_jsonapi_apiversion=3"
                  . "&cpanel_jsonapi_module=DomainInfo"
-                 . "&cpanel_jsonapi_func=main_domain_builtin_subdomain_aliases";
+                 . "&cpanel_jsonapi_func=list_domains";
 
             $rDomain = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomain);
             if ($rDomain['code'] === 200 && $rDomain['body']) {
                 $jsonD = json_decode($rDomain['body'], true);
                 $mainDomain = $jsonD['result']['data']['main_domain'] ?? '';
             }
-            // Fallback: try list_domains
+            // Fallback: try WHM accountsummary
             if (empty($mainDomain)) {
-                $urlDomain2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                     . "&cpanel_jsonapi_apiversion=3"
-                     . "&cpanel_jsonapi_module=DomainInfo"
-                     . "&cpanel_jsonapi_func=list_domains";
-
-                $rDomain2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomain2);
-                if ($rDomain2['code'] === 200 && $rDomain2['body']) {
-                    $jsonD2 = json_decode($rDomain2['body'], true);
-                    $mainDomain = $jsonD2['result']['data']['main_domain'] ?? '';
+                $urlAcct = "{$protocol}://{$hostname}:{$port}/json-api/accountsummary"
+                     . "?user=" . urlencode($cpUsername);
+                $rAcct = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlAcct);
+                if ($rAcct['code'] === 200 && $rAcct['body']) {
+                    $jsonA = json_decode($rAcct['body'], true);
+                    $acctData = $jsonA['data']['acct'][0] ?? ($jsonA['acct'][0] ?? []);
+                    $mainDomain = $acctData['domain'] ?? '';
                 }
             }
         }
@@ -1788,7 +1833,12 @@ switch ($action) {
         }
 
         if (empty($logContent)) {
-            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'total' => 0, 'showing' => 0, 'message' => 'No error logs found. The server may not have any recent errors.']);
+            $debugMsg = 'Tried: Stats::get_site_errors';
+            if (!empty($mainDomain)) $debugMsg .= ' (domain=' . $mainDomain . ')';
+            else $debugMsg .= ' (no domain found)';
+            $debugMsg .= ', Fileman::get_file_content on ' . count($logPaths ?? []) . ' paths';
+            $debugMsg .= '. Home: ' . $homedir;
+            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'total' => 0, 'showing' => 0, 'message' => 'No error logs found. ' . $debugMsg]);
             exit;
         }
 
