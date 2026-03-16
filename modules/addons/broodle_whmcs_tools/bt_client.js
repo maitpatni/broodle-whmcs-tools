@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.48");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.49");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -320,30 +320,46 @@ function injectStyles8(){
     if(document.getElementById("bt-injected-styles8")) return;
     var s=document.createElement("style");s.id="bt-injected-styles8";
     s.textContent=[
-/* Service header */
-'.bt-service-header{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:20px 24px;margin-bottom:20px}',
-'.bt-sh-info{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}',
-'.bt-sh-icon{width:48px;height:48px;border-radius:12px;background:rgba(10,94,211,.08);color:#0a5ed3;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
-'.bt-sh-plan{margin:0;font-size:18px;font-weight:700;color:var(--heading-color,#111827)}',
-'.bt-sh-domain{margin:2px 0 0;font-size:13px;color:var(--text-muted,#6b7280)}',
-'.bt-sh-status{margin-left:auto;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px}',
-'.bt-sh-status.active{background:#dcfce7;color:#166534}',
-'.bt-sh-status.suspended{background:#fef3c7;color:#92400e}',
-'.bt-sh-status.terminated,.bt-sh-status.cancelled{background:#fee2e2;color:#991b1b}',
-'.bt-sh-status.pending{background:#e0e7ff;color:#3730a3}',
-'.bt-sh-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}',
-'@media(max-width:640px){.bt-sh-stats{grid-template-columns:1fr}}',
-'.bt-sh-stat{background:var(--input-bg,#f9fafb);border-radius:10px;padding:14px 16px}',
-'.bt-sh-stat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--heading-color,#111827)}',
-'.bt-sh-stat-head svg{color:var(--text-muted,#6b7280)}',
-'.bt-sh-bar{height:8px;background:var(--border-color,#e5e7eb);border-radius:4px;overflow:hidden}',
-'.bt-sh-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}',
-'.bt-sh-stat-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-muted,#6b7280)}',
-/* Inherit Lagom2 dark mode via data-theme or class */
-'[data-theme="dark"] .bt-service-header,[data-theme="dark"] .bt-sh-stat{background:var(--card-bg,#1e293b);border-color:var(--border-color,#334155)}',
-'[data-theme="dark"] .bt-sh-status.active{background:rgba(5,150,105,.15);color:#34d399}',
-'[data-theme="dark"] .bt-sh-status.suspended{background:rgba(217,119,6,.15);color:#fbbf24}',
-'[data-theme="dark"] .bt-sh-status.terminated,[data-theme="dark"] .bt-sh-status.cancelled{background:rgba(239,68,68,.15);color:#f87171}',
+/* ── Hero Card ── */
+'.bt-hero{display:flex;gap:0;margin-bottom:24px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff)}',
+'.bt-hero-left{flex:1;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:32px 36px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:200px;position:relative;overflow:hidden}',
+'.bt-hero-left::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}',
+'.bt-hero-left::after{content:"";position:absolute;bottom:-30px;left:-30px;width:90px;height:90px;background:rgba(255,255,255,.04);border-radius:50%}',
+'.bt-hero-icon{width:64px;height:64px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;backdrop-filter:blur(4px)}',
+'.bt-hero-plan{margin:0;font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.3px}',
+'.bt-hero-status{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px)}',
+'.bt-hero-status .dot{width:7px;height:7px;border-radius:50%;background:#4ade80}',
+'.bt-hero-status.suspended .dot{background:#fbbf24}',
+'.bt-hero-status.terminated .dot,.bt-hero-status.cancelled .dot{background:#f87171}',
+'.bt-hero-domain{margin-top:12px;font-size:13px;opacity:.85;font-weight:500}',
+/* ── Usage Panel ── */
+'.bt-hero-right{width:320px;flex-shrink:0;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}',
+'.bt-gauges{display:flex;gap:28px;align-items:center;justify-content:center}',
+'.bt-gauge{text-align:center}',
+'.bt-gauge-ring{position:relative;width:90px;height:90px}',
+'.bt-gauge-ring svg{transform:rotate(-90deg)}',
+'.bt-gauge-ring circle{fill:none;stroke-width:7;stroke-linecap:round}',
+'.bt-gauge-ring .bg{stroke:var(--border-color,#e5e7eb)}',
+'.bt-gauge-ring .fill{transition:stroke-dashoffset .8s ease}',
+'.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--heading-color,#111827)}',
+'.bt-gauge-label{margin-top:8px;font-size:13px;font-weight:600;color:var(--heading-color,#111827)}',
+'.bt-gauge-sub{font-size:11px;color:var(--text-muted,#6b7280);margin-top:2px}',
+'.bt-hero-updated{font-size:11px;color:var(--text-muted,#9ca3af);margin-top:8px}',
+/* ── Quick Shortcuts ── */
+'.bt-shortcuts{margin-bottom:24px}',
+'.bt-shortcuts-title{font-size:16px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 14px}',
+'.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:18px 20px}',
+'.bt-sc-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
+'.bt-sc-item:hover{background:rgba(10,94,211,.06);text-decoration:none;color:#0a5ed3}',
+'.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
+/* ── Responsive ── */
+'@media(max-width:768px){.bt-hero{flex-direction:column}.bt-hero-right{width:100%;padding:20px}.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}}',
+'@media(max-width:480px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:16px}}',
+/* ── Dark mode ── */
+'[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
+'[data-theme="dark"] .bt-hero-right{background:var(--card-bg,#1e293b)}',
+'[data-theme="dark"] .bt-shortcuts-grid{background:var(--card-bg,#1e293b);border-color:var(--border-color,#334155)}',
+'[data-theme="dark"] .bt-sc-item:hover{background:rgba(59,130,246,.1)}',
     ].join('\n');
     document.head.appendChild(s);
 }
@@ -364,19 +380,47 @@ function init(){
     var pageWrap=$("bt-page-wrap");
     if(!pageWrap) return;
 
-    /* ── Build service header (plan name + usage bars) ── */
-    var headerHtml='<div class="bt-service-header">';
-    headerHtml+='<div class="bt-sh-info"><div class="bt-sh-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div><h2 class="bt-sh-plan">'+esc(C.productName||"Hosting Plan")+'</h2><p class="bt-sh-domain">'+esc(C.domain||"")+'</p></div><span class="bt-sh-status '+((C.status||"").toLowerCase())+'">'+esc(C.status||"Active")+'</span></div>';
-    headerHtml+='<div class="bt-sh-stats">';
-    /* Disk usage */
+    /* ── Build hero card with circular gauges ── */
+    var statusLc=(C.status||"active").toLowerCase();
     var diskPct=C.diskLimit>0?Math.min(100,Math.round(C.diskUsed/C.diskLimit*100)):0;
-    var diskColor=diskPct>90?"#ef4444":diskPct>70?"#d97706":"#0a5ed3";
-    headerHtml+='<div class="bt-sh-stat"><div class="bt-sh-stat-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>Disk Usage</span></div><div class="bt-sh-bar"><div class="bt-sh-bar-fill" style="width:'+diskPct+'%;background:'+diskColor+'"></div></div><div class="bt-sh-stat-foot"><span>'+C.diskUsed+' MB used</span><span>'+(C.diskLimit>0?C.diskLimit+' MB':'Unlimited')+'</span></div></div>';
-    /* Bandwidth usage */
     var bwPct=C.bwLimit>0?Math.min(100,Math.round(C.bwUsed/C.bwLimit*100)):0;
-    var bwColor=bwPct>90?"#ef4444":bwPct>70?"#d97706":"#7c3aed";
-    headerHtml+='<div class="bt-sh-stat"><div class="bt-sh-stat-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Bandwidth</span></div><div class="bt-sh-bar"><div class="bt-sh-bar-fill" style="width:'+bwPct+'%;background:'+bwColor+'"></div></div><div class="bt-sh-stat-foot"><span>'+C.bwUsed+' MB used</span><span>'+(C.bwLimit>0?C.bwLimit+' MB':'Unlimited')+'</span></div></div>';
-    headerHtml+='</div></div>';
+    var circ=2*Math.PI*38;/* radius 38, circumference ~238.76 */
+    var diskOff=circ-(diskPct/100*circ);
+    var bwOff=circ-(bwPct/100*circ);
+    var diskColor=diskPct>90?"#ef4444":diskPct>70?"#f59e0b":"#0a5ed3";
+    var bwColor=bwPct>90?"#ef4444":bwPct>70?"#f59e0b":"#0a5ed3";
+    function fmtSize(mb){if(mb>=1024)return(mb/1024).toFixed(1)+' GB';return mb+' M';}
+
+    var heroHtml='<div class="bt-hero">';
+    heroHtml+='<div class="bt-hero-left"><div class="bt-hero-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>';
+    heroHtml+='<h2 class="bt-hero-plan">'+esc(C.productName||"Hosting Plan")+'</h2>';
+    heroHtml+='<span class="bt-hero-status '+statusLc+'"><span class="dot"></span>'+esc(C.status||"Active")+'</span>';
+    heroHtml+='<div class="bt-hero-domain">'+esc(C.domain||"")+'</div>';
+    heroHtml+='</div>';
+    heroHtml+='<div class="bt-hero-right"><div class="bt-gauges">';
+    /* Disk gauge */
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="90" height="90" viewBox="0 0 90 90"><circle class="bg" cx="45" cy="45" r="38"/><circle class="fill" cx="45" cy="45" r="38" stroke="'+diskColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+diskOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+diskPct+'%</div></div><div class="bt-gauge-label">Disk Usage</div><div class="bt-gauge-sub">'+fmtSize(C.diskUsed)+' / '+fmtSize(C.diskLimit)+'</div></div>';
+    /* BW gauge */
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="90" height="90" viewBox="0 0 90 90"><circle class="bg" cx="45" cy="45" r="38"/><circle class="fill" cx="45" cy="45" r="38" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
+    heroHtml+='</div></div></div>';
+
+    /* ── Quick Shortcuts ── */
+    var cpanelBase='clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1';
+    heroHtml+='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Shortcuts</h3><div class="bt-shortcuts-grid">';
+    var shortcuts=[
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',tab:'email'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',tab:'domains'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',tab:'cronjobs'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'Databases',tab:'databases'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:'SSL',tab:'ssl'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',label:'DNS Manager',tab:'dns'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:'PHP Version',tab:'phpversion'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',label:'Error Logs',tab:'errorlogs'}
+    ];
+    shortcuts.forEach(function(sc){
+        heroHtml+='<a class="bt-sc-item" data-sc-tab="'+sc.tab+'">'+sc.icon+' '+esc(sc.label)+'</a>';
+    });
+    heroHtml+='</div></div>';
 
     /* ── Build sidebar ── */
     var sidebar=document.createElement("div");
@@ -389,10 +433,10 @@ function init(){
     mainArea.className="bt-main-area";
     mainArea.id="bt-main-area";
 
-    /* ── Service header ── */
+    /* ── Service header + shortcuts ── */
     var headerDiv=document.createElement("div");
-    headerDiv.innerHTML=headerHtml;
-    mainArea.appendChild(headerDiv.firstChild);
+    headerDiv.innerHTML=heroHtml;
+    while(headerDiv.firstChild) mainArea.appendChild(headerDiv.firstChild);
 
     /* ── Tabs container ── */
     var tabsWrap=document.createElement("div");
@@ -427,6 +471,16 @@ function init(){
     buildTabs();
     bindModals();
     bindSidebarActions();
+
+    /* ── Quick Shortcut click handlers ── */
+    document.querySelectorAll("[data-sc-tab]").forEach(function(a){
+        a.addEventListener("click",function(e){
+            e.preventDefault();
+            var tabId=this.getAttribute("data-sc-tab");
+            var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+tabId+'"]');
+            if(tabBtn) tabBtn.click();
+        });
+    });
 
     /* ── Deep link from hash ── */
     activateTabFromHash();
