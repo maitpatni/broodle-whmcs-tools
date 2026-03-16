@@ -7,6 +7,10 @@
  * @link       https://broodle.host
  */
 
+if (!defined('BROODLE_TOOLS_VERSION')) {
+    define('BROODLE_TOOLS_VERSION', '3.10.43');
+}
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly.');
 }

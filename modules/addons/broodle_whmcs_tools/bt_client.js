@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.42");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.43");
 var ajaxUrl="modules/addons/broodle_whmcs_tools/ajax.php";
 var wpAjaxUrl="modules/addons/broodle_whmcs_tools/ajax_wordpress.php";
 var C={};
