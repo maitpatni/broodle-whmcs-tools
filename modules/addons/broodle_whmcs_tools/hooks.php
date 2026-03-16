@@ -34,6 +34,10 @@ function broodle_tools_domain_enabled() { return broodle_tools_setting_enabled('
 function broodle_tools_db_enabled() { return broodle_tools_setting_enabled('tweak_database_management'); }
 function broodle_tools_ssl_enabled() { return broodle_tools_setting_enabled('tweak_ssl_management'); }
 function broodle_tools_dns_enabled() { return broodle_tools_setting_enabled('tweak_dns_management'); }
+function broodle_tools_cron_enabled() { return broodle_tools_setting_enabled('tweak_cron_management'); }
+function broodle_tools_php_enabled() { return broodle_tools_setting_enabled('tweak_php_version'); }
+function broodle_tools_logs_enabled() { return broodle_tools_setting_enabled('tweak_error_logs'); }
+function broodle_tools_upgrade_list_enabled() { return broodle_tools_setting_enabled('tweak_upgrade_list_layout'); }
 
 function broodle_tools_get_service_id($vars)
 {
@@ -155,6 +159,9 @@ function broodle_tools_ensure_defaults()
             'tweak_database_management'=> '1',
             'tweak_ssl_management'     => '1',
             'tweak_dns_management'     => '1',
+            'tweak_cron_management'    => '1',
+            'tweak_php_version'        => '1',
+            'tweak_error_logs'         => '1',
             'auto_update_enabled'      => '0',
         ];
         foreach ($defaults as $key => $value) {
@@ -247,6 +254,9 @@ function broodle_tools_gather_data($vars)
         'dbEnabled' => broodle_tools_db_enabled(),
         'sslEnabled' => broodle_tools_ssl_enabled(),
         'dnsEnabled' => broodle_tools_dns_enabled(),
+        'cronEnabled' => broodle_tools_cron_enabled(),
+        'phpEnabled' => broodle_tools_php_enabled(),
+        'logsEnabled' => broodle_tools_logs_enabled(),
         'nsEnabled' => broodle_tools_ns_enabled(),
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
@@ -273,7 +283,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.32\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.33\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });

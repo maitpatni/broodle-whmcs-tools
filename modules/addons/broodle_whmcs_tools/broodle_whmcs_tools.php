@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.32');
+define('BROODLE_TOOLS_VERSION', '3.10.33');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -60,6 +60,10 @@ function broodle_whmcs_tools_activate()
             'tweak_database_management' => '1',
             'tweak_ssl_management'  => '1',
             'tweak_dns_management'  => '1',
+            'tweak_cron_management' => '1',
+            'tweak_php_version'     => '1',
+            'tweak_error_logs'      => '1',
+            'tweak_upgrade_list_layout' => '0',
             'auto_update_enabled'   => '0',
         ];
 
@@ -126,6 +130,10 @@ function broodle_whmcs_tools_output($vars)
             'tweak_database_management',
             'tweak_ssl_management',
             'tweak_dns_management',
+            'tweak_cron_management',
+            'tweak_php_version',
+            'tweak_error_logs',
+            'tweak_upgrade_list_layout',
             'auto_update_enabled',
         ];
 
@@ -192,6 +200,10 @@ function broodle_tools_render_admin($vars, $settings)
     $dbMgmtEnabled = !empty($settings['tweak_database_management']) && $settings['tweak_database_management'] === '1';
     $sslMgmtEnabled = !empty($settings['tweak_ssl_management']) && $settings['tweak_ssl_management'] === '1';
     $dnsMgmtEnabled = !empty($settings['tweak_dns_management']) && $settings['tweak_dns_management'] === '1';
+    $cronMgmtEnabled = !empty($settings['tweak_cron_management']) && $settings['tweak_cron_management'] === '1';
+    $phpVersionEnabled = !empty($settings['tweak_php_version']) && $settings['tweak_php_version'] === '1';
+    $errorLogsEnabled = !empty($settings['tweak_error_logs']) && $settings['tweak_error_logs'] === '1';
+    $upgradeListEnabled = !empty($settings['tweak_upgrade_list_layout']) && $settings['tweak_upgrade_list_layout'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -343,6 +355,46 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_dns_management" value="1" ' . ($dnsMgmtEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Cron Jobs</h4>
+                            <p>Show a Cron Jobs tab on cPanel product details with cron job management, common presets, and scheduling.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_cron_management" value="1" ' . ($cronMgmtEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>PHP Version</h4>
+                            <p>Show a PHP Version tab on cPanel product details to view and switch PHP versions per domain.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_php_version" value="1" ' . ($phpVersionEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Error Logs</h4>
+                            <p>Show an Error Logs tab on cPanel product details with live error log viewing and auto-refresh.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_error_logs" value="1" ' . ($errorLogsEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Upgrade Page List Layout</h4>
+                            <p>Convert the upgrade/downgrade page from grid boxes to a clean list layout for better readability.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_upgrade_list_layout" value="1" ' . ($upgradeListEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>

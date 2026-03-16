@@ -45,6 +45,9 @@ $domainActions = ['get_parent_domains', 'add_addon_domain', 'add_subdomain', 'de
 $dbActions = ['list_databases', 'create_database', 'create_db_user', 'delete_database', 'delete_db_user', 'assign_db_user', 'get_phpmyadmin_url'];
 $sslActions = ['ssl_status', 'start_autossl', 'autossl_progress', 'autossl_problems'];
 $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_edit_record', 'dns_delete_record', 'dns_bulk_delete'];
+$cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
+$phpActions = ['php_get_versions', 'php_set_version'];
+$logActions = ['error_log_read'];
 
 // Handle addon description lookup (no cPanel needed)
 if ($action === 'get_addon_description') {
@@ -92,6 +95,12 @@ if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_ssl_management';
 } elseif (in_array($action, $dnsActions)) {
     $featureKey = 'tweak_dns_management';
+} elseif (in_array($action, $cronActions)) {
+    $featureKey = 'tweak_cron_management';
+} elseif (in_array($action, $phpActions)) {
+    $featureKey = 'tweak_php_version';
+} elseif (in_array($action, $logActions)) {
+    $featureKey = 'tweak_error_logs';
 } else {
     $featureKey = 'tweak_email_list';
 }
@@ -1284,6 +1293,308 @@ switch ($action) {
         $msg = "Deleted {$deleted} of " . count($lineArr) . " records";
         if (!empty($errors)) $msg .= '. Errors: ' . implode('; ', array_slice($errors, 0, 3));
         echo json_encode(['success' => $deleted > 0, 'message' => $msg, 'deleted' => $deleted, 'total' => count($lineArr)]);
+        break;
+
+    // ── Cron Jobs Management Actions ──
+
+    case 'cron_list':
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Cron"
+             . "&cpanel_jsonapi_func=list_cron";
+
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        $jobs = [];
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $data = $json['result']['data'] ?? [];
+            if (is_array($data)) {
+                foreach ($data as $job) {
+                    if (!is_array($job)) continue;
+                    $jobs[] = [
+                        'linekey'  => $job['linekey'] ?? '',
+                        'minute'   => $job['minute'] ?? '*',
+                        'hour'     => $job['hour'] ?? '*',
+                        'day'      => $job['day'] ?? '*',
+                        'month'    => $job['month'] ?? '*',
+                        'weekday'  => $job['weekday'] ?? '*',
+                        'command'  => $job['command'] ?? '',
+                    ];
+                }
+            }
+        }
+        $emailUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Cron"
+             . "&cpanel_jsonapi_func=get_email";
+        $rEmail = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $emailUrl);
+        $cronEmail = '';
+        if ($rEmail['code'] === 200 && $rEmail['body']) {
+            $ej = json_decode($rEmail['body'], true);
+            $cronEmail = $ej['result']['data']['email'] ?? '';
+        }
+        echo json_encode(['success' => true, 'jobs' => $jobs, 'cron_email' => $cronEmail]);
+        break;
+
+    case 'cron_add':
+        $minute  = isset($_POST['minute']) ? trim($_POST['minute']) : '*';
+        $hour    = isset($_POST['hour']) ? trim($_POST['hour']) : '*';
+        $day     = isset($_POST['day']) ? trim($_POST['day']) : '*';
+        $month   = isset($_POST['month']) ? trim($_POST['month']) : '*';
+        $weekday = isset($_POST['weekday']) ? trim($_POST['weekday']) : '*';
+        $command = isset($_POST['command']) ? trim($_POST['command']) : '';
+
+        if (empty($command)) {
+            echo json_encode(['success' => false, 'message' => 'Command is required']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Cron"
+             . "&cpanel_jsonapi_func=add_line"
+             . "&minute=" . urlencode($minute)
+             . "&hour=" . urlencode($hour)
+             . "&day=" . urlencode($day)
+             . "&month=" . urlencode($month)
+             . "&weekday=" . urlencode($weekday)
+             . "&command=" . urlencode($command);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Cron job added successfully' : $p['error']]);
+        break;
+
+    case 'cron_edit':
+        $linekey = isset($_POST['linekey']) ? trim($_POST['linekey']) : '';
+        $minute  = isset($_POST['minute']) ? trim($_POST['minute']) : '*';
+        $hour    = isset($_POST['hour']) ? trim($_POST['hour']) : '*';
+        $day     = isset($_POST['day']) ? trim($_POST['day']) : '*';
+        $month   = isset($_POST['month']) ? trim($_POST['month']) : '*';
+        $weekday = isset($_POST['weekday']) ? trim($_POST['weekday']) : '*';
+        $command = isset($_POST['command']) ? trim($_POST['command']) : '';
+
+        if (empty($linekey) || empty($command)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Cron"
+             . "&cpanel_jsonapi_func=edit_line"
+             . "&linekey=" . urlencode($linekey)
+             . "&minute=" . urlencode($minute)
+             . "&hour=" . urlencode($hour)
+             . "&day=" . urlencode($day)
+             . "&month=" . urlencode($month)
+             . "&weekday=" . urlencode($weekday)
+             . "&command=" . urlencode($command);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Cron job updated successfully' : $p['error']]);
+        break;
+
+    case 'cron_delete':
+        $linekey = isset($_POST['linekey']) ? trim($_POST['linekey']) : '';
+        if (empty($linekey)) {
+            echo json_encode(['success' => false, 'message' => 'Missing line key']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Cron"
+             . "&cpanel_jsonapi_func=remove_line"
+             . "&linekey=" . urlencode($linekey);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Cron job deleted' : $p['error']]);
+        break;
+
+    // ── PHP Version Management Actions ──
+
+    case 'php_get_versions':
+        $urlInstalled = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_get_installed_versions";
+
+        $rInstalled = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlInstalled);
+        $installed = [];
+        if ($rInstalled['code'] === 200 && $rInstalled['body']) {
+            $json = json_decode($rInstalled['body'], true);
+            $installed = $json['result']['data'] ?? [];
+        }
+
+        $urlVhosts = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_get_vhost_versions";
+
+        $rVhosts = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlVhosts);
+        $vhosts = [];
+        if ($rVhosts['code'] === 200 && $rVhosts['body']) {
+            $json = json_decode($rVhosts['body'], true);
+            $data = $json['result']['data'] ?? [];
+            if (is_array($data)) {
+                foreach ($data as $vh) {
+                    if (!is_array($vh)) continue;
+                    $vhosts[] = [
+                        'vhost'       => $vh['vhost'] ?? '',
+                        'version'     => $vh['version'] ?? '',
+                        'php_admin'   => $vh['php_admin'] ?? false,
+                        'documentroot'=> $vh['documentroot'] ?? '',
+                    ];
+                }
+            }
+        }
+
+        $urlDefault = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_get_system_default_version";
+
+        $rDefault = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDefault);
+        $defaultVersion = '';
+        if ($rDefault['code'] === 200 && $rDefault['body']) {
+            $json = json_decode($rDefault['body'], true);
+            $defaultVersion = $json['result']['data'] ?? '';
+            if (is_array($defaultVersion)) $defaultVersion = $defaultVersion['version'] ?? '';
+        }
+
+        echo json_encode([
+            'success'   => true,
+            'installed' => $installed,
+            'vhosts'    => $vhosts,
+            'default'   => $defaultVersion,
+        ]);
+        break;
+
+    case 'php_set_version':
+        $vhost   = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        $version = isset($_POST['version']) ? trim($_POST['version']) : '';
+
+        if (empty($vhost) || empty($version)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_set_vhost_versions"
+             . "&vhost=" . urlencode($vhost)
+             . "&version=" . urlencode($version);
+
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'PHP version updated to ' . $version : $p['error']]);
+        break;
+
+    // ── Error Logs Actions ──
+
+    case 'error_log_read':
+        $lines = isset($_POST['lines']) ? (int) $_POST['lines'] : 100;
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        if ($lines < 10) $lines = 10;
+        if ($lines > 500) $lines = 500;
+
+        $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Fileman"
+             . "&cpanel_jsonapi_func=get_homedir";
+
+        $rHome = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlHomedir);
+        $homedir = '';
+        if ($rHome['code'] === 200 && $rHome['body']) {
+            $json = json_decode($rHome['body'], true);
+            $homedir = $json['result']['data'] ?? '';
+            if (is_array($homedir)) $homedir = $homedir[0] ?? '';
+        }
+        if (empty($homedir)) $homedir = '/home/' . $cpUsername;
+
+        $logPaths = [];
+        if (!empty($domain)) {
+            $logPaths[] = $homedir . '/logs/' . $domain . '.error.log';
+        }
+        $logPaths[] = $homedir . '/logs/error.log';
+        $logPaths[] = $homedir . '/public_html/error_log';
+
+        $logContent = '';
+        $logFile = '';
+        foreach ($logPaths as $path) {
+            $urlRead = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Fileman"
+                 . "&cpanel_jsonapi_func=get_file_content"
+                 . "&dir=" . urlencode(dirname($path))
+                 . "&file=" . urlencode(basename($path))
+                 . "&from_charset=utf-8"
+                 . "&to_charset=utf-8";
+
+            $rRead = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlRead, 30);
+            if ($rRead['code'] === 200 && $rRead['body']) {
+                $json = json_decode($rRead['body'], true);
+                $status = $json['result']['status'] ?? 0;
+                if ($status == 1) {
+                    $content = $json['result']['data']['content'] ?? '';
+                    if (!empty($content)) {
+                        $logContent = $content;
+                        $logFile = $path;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (empty($logContent)) {
+            $urlErrors = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Errors"
+                 . "&cpanel_jsonapi_func=fetch_error_log"
+                 . "&lines=" . $lines;
+
+            $rErrors = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrors, 30);
+            if ($rErrors['code'] === 200 && $rErrors['body']) {
+                $json = json_decode($rErrors['body'], true);
+                $status = $json['result']['status'] ?? 0;
+                if ($status == 1) {
+                    $logContent = $json['result']['data'] ?? '';
+                    if (is_array($logContent)) $logContent = implode("\n", $logContent);
+                    $logFile = 'Apache Error Log';
+                }
+            }
+        }
+
+        if (empty($logContent)) {
+            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'message' => 'No error logs found']);
+            exit;
+        }
+
+        $allLines = explode("\n", $logContent);
+        $allLines = array_filter($allLines, function($l) { return trim($l) !== ''; });
+        $allLines = array_values($allLines);
+        $totalLines = count($allLines);
+        $returnLines = array_slice($allLines, max(0, $totalLines - $lines));
+
+        echo json_encode([
+            'success'    => true,
+            'lines'      => $returnLines,
+            'file'       => $logFile,
+            'total'      => $totalLines,
+            'showing'    => count($returnLines),
+        ]);
         break;
 
     default:
