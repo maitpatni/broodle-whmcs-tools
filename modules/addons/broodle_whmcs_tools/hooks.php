@@ -284,7 +284,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.34\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.35\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -295,6 +295,16 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
         $actions = $primarySidebar->getChild('Service Details Actions');
         if ($actions) {
             $actions->removeChild('Login to Webmail');
+            $actions->removeChild('Login to Webmail ');
+            $actions->removeChild('Webmail Login');
+            $actions->removeChild('Webmail');
+        }
+        // Also try Service Details Overview
+        $overview = $primarySidebar->getChild('Service Details Overview');
+        if ($overview) {
+            $overview->removeChild('Login to Webmail');
+            $overview->removeChild('Webmail Login');
+            $overview->removeChild('Webmail');
         }
     } catch (\Exception $e) {}
 });
@@ -356,6 +366,7 @@ function broodle_tools_css_hide()
 .quick-create-email,.quick-create-email-section,[class*="quick-create-email"],.module-quick-create-email,#cPanelQuickEmailPanel{display:none!important}
 #Primary_Sidebar-productdetails_addons_and_extras,#cPanelExtrasPurchasePanel,#tabAddonsExtras,.addons-and-extras-section,[id*="addons_and_extras"],[class*="addons-extras"]{display:none!important}
 .bt-hidden-section{display:none!important}
+.list-group-tab-nav .list-group-item[id*="webmail"],.list-group-tab-nav .list-group-item[id*="Webmail"],.list-group-tab-nav a[href*="webmail"]{display:none!important}
 </style>';
 }
 
