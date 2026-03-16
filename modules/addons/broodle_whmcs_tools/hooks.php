@@ -284,7 +284,7 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     // Use <img onerror> to bootstrap bt_client.js
     // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
     // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.35\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.36\';document.head.appendChild(s);" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -298,6 +298,18 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
             $actions->removeChild('Login to Webmail ');
             $actions->removeChild('Webmail Login');
             $actions->removeChild('Webmail');
+            $actions->removeChild('webmail');
+            // Iterate children and remove any with webmail in the name
+            if (is_object($actions) && method_exists($actions, 'getChildren')) {
+                $children = $actions->getChildren();
+                if ($children) {
+                    foreach ($children as $name => $child) {
+                        if (stripos($name, 'webmail') !== false || stripos($name, 'Webmail') !== false) {
+                            $actions->removeChild($name);
+                        }
+                    }
+                }
+            }
         }
         // Also try Service Details Overview
         $overview = $primarySidebar->getChild('Service Details Overview');
@@ -305,6 +317,7 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
             $overview->removeChild('Login to Webmail');
             $overview->removeChild('Webmail Login');
             $overview->removeChild('Webmail');
+            $overview->removeChild('webmail');
         }
     } catch (\Exception $e) {}
 });

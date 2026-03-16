@@ -1419,6 +1419,7 @@ switch ($action) {
     // ── PHP Version Management Actions ──
 
     case 'php_get_versions':
+        // Try UAPI LangPHP first
         $urlInstalled = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=3"
@@ -1427,9 +1428,24 @@ switch ($action) {
 
         $rInstalled = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlInstalled);
         $installed = [];
+        $debugInfo = '';
         if ($rInstalled['code'] === 200 && $rInstalled['body']) {
             $json = json_decode($rInstalled['body'], true);
             $installed = $json['result']['data'] ?? [];
+            if (!is_array($installed)) $installed = [];
+            // Some servers return versions as objects with 'version' key
+            $cleanInstalled = [];
+            foreach ($installed as $v) {
+                if (is_string($v)) $cleanInstalled[] = $v;
+                elseif (is_array($v) && isset($v['version'])) $cleanInstalled[] = $v['version'];
+            }
+            if (!empty($cleanInstalled)) $installed = $cleanInstalled;
+            if (empty($installed)) {
+                $debugInfo = 'installed_versions returned empty. Status: ' . ($json['result']['status'] ?? 'unknown');
+                if (!empty($json['result']['errors'])) $debugInfo .= '. Error: ' . ($json['result']['errors'][0] ?? '');
+            }
+        } else {
+            $debugInfo = 'installed_versions HTTP ' . $rInstalled['code'];
         }
 
         $urlVhosts = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
@@ -1454,6 +1470,12 @@ switch ($action) {
                     ];
                 }
             }
+            if (empty($vhosts) && !empty($debugInfo)) {
+                $debugInfo .= '. vhost_versions also empty.';
+                if (!empty($json['result']['errors'])) $debugInfo .= ' Error: ' . ($json['result']['errors'][0] ?? '');
+            }
+        } else {
+            $debugInfo .= '. vhost_versions HTTP ' . $rVhosts['code'];
         }
 
         $urlDefault = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
@@ -1470,12 +1492,28 @@ switch ($action) {
             if (is_array($defaultVersion)) $defaultVersion = $defaultVersion['version'] ?? '';
         }
 
-        echo json_encode([
+        // If no installed versions found but we have vhosts, extract versions from vhosts
+        if (empty($installed) && !empty($vhosts)) {
+            $fromVhosts = [];
+            foreach ($vhosts as $vh) {
+                if (!empty($vh['version'])) $fromVhosts[$vh['version']] = true;
+            }
+            if (!empty($defaultVersion)) $fromVhosts[$defaultVersion] = true;
+            $installed = array_keys($fromVhosts);
+            sort($installed);
+        }
+
+        $result = [
             'success'   => true,
             'installed' => $installed,
             'vhosts'    => $vhosts,
             'default'   => $defaultVersion,
-        ]);
+        ];
+        if (empty($installed) && empty($vhosts)) {
+            $result['success'] = false;
+            $result['message'] = 'PHP version management is not available on this server' . ($debugInfo ? ' (' . $debugInfo . ')' : '');
+        }
+        echo json_encode($result);
         break;
 
     case 'php_set_version':
@@ -1507,6 +1545,7 @@ switch ($action) {
         if ($lines < 10) $lines = 10;
         if ($lines > 500) $lines = 500;
 
+        // Get home directory
         $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=3"
@@ -1522,63 +1561,69 @@ switch ($action) {
         }
         if (empty($homedir)) $homedir = '/home/' . $cpUsername;
 
-        $logPaths = [];
-        if (!empty($domain)) {
-            $logPaths[] = $homedir . '/logs/' . $domain . '.error.log';
-        }
-        $logPaths[] = $homedir . '/logs/error.log';
-        $logPaths[] = $homedir . '/public_html/error_log';
-
+        // Try the UAPI Errors module first (most reliable)
         $logContent = '';
         $logFile = '';
-        foreach ($logPaths as $path) {
-            $urlRead = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
-                 . "&cpanel_jsonapi_module=Fileman"
-                 . "&cpanel_jsonapi_func=get_file_content"
-                 . "&dir=" . urlencode(dirname($path))
-                 . "&file=" . urlencode(basename($path))
-                 . "&from_charset=utf-8"
-                 . "&to_charset=utf-8";
 
-            $rRead = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlRead, 30);
-            if ($rRead['code'] === 200 && $rRead['body']) {
-                $json = json_decode($rRead['body'], true);
-                $status = $json['result']['status'] ?? 0;
-                if ($status == 1) {
-                    $content = $json['result']['data']['content'] ?? '';
-                    if (!empty($content)) {
-                        $logContent = $content;
-                        $logFile = $path;
-                        break;
+        $urlErrors = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Errors"
+             . "&cpanel_jsonapi_func=fetch_error_log"
+             . "&lines=" . $lines;
+
+        $rErrors = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrors, 30);
+        if ($rErrors['code'] === 200 && $rErrors['body']) {
+            $json = json_decode($rErrors['body'], true);
+            $status = $json['result']['status'] ?? 0;
+            if ($status == 1) {
+                $data = $json['result']['data'] ?? '';
+                if (is_array($data)) $logContent = implode("\n", $data);
+                elseif (is_string($data) && !empty($data)) $logContent = $data;
+                if (!empty($logContent)) $logFile = 'Apache Error Log (UAPI)';
+            }
+        }
+
+        // Fallback: try reading log files directly
+        if (empty($logContent)) {
+            $logPaths = [];
+            if (!empty($domain)) {
+                $logPaths[] = $homedir . '/logs/' . $domain . '.error.log';
+                $logPaths[] = $homedir . '/logs/' . $domain . '-error.log';
+            }
+            $logPaths[] = $homedir . '/logs/error.log';
+            $logPaths[] = $homedir . '/public_html/error_log';
+            $logPaths[] = '/var/log/apache2/error.log';
+
+            foreach ($logPaths as $path) {
+                $urlRead = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                     . "&cpanel_jsonapi_apiversion=3"
+                     . "&cpanel_jsonapi_module=Fileman"
+                     . "&cpanel_jsonapi_func=get_file_content"
+                     . "&dir=" . urlencode(dirname($path))
+                     . "&file=" . urlencode(basename($path))
+                     . "&from_charset=utf-8"
+                     . "&to_charset=utf-8";
+
+                $rRead = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlRead, 30);
+                if ($rRead['code'] === 200 && $rRead['body']) {
+                    $json = json_decode($rRead['body'], true);
+                    $fStatus = $json['result']['status'] ?? 0;
+                    if ($fStatus == 1) {
+                        $content = $json['result']['data']['content'] ?? '';
+                        if (!empty($content)) {
+                            $logContent = $content;
+                            $logFile = basename($path);
+                            break;
+                        }
                     }
                 }
             }
         }
 
         if (empty($logContent)) {
-            $urlErrors = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
-                 . "&cpanel_jsonapi_module=Errors"
-                 . "&cpanel_jsonapi_func=fetch_error_log"
-                 . "&lines=" . $lines;
-
-            $rErrors = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrors, 30);
-            if ($rErrors['code'] === 200 && $rErrors['body']) {
-                $json = json_decode($rErrors['body'], true);
-                $status = $json['result']['status'] ?? 0;
-                if ($status == 1) {
-                    $logContent = $json['result']['data'] ?? '';
-                    if (is_array($logContent)) $logContent = implode("\n", $logContent);
-                    $logFile = 'Apache Error Log';
-                }
-            }
-        }
-
-        if (empty($logContent)) {
-            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'message' => 'No error logs found']);
+            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'total' => 0, 'showing' => 0, 'message' => 'No error logs found. The server may not have any recent errors.']);
             exit;
         }
 

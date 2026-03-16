@@ -1181,6 +1181,7 @@ function openDelDomainModal(domain,type){
 
 /* ─── DNS Manager Pane ─── */
 var dnsCurrentDomain="";
+var dnsZoneDomain="";
 var dnsRecords=[];
 var dnsSelectedLines={};
 var dnsActiveFilter="ALL";
@@ -1226,15 +1227,61 @@ function loadDnsRecords(domain){
     var list=$("bt-dns-records-list");if(!list) return;
     list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading DNS records...</span></div>';
     dnsSelectedLines={};
-    post({action:"dns_fetch_records",domain:domain},function(r){
+    // For subdomains/addon domains, we need to fetch the zone of the main domain
+    // cPanel zones are per main domain — addon/sub records live in the main zone
+    var zoneDomain=domain;
+    // If this is a subdomain of the main domain, use the main domain as zone
+    if(C.domains&&C.domains.main){
+        var main=C.domains.main.toLowerCase();
+        var dl=domain.toLowerCase();
+        if(dl!==main&&dl.indexOf("."+main)!==-1){
+            zoneDomain=C.domains.main;
+        }
+    }
+    post({action:"dns_fetch_records",domain:zoneDomain},function(r){
         if(!r.success){
+            // If zone fetch failed for addon domain, try fetching its own zone
+            if(zoneDomain!==domain){
+                post({action:"dns_fetch_records",domain:domain},function(r2){
+                    if(!r2.success){
+                        list.innerHTML='<div class="bt-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>'+(r2.message||"Failed to load records")+'</span></div>';
+                        return;
+                    }
+                    dnsRecords=r2.records||[];
+                    dnsZoneDomain=domain;
+                    renderDnsToolbar();
+                    renderDnsFilterBar();
+                    renderDnsRecords();
+                });
+                return;
+            }
             list.innerHTML='<div class="bt-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>'+(r.message||"Failed to load records")+'</span></div>';
             return;
         }
-        dnsRecords=r.records||[];
+        var allRecords=r.records||[];
+        dnsZoneDomain=zoneDomain;
+        // Filter records to show only those belonging to the selected domain
+        var selectedDomain=domain.toLowerCase().replace(/\.$/,"");
+        var filterSuffix=selectedDomain+".";
+        dnsRecords=allRecords.filter(function(rec){
+            var name=(rec.name||"").toLowerCase().replace(/\.$/,"");
+            // Exact match: record name is the domain itself (or domain.)
+            if(name===selectedDomain) return true;
+            // Subdomain of selected domain: name ends with .selectedDomain
+            if(name.indexOf("."+selectedDomain)!==-1&&name.indexOf("."+selectedDomain)===name.length-selectedDomain.length-1) return true;
+            // For the main domain, also include bare records (just the zone apex)
+            return false;
+        });
+        // If no filtered records but we have all records and this is the main domain, show all
+        if(!dnsRecords.length&&allRecords.length&&domain.toLowerCase()===zoneDomain.toLowerCase()){
+            dnsRecords=allRecords;
+        }
         renderDnsToolbar();
         renderDnsFilterBar();
         renderDnsRecords();
+        // Update subtitle with record count
+        var sub=$("bt-dns-subtitle");
+        if(sub) sub.textContent=domain+" · "+dnsRecords.length+" record"+(dnsRecords.length!==1?"s":"");
     });
 }
 
@@ -1382,7 +1429,7 @@ function dnsHandleBulkDelete(){
     if(!confirm("Delete "+lines.length+" selected DNS record(s)? This cannot be undone.")) return;
     var btn=document.querySelector(".bt-dns-bulk-del-btn");
     if(btn) btnLoad(btn,"Deleting...");
-    post({action:"dns_bulk_delete",domain:dnsCurrentDomain,lines:lines.join(",")},function(r){
+    post({action:"dns_bulk_delete",domain:dnsZoneDomain||dnsCurrentDomain,lines:lines.join(",")},function(r){
         if(btn) btnDone(btn);
         if(r.success||r.deleted>0){
             dnsSelectedLines={};
@@ -1413,7 +1460,7 @@ function openDnsAddModal(){
     overlay.querySelectorAll("[data-dns-close]").forEach(function(b){b.addEventListener("click",function(){overlay.remove();});});
     overlay.addEventListener("click",function(e){if(e.target===overlay) overlay.remove();});
     $("btDnsAddSubmit").addEventListener("click",function(){
-        var data={action:"dns_add_record",domain:dnsCurrentDomain,type:typeSelect.value,name:$("btDnsAddName").value.trim(),ttl:$("btDnsAddTtl").value};
+        var data={action:"dns_add_record",domain:dnsZoneDomain||dnsCurrentDomain,type:typeSelect.value,name:$("btDnsAddName").value.trim(),ttl:$("btDnsAddTtl").value};
         Object.assign(data,dnsCollectTypeFields("btDnsAddFields",typeSelect.value));
         var msg=$("btDnsAddMsg");msg.style.display="none";
         var btn=this;btnLoad(btn,"Adding...");
@@ -1441,7 +1488,7 @@ function openDnsEditModal(rec){
     overlay.querySelectorAll("[data-dns-close]").forEach(function(b){b.addEventListener("click",function(){overlay.remove();});});
     overlay.addEventListener("click",function(e){if(e.target===overlay) overlay.remove();});
     $("btDnsEditSubmit").addEventListener("click",function(){
-        var data={action:"dns_edit_record",domain:dnsCurrentDomain,line:rec.line,type:rec.type,name:$("btDnsEditName").value.trim(),ttl:$("btDnsEditTtl").value};
+        var data={action:"dns_edit_record",domain:dnsZoneDomain||dnsCurrentDomain,line:rec.line,type:rec.type,name:$("btDnsEditName").value.trim(),ttl:$("btDnsEditTtl").value};
         Object.assign(data,dnsCollectTypeFields("btDnsEditFields",rec.type));
         var msg=$("btDnsEditMsg");msg.style.display="none";
         var btn=this;btnLoad(btn,"Saving...");
@@ -1455,7 +1502,7 @@ function openDnsEditModal(rec){
 
 function openDnsDeleteConfirm(rec){
     if(!confirm("Delete this "+rec.type+" record for "+rec.name+"?")) return;
-    post({action:"dns_delete_record",domain:dnsCurrentDomain,line:rec.line},function(r){
+    post({action:"dns_delete_record",domain:dnsZoneDomain||dnsCurrentDomain,line:rec.line},function(r){
         if(r.success){
             loadDnsRecords(dnsCurrentDomain);
         } else {
@@ -1663,7 +1710,7 @@ function loadPhpVersions(){
     var list=$("bt-php-list");if(!list) return;
     list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP versions...</span></div>';
     post({action:"php_get_versions"},function(r){
-        if(!r.success){list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load")+'</span></div>';return;}
+        if(!r.success){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>'+(r.message||"Failed to load PHP versions")+'</span></div>';var countEl=document.querySelector(".bt-php-count");if(countEl) countEl.textContent="Unavailable";return;}
         var installed=r.installed||[];
         var vhosts=r.vhosts||[];
         var defaultVer=r.default||"";
