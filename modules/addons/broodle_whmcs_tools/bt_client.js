@@ -130,7 +130,7 @@ function styleSidebarActions(){
         // Inject WordPress sidebar item into overview panel (not actions panel)
         if(!isActionsPanel&&C.wpEnabled&&!nav.querySelector(".bt-wp-sidebar-item")){
             var wpItem=document.createElement("a");
-            wpItem.href="javascript:void(0)";
+            wpItem.href="#tabWordpress";
             wpItem.className="list-group-item bt-wp-sidebar-item";
             var wpIconDiv=document.createElement("div");
             wpIconDiv.className="bt-action-icon";
@@ -141,13 +141,6 @@ function styleSidebarActions(){
             wpLabelDiv.innerHTML='WordPress<span>Site Management</span>';
             wpItem.appendChild(wpIconDiv);
             wpItem.appendChild(wpLabelDiv);
-            wpItem.addEventListener("click",function(e){
-                e.preventDefault();
-                var wpTab=document.querySelector('.bt-tab-btn[data-tab="wordpress"]');
-                if(wpTab) wpTab.click();
-                var btWrap=document.getElementById("bt-wrap");
-                if(btWrap) btWrap.scrollIntoView({behavior:"smooth",block:"start"});
-            });
             nav.appendChild(wpItem);
         }
     });
@@ -306,6 +299,10 @@ function buildTabs(){
             panes.querySelectorAll(".bt-tab-pane").forEach(function(p){p.classList.remove("active");});
             btn.classList.add("active");
             var pane=$("bt-pane-"+t.id);if(pane) pane.classList.add("active");
+            // Update URL hash for deep linking (e.g. #tabWordPress)
+            var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
+            if(history.replaceState) history.replaceState(null,null,"#"+hashName);
+            else location.hash=hashName;
             if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
             if(t.id==="wordpress"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadWpInstances();}
             if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
@@ -343,6 +340,38 @@ function buildTabs(){
     if(C.phpEnabled) buildPhpPane();
     if(C.logsEnabled) buildLogsPane();
     if(C.wpEnabled) buildWpPane();
+
+    // Deep-link: activate tab from URL hash (e.g. #tabWordpress, #tabDns, #tabOverview)
+    activateTabFromHash();
+    window.addEventListener("hashchange",activateTabFromHash);
+}
+
+function activateTabFromHash(){
+    var hash=(location.hash||"").replace("#","").toLowerCase();
+    if(!hash||hash.indexOf("tab")!==0) return;
+    // Map hash to tab id: #tabWordpress -> wordpress, #tabDns -> dns, etc.
+    var tabName=hash.replace(/^tab/,"").toLowerCase();
+    // Handle special mappings
+    var hashMap={
+        "wordpress":"wordpress","wp":"wordpress",
+        "overview":"overview",
+        "domains":"domains","domain":"domains",
+        "ssl":"ssl",
+        "email":"email","emailaccounts":"email",
+        "databases":"databases","database":"databases","db":"databases",
+        "dns":"dns","dnsmanager":"dns",
+        "cronjobs":"cronjobs","cron":"cronjobs",
+        "php":"phpversion","phpversion":"phpversion",
+        "errorlogs":"errorlogs","errors":"errorlogs","logs":"errorlogs",
+        "addons":"overview","addonsextras":"overview"
+    };
+    var targetId=hashMap[tabName]||tabName;
+    var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
+    if(tabBtn){
+        tabBtn.click();
+        var btWrap=document.getElementById("bt-wrap");
+        if(btWrap) setTimeout(function(){btWrap.scrollIntoView({behavior:"smooth",block:"start"});},100);
+    }
 }
 
 /* ─── Overview Pane (improved) ─── */
