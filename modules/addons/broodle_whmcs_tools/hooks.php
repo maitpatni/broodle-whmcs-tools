@@ -14,6 +14,9 @@ if (!defined('WHMCS')) {
 use WHMCS\Database\Capsule;
 use WHMCS\View\Menu\Item as MenuItem;
 
+/* ─── DIAGNOSTIC: Remove after confirming hooks load ─── */
+/* (diagnostic removed — hooks confirmed working) */
+
 /* ─── Helpers ─────────────────────────────────────────────── */
 
 function broodle_tools_setting_enabled($key)
@@ -265,7 +268,8 @@ function broodle_tools_gather_data($vars)
     return $cache;
 }
 
-/* Single hook: inject everything via ClientAreaProductDetailsOutput */
+/* Secondary hook: inject via ClientAreaProductDetailsOutput (works in default WHMCS themes).
+   Lagom2 may NOT render this hook's output, so ClientAreaFooterOutput is the primary method. */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     try {
         $data = broodle_tools_gather_data($vars);
@@ -278,13 +282,14 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
     }
 
     $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $version = BROODLE_TOOLS_VERSION;
+    $ts = time();
 
     $out  = '<div id="bt-data" style="display:none" data-config=\'' . $jsData . '\'></div>';
 
-    // Use <img onerror> to bootstrap bt_client.js
-    // Avoid the literal word "script" in the attribute to bypass Smarty/Lagom2 output filter
-    // Instead, build the tag name from parts: "scr"+"ipt"
-    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=3.10.40\';document.head.appendChild(s);" style="display:none!important" alt="">';
+    // Method 1: img onload (bypasses Smarty script filtering)
+    // Build URL with string concat to avoid & being stripped from onload attribute
+    $out .= '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="if(!window.__btClientLoaded){var s=document.createElement(\'scr\'+\'ipt\');s.src=\'modules/addons/broodle_whmcs_tools/bt_client.js?v=' . $version . '\'+String.fromCharCode(38)+\'t=' . $ts . '\';document.head.appendChild(s);}" style="display:none!important" alt="">';
 
     return $out;
 });
@@ -989,6 +994,7 @@ function broodle_tools_css_responsive()
 .bwp-site-actions{flex-direction:column}
 }
 @media(max-width:400px){.bwp-theme-grid{grid-template-columns:1fr}}
+.bt-wp-sidebar-item.active{border-color:#0a5ed3!important;background:rgba(10,94,211,.06)!important;color:#0a5ed3!important;box-shadow:0 2px 8px rgba(10,94,211,.12)!important}
 </style>';
 }
 
@@ -1162,7 +1168,9 @@ function buildTabs(){
         {id:"email",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><rect x=\\x272\\x27 y=\\x274\\x27 width=\\x2720\\x27 height=\\x2716\\x27 rx=\\x272\\x27/><path d=\\x27m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\\x27/></svg>",label:"Email Accounts",check:"emailEnabled"},
         {id:"databases",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><ellipse cx=\\x2712\\x27 cy=\\x275\\x27 rx=\\x279\\x27 ry=\\x273\\x27/><path d=\\x27M21 12c0 1.66-4 3-9 3s-9-1.34-9-3\\x27/><path d=\\x27M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5\\x27/></svg>",label:"Databases",check:"dbEnabled"},
         {id:"dns",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M12 2L2 7l10 5 10-5-10-5z\\x27/><path d=\\x27M2 17l10 5 10-5\\x27/><path d=\\x27M2 12l10 5 10-5\\x27/></svg>",label:"DNS Manager",check:"dnsEnabled"},
-        {id:"wordpress",icon:wpIcon,label:"WordPress",check:"wpEnabled"}
+        {id:"cronjobs",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><circle cx=\\x2712\\x27 cy=\\x2712\\x27 r=\\x2710\\x27/><polyline points=\\x2712 6 12 12 16 14\\x27/></svg>",label:"Cron Jobs",check:"cronEnabled"},
+        {id:"phpversion",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><polyline points=\\x2716 18 22 12 16 6\\x27/><polyline points=\\x278 6 2 12 8 18\\x27/><line x1=\\x2714\\x27 y1=\\x274\\x27 x2=\\x2710\\x27 y2=\\x2720\\x27/></svg>",label:"PHP",check:"phpEnabled"},
+        {id:"errorlogs",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\\x27/><polyline points=\\x2714 2 14 8 20 8\\x27/><line x1=\\x2716\\x27 y1=\\x2713\\x27 x2=\\x278\\x27 y2=\\x2713\\x27/><line x1=\\x2716\\x27 y1=\\x2717\\x27 x2=\\x278\\x27 y2=\\x2717\\x27/></svg>",label:"Error Logs",check:"logsEnabled"}
     ];
 
     var nav=document.createElement("div");nav.className="bt-tabs-nav";
@@ -1181,10 +1189,15 @@ function buildTabs(){
             panes.querySelectorAll(".bt-tab-pane").forEach(function(p){p.classList.remove("active");});
             btn.classList.add("active");
             var pane=$("bt-pane-"+t.id);if(pane) pane.classList.add("active");
+            // Deactivate WordPress sidebar item when switching to a regular tab
+            var wpSb=document.querySelector(".bt-wp-sidebar-item");
+            if(wpSb) wpSb.classList.remove("active");
             if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
-            if(t.id==="wordpress"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadWpInstances();}
             if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
             if(t.id==="dns"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDnsDomains();}
+            if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
+            if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
+            if(t.id==="errorlogs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadErrorLogs();}
         });
         nav.appendChild(btn);
 
@@ -1194,6 +1207,8 @@ function buildTabs(){
         panes.appendChild(pane);
         firstTab=false;
     });
+
+    // WordPress is now a top-level page (sibling of #Overview), not inside bt-wrap
 
     wrap.appendChild(nav);wrap.appendChild(panes);
     if(insertMode==="prepend"&&insertTarget){
@@ -1211,7 +1226,10 @@ function buildTabs(){
     if(C.dbEnabled) buildDatabasesPane();
     if(C.sslEnabled) buildSSLPane();
     if(C.dnsEnabled) buildDnsPane();
-    if(C.wpEnabled) buildWpPane();
+    if(C.cronEnabled) buildCronPane();
+    if(C.phpEnabled) buildPhpPane();
+    if(C.logsEnabled) buildLogsPane();
+    // WordPress pane is built lazily when sidebar item is clicked (top-level page)
 }
 
 /* ─── Overview Pane (improved) ─── */
@@ -2408,6 +2426,51 @@ function broodle_tools_shared_script()
 }
 
 /* ─── Upgrade Page List Layout ────────────────────────────── */
+
+/* PRIMARY injection: ClientAreaFooterOutput is universally supported by all themes including Lagom2.
+   We inject the bt-data config div + bt_client.js here because some themes (e.g. Lagom2) may not
+   render ClientAreaProductDetailsOutput hook output at all. */
+add_hook('ClientAreaFooterOutput', 1, function ($vars) {
+    // Only run on product details pages
+    $filename = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
+    $action = $_GET['action'] ?? '';
+    $isProductDetails = ($filename === 'clientarea.php' && $action === 'productdetails')
+                     || (isset($vars['templatefile']) && strpos($vars['templatefile'], 'clientareaproductdetails') !== false);
+    if (!$isProductDetails) return '';
+
+    try {
+        $data = broodle_tools_gather_data($vars);
+    } catch (\Exception $e) {
+        return '';
+    }
+
+    if (!$data) {
+        return '';
+    }
+
+    $version = BROODLE_TOOLS_VERSION;
+    $ts = time();
+    $jsData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    $out = '';
+    // Only inject bt-data if not already present (ClientAreaProductDetailsOutput may have done it)
+    $out .= '<script>
+if(!document.getElementById("bt-data")){
+    var d=document.createElement("div");
+    d.id="bt-data";
+    d.style.display="none";
+    d.setAttribute("data-config",' . json_encode($jsData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) . ');
+    document.body.appendChild(d);
+}
+if(!window.__btClientLoaded){
+    var s=document.createElement("script");
+    s.src="modules/addons/broodle_whmcs_tools/bt_client.js?v=' . $version . '&t=' . $ts . '";
+    document.head.appendChild(s);
+}
+</script>';
+    return $out;
+});
+
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     if (!broodle_tools_upgrade_list_enabled()) {
         return '';

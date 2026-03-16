@@ -1700,69 +1700,106 @@ switch ($action) {
         if ($lines < 10) $lines = 10;
         if ($lines > 500) $lines = 500;
 
-        // Get home directory via cPanel API 2 Fileman::getdir
+        // Get home directory
+        $homedir = '/home/' . $cpUsername;
         $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=2"
              . "&cpanel_jsonapi_module=Fileman"
              . "&cpanel_jsonapi_func=getdir";
-
         $rHome = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlHomedir);
-        $homedir = '';
         if ($rHome['code'] === 200 && $rHome['body']) {
             $json = json_decode($rHome['body'], true);
             $dirData = $json['cpanelresult']['data'][0] ?? [];
-            $homedir = $dirData['homedir'] ?? ($dirData['dir'] ?? '');
-            if (empty($homedir)) {
-                // Try UAPI Variables::get_user_information for homedir
-                $urlVars = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                     . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                     . "&cpanel_jsonapi_apiversion=3"
-                     . "&cpanel_jsonapi_module=Variables"
-                     . "&cpanel_jsonapi_func=get_user_information";
-                $rVars = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlVars);
-                if ($rVars['code'] === 200 && $rVars['body']) {
-                    $jsonV = json_decode($rVars['body'], true);
-                    $homedir = $jsonV['result']['data']['home'] ?? '';
-                }
-            }
+            $h = $dirData['homedir'] ?? ($dirData['dir'] ?? '');
+            if (!empty($h)) $homedir = $h;
         }
-        if (empty($homedir)) $homedir = '/home/' . $cpUsername;
 
         $logContent = '';
         $logFile = '';
         $logEntries = [];
 
-        // Get the main domain for the account (needed for Stats::get_site_errors)
+        // Get the main domain
         $mainDomain = $domain;
         if (empty($mainDomain)) {
-            // Try DomainInfo::list_domains
             $urlDomain = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                  . "&cpanel_jsonapi_apiversion=3"
                  . "&cpanel_jsonapi_module=DomainInfo"
                  . "&cpanel_jsonapi_func=list_domains";
-
             $rDomain = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomain);
             if ($rDomain['code'] === 200 && $rDomain['body']) {
                 $jsonD = json_decode($rDomain['body'], true);
                 $mainDomain = $jsonD['result']['data']['main_domain'] ?? '';
             }
-            // Fallback: try WHM accountsummary
-            if (empty($mainDomain)) {
-                $urlAcct = "{$protocol}://{$hostname}:{$port}/json-api/accountsummary"
-                     . "?user=" . urlencode($cpUsername);
-                $rAcct = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlAcct);
-                if ($rAcct['code'] === 200 && $rAcct['body']) {
-                    $jsonA = json_decode($rAcct['body'], true);
-                    $acctData = $jsonA['data']['acct'][0] ?? ($jsonA['acct'][0] ?? []);
-                    $mainDomain = $acctData['domain'] ?? '';
+            if (empty($mainDomain) && !empty($service->domain)) {
+                $mainDomain = $service->domain;
+            }
+        }
+
+        // Strategy 1: UAPI Logd::get_last_errors (newer cPanel)
+        if (!empty($mainDomain)) {
+            $urlLogd = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Logd"
+                 . "&cpanel_jsonapi_func=get_last_errors"
+                 . "&domain=" . urlencode($mainDomain)
+                 . "&maxlines=" . $lines;
+            $rLogd = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlLogd, 30);
+            if ($rLogd['code'] === 200 && $rLogd['body']) {
+                $json = json_decode($rLogd['body'], true);
+                $status = $json['result']['status'] ?? 0;
+                if ($status == 1) {
+                    $data = $json['result']['data'] ?? [];
+                    if (is_array($data)) {
+                        foreach ($data as $entry) {
+                            if (is_array($entry) && isset($entry['entry'])) {
+                                $logEntries[] = $entry['entry'];
+                            } elseif (is_string($entry) && !empty($entry)) {
+                                $logEntries[] = $entry;
+                            }
+                        }
+                    }
+                    if (!empty($logEntries)) {
+                        $logContent = implode("\n", $logEntries);
+                        $logFile = $mainDomain . ' Error Log';
+                    }
                 }
             }
         }
 
-        // Strategy 1: UAPI Stats::get_site_errors (correct documented endpoint)
-        if (!empty($mainDomain)) {
+        // Strategy 2: cPanel API 2 ErrorLog::fetchlog (older cPanel)
+        if (empty($logContent)) {
+            $urlErrLog = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=2"
+                 . "&cpanel_jsonapi_module=ErrorLog"
+                 . "&cpanel_jsonapi_func=fetchlog";
+            $rErrLog = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrLog, 30);
+            if ($rErrLog['code'] === 200 && $rErrLog['body']) {
+                $json = json_decode($rErrLog['body'], true);
+                $data = $json['cpanelresult']['data'] ?? [];
+                if (is_array($data) && !empty($data)) {
+                    foreach ($data as $entry) {
+                        $line = '';
+                        if (is_array($entry)) {
+                            $line = $entry['log'] ?? ($entry['entry'] ?? ($entry['line'] ?? ''));
+                        } elseif (is_string($entry)) {
+                            $line = $entry;
+                        }
+                        if (!empty(trim($line))) $logEntries[] = trim($line);
+                    }
+                    if (!empty($logEntries)) {
+                        $logContent = implode("\n", $logEntries);
+                        $logFile = 'Error Log (API 2)';
+                    }
+                }
+            }
+        }
+
+        // Strategy 3: UAPI Stats::get_site_errors
+        if (empty($logContent) && !empty($mainDomain)) {
             $urlErrors = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                  . "&cpanel_jsonapi_apiversion=3"
@@ -1771,7 +1808,6 @@ switch ($action) {
                  . "&domain=" . urlencode($mainDomain)
                  . "&log=error"
                  . "&maxlines=" . $lines;
-
             $rErrors = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrors, 30);
             if ($rErrors['code'] === 200 && $rErrors['body']) {
                 $json = json_decode($rErrors['body'], true);
@@ -1795,7 +1831,7 @@ switch ($action) {
             }
         }
 
-        // Strategy 2: Try reading log files directly via Fileman::get_file_content
+        // Strategy 4: Read log files directly via Fileman::get_file_content
         if (empty($logContent)) {
             $logPaths = [];
             if (!empty($mainDomain)) {
@@ -1815,7 +1851,6 @@ switch ($action) {
                      . "&file=" . urlencode(basename($path))
                      . "&from_charset=utf-8"
                      . "&to_charset=utf-8";
-
                 $rRead = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlRead, 30);
                 if ($rRead['code'] === 200 && $rRead['body']) {
                     $json = json_decode($rRead['body'], true);
@@ -1833,12 +1868,7 @@ switch ($action) {
         }
 
         if (empty($logContent)) {
-            $debugMsg = 'Tried: Stats::get_site_errors';
-            if (!empty($mainDomain)) $debugMsg .= ' (domain=' . $mainDomain . ')';
-            else $debugMsg .= ' (no domain found)';
-            $debugMsg .= ', Fileman::get_file_content on ' . count($logPaths ?? []) . ' paths';
-            $debugMsg .= '. Home: ' . $homedir;
-            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'total' => 0, 'showing' => 0, 'message' => 'No error logs found. ' . $debugMsg]);
+            echo json_encode(['success' => true, 'lines' => [], 'file' => '', 'total' => 0, 'showing' => 0, 'message' => 'No error logs found']);
             exit;
         }
 
