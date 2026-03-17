@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.81");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.82");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -213,7 +213,7 @@ function injectStyles4(){
 '.bt-log-lines{padding:6px 0;display:flex;flex-direction:column}',
 '.bt-log-entry{display:flex;align-items:flex-start;gap:0;padding:3px 16px;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:12px;line-height:1.65;transition:background .1s;border-left:3px solid transparent}.bt-log-entry:hover{background:rgba(255,255,255,.04)}',
 '.bt-log-fatal{border-left-color:#ef4444;background:rgba(239,68,68,.06)}.bt-log-error{border-left-color:#fb923c;background:rgba(251,146,60,.04)}.bt-log-warn{border-left-color:#fbbf24}.bt-log-info{border-left-color:#60a5fa}.bt-log-other{border-left-color:transparent}',
-'.bt-log-num{min-width:36px;padding:0 8px 0 0;text-align:right;color:rgba(148,163,184,.35);user-select:none;flex-shrink:0}',
+'.bt-log-num{min-width:24px;width:24px;padding:0 6px 0 0;text-align:right;color:rgba(148,163,184,.35);user-select:none;flex-shrink:0;font-size:10px}',
 '.bt-log-level-dot{width:6px;height:6px;border-radius:50%;margin:7px 8px 0 0;flex-shrink:0}',
 '.bt-log-fatal .bt-log-level-dot{background:#ef4444}.bt-log-error .bt-log-level-dot{background:#fb923c}.bt-log-warn .bt-log-level-dot{background:#fbbf24}.bt-log-info .bt-log-level-dot{background:#60a5fa}.bt-log-other .bt-log-level-dot{background:rgba(148,163,184,.3)}',
 '.bt-log-ts{color:rgba(148,163,184,.5);font-size:11px;margin-right:8px;white-space:nowrap;flex-shrink:0}',
@@ -936,7 +936,6 @@ function buildOverviewPane(){
     var html="";
 
     /* Billing & service info cards */
-    if(C.domains&&C.domains.main) pairs.push({label:"Primary Domain",value:'<a href="https://'+esc(C.domains.main)+'" target="_blank">'+esc(C.domains.main)+'</a>'});
     if(C.regDate) pairs.push({label:"Registration Date",value:esc(C.regDate)});
     if(C.nextDueDate&&C.nextDueDate!=="0000-00-00"){
         var dueVal=esc(C.nextDueDate);

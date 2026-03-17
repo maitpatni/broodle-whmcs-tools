@@ -1782,14 +1782,20 @@ switch ($action) {
             $json = json_decode($rInstalled['body'], true);
             $status = $json['result']['status'] ?? 0;
             if ($status == 1) {
-                $installed = $json['result']['data'] ?? [];
-                if (!is_array($installed)) $installed = [];
+                $rawData = $json['result']['data'] ?? [];
+                // Handle both formats: {versions: [...]} and direct array [...]
+                if (is_array($rawData) && isset($rawData['versions']) && is_array($rawData['versions'])) {
+                    $installed = $rawData['versions'];
+                } elseif (is_array($rawData)) {
+                    $installed = $rawData;
+                }
+                // Clean: extract version strings from mixed formats
                 $cleanInstalled = [];
                 foreach ($installed as $v) {
                     if (is_string($v)) $cleanInstalled[] = $v;
                     elseif (is_array($v) && isset($v['version'])) $cleanInstalled[] = $v['version'];
                 }
-                if (!empty($cleanInstalled)) $installed = $cleanInstalled;
+                $installed = !empty($cleanInstalled) ? $cleanInstalled : [];
             }
             if (empty($installed)) {
                 $debugInfo = 'LangPHP::installed_versions status=' . ($status ?? 'null');
