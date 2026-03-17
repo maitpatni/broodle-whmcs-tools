@@ -938,6 +938,105 @@ switch ($action) {
         }
         break;
 
+    // ─── Security Debug: Test all security endpoints and return raw responses ──
+    case 'wp_security_debug':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $tests = [];
+
+        // Test 1: POST /v1/security-measures/checker with installationsIds (plural, array)
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            '/v1/security-measures/checker', 'POST', ['installationsIds' => [$instId]]);
+        $tests[] = [
+            'endpoint' => 'POST /v1/security-measures/checker',
+            'body'     => ['installationsIds' => [$instId]],
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 2: GET with installationId query param
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/security-measures/checker?installationId={$instId}");
+        $tests[] = [
+            'endpoint' => "GET /v1/security-measures/checker?installationId={$instId}",
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 3: GET per-installation security
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/security");
+        $tests[] = [
+            'endpoint' => "GET /v1/installations/{$instId}/security",
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 4: GET per-installation security-measures
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/security-measures");
+        $tests[] = [
+            'endpoint' => "GET /v1/installations/{$instId}/security-measures",
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 5: GET with installationsIds[] query param
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/security-measures/checker?installationsIds[]={$instId}");
+        $tests[] = [
+            'endpoint' => "GET /v1/security-measures/checker?installationsIds[]={$instId}",
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 6: POST with installationId (singular)
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            '/v1/security-measures/checker', 'POST', ['installationId' => $instId]);
+        $tests[] = [
+            'endpoint' => 'POST /v1/security-measures/checker',
+            'body'     => ['installationId' => $instId],
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => $r['data'] ?? null,
+            'raw'      => $r['raw'] ?? null,
+        ];
+
+        // Test 7: GET the OpenAPI spec paths (to discover available endpoints)
+        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            '/v1/specification/public');
+        $specPaths = [];
+        if ($r['success'] && is_array($r['data']) && isset($r['data']['paths'])) {
+            foreach ($r['data']['paths'] as $path => $methods) {
+                if (stripos($path, 'security') !== false) {
+                    $specPaths[$path] = array_keys($methods);
+                }
+            }
+        }
+        $tests[] = [
+            'endpoint' => 'GET /v1/specification/public (security paths only)',
+            'http'     => $r['status'] ?? null,
+            'success'  => $r['success'],
+            'data'     => !empty($specPaths) ? $specPaths : 'No security paths found in spec',
+        ];
+
+        echo json_encode(['success' => true, 'tests' => $tests], JSON_PRETTY_PRINT);
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
 }
