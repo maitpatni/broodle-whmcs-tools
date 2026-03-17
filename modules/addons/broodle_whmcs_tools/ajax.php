@@ -48,6 +48,7 @@ $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_e
 $cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
 $phpActions = ['php_get_versions', 'php_set_version'];
 $logActions = ['error_log_read'];
+$fileActions = ['fm_list', 'fm_read', 'fm_save', 'fm_create_file', 'fm_create_folder', 'fm_delete', 'fm_rename', 'fm_copy', 'fm_move', 'fm_upload', 'fm_permissions', 'fm_compress', 'fm_extract', 'fm_search', 'fm_download_url'];
 
 // Handle addon description lookup (no cPanel needed)
 if ($action === 'get_addon_description') {
@@ -274,6 +275,8 @@ if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_php_version';
 } elseif (in_array($action, $logActions)) {
     $featureKey = 'tweak_error_logs';
+} elseif (in_array($action, $fileActions)) {
+    $featureKey = 'tweak_file_manager';
 } else {
     $featureKey = 'tweak_email_list';
 }
@@ -2058,6 +2061,25 @@ switch ($action) {
             'total'      => $totalLines,
             'showing'    => count($returnLines),
         ]);
+        break;
+
+    /* ═══ FILE MANAGER ═══ */
+    case 'fm_list':
+    case 'fm_read':
+    case 'fm_save':
+    case 'fm_create_file':
+    case 'fm_create_folder':
+    case 'fm_delete':
+    case 'fm_rename':
+    case 'fm_copy':
+    case 'fm_move':
+    case 'fm_upload':
+    case 'fm_permissions':
+    case 'fm_compress':
+    case 'fm_extract':
+    case 'fm_search':
+    case 'fm_download_url':
+        require_once __DIR__ . '/ajax_filemanager.php';
         break;
 
     default:
