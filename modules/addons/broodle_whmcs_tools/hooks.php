@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.77');
+    define('BROODLE_TOOLS_VERSION', '3.10.78');
 }
 
 if (!defined('WHMCS')) {
@@ -46,6 +46,8 @@ function broodle_tools_php_enabled() { return broodle_tools_setting_enabled('twe
 function broodle_tools_logs_enabled() { return broodle_tools_setting_enabled('tweak_error_logs'); }
 function broodle_tools_fm_enabled() { return broodle_tools_setting_enabled('tweak_file_manager'); }
 function broodle_tools_upgrade_list_enabled() { return broodle_tools_setting_enabled('tweak_upgrade_list_layout'); }
+function broodle_tools_v2_dropdown_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_dropdown'); }
+function broodle_tools_v2_banner_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_banner'); }
 
 function broodle_tools_get_service_id($vars)
 {
@@ -172,6 +174,8 @@ function broodle_tools_ensure_defaults()
             'tweak_error_logs'         => '1',
             'tweak_file_manager'       => '1',
             'tweak_upgrade_list_layout'=> '0',
+            'tweak_manage_v2_dropdown' => '1',
+            'tweak_manage_v2_banner'   => '1',
             'auto_update_enabled'      => '0',
         ];
         foreach ($defaults as $key => $value) {
@@ -382,15 +386,45 @@ function broodle_tools_gather_data($vars)
     return $cache;
 }
 
-/* ─── Manage V2 button: inject via ClientAreaProductDetailsOutput ─── */
-/* This adds a small "Manage V2" link on the default product details page */
+/* ─── Manage V2 banner: inject via ClientAreaProductDetailsOutput ─── */
+/* Shows a beta banner at the top of the cPanel product details page */
 add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
+    if (!broodle_tools_v2_banner_enabled()) return '';
     $serviceId = broodle_tools_get_service_id($vars);
     if (!$serviceId) return '';
     $cpData = broodle_tools_get_cpanel_service($serviceId);
     if (!$cpData) return '';
     $url = 'index.php?m=broodle_whmcs_tools&id=' . $serviceId;
-    return '<div style="margin:10px 0"><a href="' . $url . '" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Manage V2</a></div>';
+    return '
+    <style>
+    .bt-v2-banner{display:flex;align-items:center;gap:16px;padding:16px 22px;margin:0 0 20px;border-radius:12px;background:linear-gradient(135deg,#0a5ed3 0%,#2563eb 50%,#7c3aed 100%);color:#fff;text-decoration:none;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+    .bt-v2-banner:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(10,94,211,.3);color:#fff;text-decoration:none}
+    .bt-v2-banner::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08) 0%,transparent 60%);pointer-events:none}
+    .bt-v2-banner-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .bt-v2-banner-icon svg{width:22px;height:22px;color:#fff}
+    .bt-v2-banner-text{flex:1;min-width:0}
+    .bt-v2-banner-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;margin:0 0 3px;color:#fff}
+    .bt-v2-banner-badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.2);color:#fff}
+    .bt-v2-banner-desc{font-size:13px;color:rgba(255,255,255,.85);margin:0;line-height:1.4}
+    .bt-v2-banner-arrow{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+    .bt-v2-banner:hover .bt-v2-banner-arrow{background:rgba(255,255,255,.25)}
+    .bt-v2-banner-arrow svg{width:18px;height:18px;color:#fff}
+    [data-theme="dark"] .bt-v2-banner,.dark-mode .bt-v2-banner{background:linear-gradient(135deg,#1e40af 0%,#1d4ed8 50%,#6d28d9 100%)}
+    [data-theme="dark"] .bt-v2-banner:hover,.dark-mode .bt-v2-banner:hover{box-shadow:0 8px 24px rgba(30,64,175,.4)}
+    @media(max-width:600px){.bt-v2-banner{flex-wrap:wrap;gap:12px;padding:14px 16px}.bt-v2-banner-text{width:100%;order:2}.bt-v2-banner-arrow{order:3}}
+    </style>
+    <a href="' . $url . '" class="bt-v2-banner">
+        <div class="bt-v2-banner-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="bt-v2-banner-text">
+            <p class="bt-v2-banner-title">Manage V2 <span class="bt-v2-banner-badge">Beta</span></p>
+            <p class="bt-v2-banner-desc">Experience a better way to manage your cPanel hosting — faster, cleaner, and more powerful.</p>
+        </div>
+        <div class="bt-v2-banner-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+    </a>';
 });
 
 /* ─── Remove Webmail sidebar button ───────────────────────── */
@@ -424,21 +458,84 @@ add_hook('ClientAreaPrimarySidebar', 1, function ($primarySidebar) {
             $overview->removeChild('webmail');
         }
     } catch (\Exception $e) {}
+});
 
-    // Add "Manage V2" link to sidebar
+/* ─── Manage V2 dropdown on Dashboard & Services List ─── */
+/* Injects JS/CSS via ClientAreaHeadOutput to add "Manage V2" to the Lagom2
+   dropdown menu on the Manage button for cPanel services. */
+add_hook('ClientAreaHeadOutput', 1, function ($vars) {
+    if (!broodle_tools_v2_dropdown_enabled()) return '';
+
+    // Only inject on dashboard and services list pages
+    $filename = basename($_SERVER['SCRIPT_NAME'] ?? '');
+    $action = $_GET['action'] ?? '';
+    $isDashboard = ($filename === 'clientarea.php' && empty($action));
+    $isServicesList = ($filename === 'clientarea.php' && $action === 'services');
+    $isIndex = ($filename === 'index.php' && empty($_GET['m']));
+
+    if (!$isDashboard && !$isServicesList && !$isIndex) return '';
+
+    // Get the logged-in client's cPanel service IDs
+    $clientId = (int) ($_SESSION['uid'] ?? 0);
+    if (!$clientId) return '';
+
     try {
-        $serviceId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($serviceId) {
-            $actions = $primarySidebar->getChild('Service Details Actions');
-            if ($actions) {
-                $actions->addChild('Manage V2')
-                    ->setLabel('Manage V2')
-                    ->setUri('index.php?m=broodle_whmcs_tools&id=' . $serviceId)
-                    ->setOrder(1)
-                    ->setIcon('fa-th-large');
-            }
+        $cpanelServiceIds = Capsule::table('tblhosting')
+            ->join('tblproducts', 'tblhosting.packageid', '=', 'tblproducts.id')
+            ->where('tblhosting.userid', $clientId)
+            ->where('tblproducts.servertype', 'cpanel')
+            ->whereIn('tblhosting.domainstatus', ['Active', 'Suspended'])
+            ->pluck('tblhosting.id')
+            ->toArray();
+    } catch (\Exception $e) {
+        $cpanelServiceIds = [];
+    }
+
+    if (empty($cpanelServiceIds)) return '';
+
+    $idsJson = json_encode(array_map('intval', $cpanelServiceIds));
+
+    return '
+<style>
+.bt-v2-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#0a5ed3!important;text-decoration:none!important;transition:background .12s}
+.bt-v2-dropdown-item:hover{background:rgba(10,94,211,.06);color:#0950b3!important;text-decoration:none!important}
+.bt-v2-dropdown-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
+.bt-v2-dropdown-divider{height:1px;margin:4px 12px;background:#e5e7eb}
+[data-theme="dark"] .bt-v2-dropdown-item{color:#5b9cf6!important}
+[data-theme="dark"] .bt-v2-dropdown-item:hover{background:rgba(91,156,246,.08);color:#7db4fa!important}
+[data-theme="dark"] .bt-v2-dropdown-divider{background:#374151}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+    var cpanelIds=' . $idsJson . ';
+    // Find all dropdown menus in service listings
+    var dropdowns=document.querySelectorAll(".dropdown-menu");
+    dropdowns.forEach(function(menu){
+        // Find the service ID from existing links in this dropdown
+        var links=menu.querySelectorAll("a[href]");
+        var serviceId=null;
+        for(var i=0;i<links.length;i++){
+            var href=links[i].getAttribute("href")||""; 
+            var m=href.match(/[?&]id=(\d+)/);
+            if(m){serviceId=parseInt(m[1]);break;}
         }
-    } catch (\Exception $e) {}
+        if(!serviceId) return;
+        // Only add for cPanel services
+        if(cpanelIds.indexOf(serviceId)===-1) return;
+        // Don\'t add twice
+        if(menu.querySelector(".bt-v2-dropdown-item")) return;
+        // Add divider + Manage V2 link
+        var divider=document.createElement("div");
+        divider.className="bt-v2-dropdown-divider";
+        var link=document.createElement("a");
+        link.className="dropdown-item bt-v2-dropdown-item";
+        link.href="index.php?m=broodle_whmcs_tools&id="+serviceId;
+        link.innerHTML=\'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Manage V2\';
+        menu.appendChild(divider);
+        menu.appendChild(link);
+    });
+});
+</script>';
 });
 
 /* ─── Modals (Email, Domain, Database) ────────────────────── */

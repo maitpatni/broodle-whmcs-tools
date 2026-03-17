@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.77');
+define('BROODLE_TOOLS_VERSION', '3.10.78');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -65,6 +65,8 @@ function broodle_whmcs_tools_activate()
             'tweak_error_logs'      => '1',
             'tweak_file_manager'    => '1',
             'tweak_upgrade_list_layout' => '0',
+            'tweak_manage_v2_dropdown' => '1',
+            'tweak_manage_v2_banner'   => '1',
             'auto_update_enabled'   => '0',
         ];
 
@@ -215,6 +217,8 @@ function broodle_whmcs_tools_output($vars)
             'tweak_error_logs',
             'tweak_file_manager',
             'tweak_upgrade_list_layout',
+            'tweak_manage_v2_dropdown',
+            'tweak_manage_v2_banner',
             'auto_update_enabled',
         ];
 
@@ -286,6 +290,8 @@ function broodle_tools_render_admin($vars, $settings)
     $errorLogsEnabled = !empty($settings['tweak_error_logs']) && $settings['tweak_error_logs'] === '1';
     $fileManagerEnabled = !empty($settings['tweak_file_manager']) && $settings['tweak_file_manager'] === '1';
     $upgradeListEnabled = !empty($settings['tweak_upgrade_list_layout']) && $settings['tweak_upgrade_list_layout'] === '1';
+    $manageV2DropdownEnabled = !empty($settings['tweak_manage_v2_dropdown']) && $settings['tweak_manage_v2_dropdown'] === '1';
+    $manageV2BannerEnabled = !empty($settings['tweak_manage_v2_banner']) && $settings['tweak_manage_v2_banner'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
     $html = '
@@ -487,6 +493,32 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_upgrade_list_layout" value="1" ' . ($upgradeListEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bt-section">
+                <div class="bt-section-label">Manage V2</div>
+                <div class="bt-card">
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Manage V2 Dropdown</h4>
+                            <p>Add a "Manage V2" option to the dropdown menu on the Dashboard and Services List pages for cPanel products.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_manage_v2_dropdown" value="1" ' . ($manageV2DropdownEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Manage V2 Banner</h4>
+                            <p>Show a Manage V2 beta banner at the top of the cPanel product details page instead of buttons and sidebar links.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_manage_v2_banner" value="1" ' . ($manageV2BannerEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>
