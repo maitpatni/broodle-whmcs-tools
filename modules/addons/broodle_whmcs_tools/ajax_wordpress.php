@@ -18,6 +18,9 @@ require_once __DIR__ . '/../../../includes/clientfunctions.php';
 use WHMCS\Database\Capsule;
 
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
 // Verify logged-in client
 $ca = new WHMCS\ClientArea();
@@ -28,7 +31,7 @@ if (!$ca->isLoggedIn()) {
 }
 $clientId = (int) $ca->getUserID();
 
-$action    = isset($_POST['action']) ? $_POST['action'] : (isset($_GET['action']) ? $_GET['action'] : '');
+$action    = isset($_POST['action']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $_POST['action']) : (isset($_GET['action']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $_GET['action']) : '');
 $serviceId = isset($_POST['service_id']) ? (int) $_POST['service_id'] : (isset($_GET['service_id']) ? (int) $_GET['service_id'] : 0);
 
 if (!$serviceId || !$action) {
@@ -448,7 +451,6 @@ switch ($action) {
             'message'  => $updateSuccess
                 ? ($verifyUpdated ? ucfirst($type) . ' updated successfully' : ucfirst($type) . ' update initiated — verifying...')
                 : $errMsg,
-            'debug_status' => $result['status'] ?? null,
         ]);
         break;
 
@@ -552,7 +554,6 @@ switch ($action) {
             echo json_encode([
                 'success'  => true,
                 'security' => $measures,
-                'debug_endpoint' => $debugEndpoint,
             ]);
         } else {
             $msg = $result['message'] ?? 'Security scan failed';
@@ -560,9 +561,6 @@ switch ($action) {
             echo json_encode([
                 'success' => false,
                 'message' => $msg,
-                'debug_endpoint' => $debugEndpoint,
-                'debug_status' => $result['status'] ?? null,
-                'debug_raw' => is_array($result['data'] ?? null) ? json_encode(array_slice($result['data'], 0, 1, true)) : ($result['raw'] ?? null),
             ]);
         }
         break;

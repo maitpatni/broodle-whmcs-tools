@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.85');
+    define('BROODLE_TOOLS_VERSION', '3.10.86');
 }
 
 if (!defined('WHMCS')) {
@@ -2652,36 +2652,6 @@ function broodle_tools_shared_script()
 }
 
 /* ─── Upgrade Page List Layout ────────────────────────────── */
-
-/* ─── Manage V2 button: also inject via ClientAreaFooterOutput for Lagom2 ─── */
-/* Lagom2 may not render ClientAreaProductDetailsOutput, so we add the button here too */
-add_hook('ClientAreaFooterOutput', 1, function ($vars) {
-    $filename = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
-    $action = $_GET['action'] ?? '';
-    $isProductDetails = ($filename === 'clientarea.php' && $action === 'productdetails')
-                     || (isset($vars['templatefile']) && strpos($vars['templatefile'], 'clientareaproductdetails') !== false);
-    if (!$isProductDetails) return '';
-
-    $serviceId = broodle_tools_get_service_id($vars);
-    if (!$serviceId) return '';
-    $cpData = broodle_tools_get_cpanel_service($serviceId);
-    if (!$cpData) return '';
-
-    $url = 'index.php?m=broodle_whmcs_tools&id=' . $serviceId;
-    return '<script>
-(function(){
-    if(document.getElementById("bt-managev2-btn")) return;
-    var btn=document.createElement("a");
-    btn.id="bt-managev2-btn";
-    btn.href="' . $url . '";
-    btn.innerHTML=\'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Manage V2\';
-    btn.style.cssText="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#0a5ed3;color:#fff;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;position:fixed;bottom:24px;right:24px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);transition:transform .15s";
-    btn.onmouseenter=function(){this.style.transform="translateY(-2px)"};
-    btn.onmouseleave=function(){this.style.transform=""};
-    document.body.appendChild(btn);
-})();
-</script>';
-});
 
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     if (!broodle_tools_upgrade_list_enabled()) {
