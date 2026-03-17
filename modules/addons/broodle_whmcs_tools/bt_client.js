@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.56");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.57");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -358,16 +358,16 @@ function injectStyles8(){
 '.bt-res-bar-fill.red{background:linear-gradient(90deg,#ef4444,#f87171)}',
 '.bt-res-bar-fill.blue{background:linear-gradient(90deg,#0a5ed3,#3b82f6)}',
 '.bt-hero-stats .bt-res-loading{grid-column:1/-1;text-align:center;font-size:11px;color:var(--text-muted,#9ca3af);padding:6px 0}',
-/* ── Quick Shortcuts ── */
-'.bt-shortcuts{margin-bottom:24px}',
-'.bt-shortcuts-title{font-size:16px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 14px}',
-'.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:14px 16px}',
-'.bt-sc-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;font-size:12px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
+/* ── Quick Access ── */
+'.bt-shortcuts{margin-bottom:20px}',
+'.bt-shortcuts-title{font-size:14px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 10px}',
+'.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:12px 14px}',
+'.bt-sc-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
 '.bt-sc-item:hover{background:rgba(10,94,211,.06);text-decoration:none;color:#0a5ed3}',
 '.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
 /* ── Responsive ── */
 '@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-left{max-width:100%}.bt-hero-right{width:100%;padding:20px;border-left:none;border-top:1px solid var(--border-color,#e5e7eb)}.bt-hero-left{min-height:140px}}',
-'@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}.bt-hero-stats{grid-template-columns:1fr}}',
+'@media(max-width:768px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}.bt-hero-stats{grid-template-columns:1fr}}',
 '@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:10px}.bt-gauge-ring{width:60px;height:60px}.bt-gauge-ring svg{width:60px;height:60px}.bt-gauge-pct{font-size:12px}}',
 /* ── Dark mode ── */
 '[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
@@ -494,6 +494,12 @@ function init(){
     sslPage.style.display="none";
     mainArea.appendChild(sslPage);
 
+    /* ── Email page (hidden by default) ── */
+    var emailPage=document.createElement("div");
+    emailPage.id="bt-email-page";
+    emailPage.style.display="none";
+    mainArea.appendChild(emailPage);
+
     /* ── Change Password page (hidden by default) ── */
     var changePwPage=document.createElement("div");
     changePwPage.id="bt-changepw-page";
@@ -541,7 +547,7 @@ function buildSidebarHtml(){
         html+='<a class="bt-sidebar-item" data-page="ssl"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="bt-si-label">SSL<span>Certificate Management</span></div></a>';
     }
     if(C.emailEnabled){
-        html+='<a class="bt-sidebar-item" data-page="tabs" data-tab="email"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div class="bt-si-label">Email<span>Email Accounts</span></div></a>';
+        html+='<a class="bt-sidebar-item" data-page="email"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div class="bt-si-label">Email<span>Email Accounts</span></div></a>';
     }
     if(C.wpEnabled){
         html+='<a class="bt-sidebar-item" data-page="wordpress"><div class="bt-si-icon" style="background:rgba(33,117,208,.08);color:#2175d0"><svg viewBox="0 0 16 16" fill="#2175d0" width="18" height="18"><path d="M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8"/><path d="M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z"/><path fill-rule="evenodd" d="M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8"/></svg></div><div class="bt-si-label">WordPress<span>Site Management</span></div></a>';
@@ -551,7 +557,7 @@ function buildSidebarHtml(){
     /* Actions panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Actions</div>';
     /* cPanel login */
-    html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);color:#ff6a13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="bt-si-label">cPanel<span>Control Panel</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);padding:0"><img src="'+btBasePath+'cpanel-icon.png" width="34" height="34" alt="cPanel" style="border-radius:9px"></div><div class="bt-si-label">Login to cPanel<span>Control Panel</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
     html+='<a class="bt-sidebar-item" href="upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
@@ -578,6 +584,7 @@ function bindSidebarActions(){
             var domainsPage=$("bt-domains-page");
             var databasesPage=$("bt-databases-page");
             var sslPage=$("bt-ssl-page");
+            var emailPage=$("bt-email-page");
             var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
@@ -585,6 +592,7 @@ function bindSidebarActions(){
             if(domainsPage) domainsPage.style.display="none";
             if(databasesPage) databasesPage.style.display="none";
             if(sslPage) sslPage.style.display="none";
+            if(emailPage) emailPage.style.display="none";
 
             if(page==="tabs"){
                 if(heroSection) heroSection.style.display="";
@@ -641,6 +649,16 @@ function bindSidebarActions(){
                     }
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabSsl");
+            }else if(page==="email"){
+                if(heroSection) heroSection.style.display="none";
+                if(emailPage){
+                    emailPage.style.display="";
+                    if(!emailPage.dataset.loaded){
+                        emailPage.dataset.loaded="1";
+                        buildEmailPageInto(emailPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabEmail");
             }else if(page==="changepw"){
                 if(heroSection) heroSection.style.display="none";
                 if(changePwPage) changePwPage.style.display="";
@@ -656,7 +674,6 @@ function buildTabs(){
 
     var tabs=[
         {id:"overview",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',label:"Overview"},
-        {id:"email",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:"Email Accounts",check:"emailEnabled"},
         {id:"dns",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',label:"DNS Manager",check:"dnsEnabled"},
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
@@ -692,6 +709,7 @@ function buildTabs(){
             var domainsPage=$("bt-domains-page");if(domainsPage) domainsPage.style.display="none";
             var databasesPage=$("bt-databases-page");if(databasesPage) databasesPage.style.display="none";
             var sslPage=$("bt-ssl-page");if(sslPage) sslPage.style.display="none";
+            var emailPage=$("bt-email-page");if(emailPage) emailPage.style.display="none";
             var heroSection=$("bt-hero-section");if(heroSection) heroSection.style.display="";
             wrap.style.display="";
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
@@ -712,7 +730,6 @@ function buildTabs(){
     wrap.appendChild(nav);wrap.appendChild(panes);
 
     buildOverviewPane();
-    if(C.emailEnabled) buildEmailPane();
     if(C.dnsEnabled) buildDnsPane();
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
@@ -758,6 +775,10 @@ function activateTabFromHash(){
     if(targetId==="ssl"){
         var sslItem=document.querySelector('.bt-sidebar-item[data-page="ssl"]');
         if(sslItem){sslItem.click();return;}
+    }
+    if(targetId==="email"){
+        var emItem=document.querySelector('.bt-sidebar-item[data-page="email"]');
+        if(emItem){emItem.click();return;}
     }
     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
     if(tabBtn) tabBtn.click();
@@ -841,12 +862,25 @@ function buildOverviewPane(){
 
 /* ─── Quick Access builder helper ─── */
 function buildQuickAccess(items){
-    var html='<div class="bt-shortcuts" style="margin-bottom:20px"><h3 class="bt-shortcuts-title" style="font-size:14px;margin:0 0 10px">Quick Access</h3><div class="bt-shortcuts-grid">';
+    var html='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Access</h3><div class="bt-shortcuts-grid">';
     items.forEach(function(sc){
         html+='<a class="bt-sc-item" href="#" onclick="btOpenCpanelPage(\''+esc(sc.page)+'\',this);return false;">'+sc.icon+' '+esc(sc.label)+'</a>';
     });
     html+='</div></div>';
     return html;
+}
+
+/* ─── Email Page (separate page with Quick Access) ─── */
+function buildEmailPageInto(container){
+    if(!container) return;
+    var qa=buildQuickAccess([
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',page:'mail/pops'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',label:'Forwarders',page:'mail/fwds'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',label:'Email Routing',page:'mail/mx'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:'Spam Filters',page:'mail/spam'}
+    ]);
+    container.innerHTML=qa+'<div id="bt-pane-email"></div>';
+    buildEmailPane();
 }
 
 /* ─── Domains Page (separate page with Quick Access) ─── */
