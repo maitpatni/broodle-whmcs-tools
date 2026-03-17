@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.59');
+    define('BROODLE_TOOLS_VERSION', '3.10.60');
 }
 
 if (!defined('WHMCS')) {
@@ -44,6 +44,7 @@ function broodle_tools_dns_enabled() { return broodle_tools_setting_enabled('twe
 function broodle_tools_cron_enabled() { return broodle_tools_setting_enabled('tweak_cron_management'); }
 function broodle_tools_php_enabled() { return broodle_tools_setting_enabled('tweak_php_version'); }
 function broodle_tools_logs_enabled() { return broodle_tools_setting_enabled('tweak_error_logs'); }
+function broodle_tools_fm_enabled() { return broodle_tools_setting_enabled('tweak_file_manager'); }
 function broodle_tools_upgrade_list_enabled() { return broodle_tools_setting_enabled('tweak_upgrade_list_layout'); }
 
 function broodle_tools_get_service_id($vars)
@@ -169,6 +170,7 @@ function broodle_tools_ensure_defaults()
             'tweak_cron_management'    => '1',
             'tweak_php_version'        => '1',
             'tweak_error_logs'         => '1',
+            'tweak_file_manager'       => '1',
             'tweak_upgrade_list_layout'=> '0',
             'auto_update_enabled'      => '0',
         ];
@@ -363,6 +365,8 @@ function broodle_tools_gather_data($vars)
         'ns' => $nsData,
         'emails' => $emails,
         'domains' => $domains,
+        'cpanelPassword' => decrypt($service->password),
+        'cpanelUrl' => 'https://' . ($server->hostname ?? '') . ':2083',
         'wpEnabled' => broodle_tools_wp_enabled(),
         'dbEnabled' => broodle_tools_db_enabled(),
         'sslEnabled' => broodle_tools_ssl_enabled(),
@@ -373,6 +377,7 @@ function broodle_tools_gather_data($vars)
         'nsEnabled' => broodle_tools_ns_enabled(),
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
+        'fmEnabled' => broodle_tools_fm_enabled(),
     ];
     return $cache;
 }

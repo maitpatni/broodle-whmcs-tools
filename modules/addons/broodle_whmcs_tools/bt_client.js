@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.59");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.60");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -83,6 +83,26 @@ function injectStyles(){
 '.bt-ov-due-ok{color:#059669}.bt-ov-due-warn{color:#d97706}.bt-ov-due-danger{color:#ef4444}.bt-ov-due-past{color:#ef4444;font-weight:700}',
 '.bt-ov-days{display:block;font-size:11px;font-weight:500;margin-top:2px}',
 '@media(max-width:768px){.bt-ov-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:480px){.bt-ov-grid{grid-template-columns:1fr}}',
+/* cPanel Credentials */
+'.bt-cpanel-creds{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:0;overflow:hidden}',
+'.bt-cred-header{display:flex;align-items:center;gap:14px;padding:20px 24px;border-bottom:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f8fafc)}',
+'.bt-cred-icon{width:48px;height:48px;background:linear-gradient(135deg,#ff6c2c 0%,#ff8f2c 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+'.bt-cred-icon svg{stroke:#fff}',
+'.bt-cred-row{padding:18px 24px;border-bottom:1px solid var(--border-color,#f3f4f6)}',
+'.bt-cred-row:last-of-type{border-bottom:none}',
+'.bt-cred-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted,#9ca3af);margin:0 0 8px}',
+'.bt-cred-field{display:flex;align-items:center;justify-content:space-between;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:8px;padding:10px 14px;gap:10px}',
+'.bt-cred-value{font-size:14px;font-weight:500;color:var(--heading-color,#1e293b);word-break:break-all;flex:1}',
+'.bt-cred-value.mono{font-family:"SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;letter-spacing:.3px}',
+'.bt-cred-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}',
+'.bt-cred-btn{background:none;border:1px solid transparent;border-radius:6px;padding:6px;cursor:pointer;color:var(--text-muted,#6b7280);display:flex;align-items:center;justify-content:center;transition:all .15s}',
+'.bt-cred-btn:hover{background:var(--card-bg,#fff);border-color:var(--border-color,#e5e7eb);color:#0a5ed3}',
+'a.bt-cred-btn{text-decoration:none}',
+'.bt-cred-extra{display:flex;gap:24px;padding:16px 24px;background:var(--input-bg,#f8fafc);border-top:1px solid var(--border-color,#f3f4f6)}',
+'.bt-cred-extra-item{display:flex;flex-direction:column;gap:2px}',
+'.bt-cred-extra-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af)}',
+'.bt-cred-extra-val{font-size:13px;font-weight:500;color:var(--heading-color,#1e293b)}',
+'@media(max-width:480px){.bt-cred-field{flex-direction:column;align-items:flex-start}.bt-cred-actions{align-self:flex-end}.bt-cred-extra{flex-direction:column;gap:12px}}',
 /* Cards and rows */
 '.bt-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;overflow:hidden}',
 '.bt-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-color,#f3f4f6)}',
@@ -422,7 +442,7 @@ window.btOpenCpanelPage=function(page,el){
 };
 
 function init(){
-    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();
+    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();injectStyles9();
 
     /* ── Parse config ── */
     var dataEl=$("bt-data");
@@ -508,6 +528,12 @@ function init(){
     wpPage.style.display="none";
     mainArea.appendChild(wpPage);
 
+    /* ── File Manager page (hidden by default) ── */
+    var fmPage=document.createElement("div");
+    fmPage.id="bt-fm-page";
+    fmPage.style.display="none";
+    mainArea.appendChild(fmPage);
+
     /* ── Domains page (hidden by default) ── */
     var domainsPage=document.createElement("div");
     domainsPage.id="bt-domains-page";
@@ -584,6 +610,9 @@ function buildSidebarHtml(){
     if(C.wpEnabled){
         html+='<a class="bt-sidebar-item" data-page="wordpress"><div class="bt-si-icon" style="background:rgba(33,117,208,.08);color:#2175d0"><svg viewBox="0 0 16 16" fill="#2175d0" width="18" height="18"><path d="M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8"/><path d="M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z"/><path fill-rule="evenodd" d="M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8"/></svg></div><div class="bt-si-label">WordPress<span>Site Management</span></div></a>';
     }
+    if(C.fmEnabled){
+        html+='<a class="bt-sidebar-item" data-page="filemanager"><div class="bt-si-icon" style="background:rgba(234,88,12,.08);color:#ea580c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div class="bt-si-label">File Manager<span>Files &amp; Folders</span></div></a>';
+    }
     html+='</div>';
 
     /* Actions panel */
@@ -612,6 +641,7 @@ function bindSidebarActions(){
             /* Hide all pages */
             var wrap=$("bt-wrap");
             var wpPage=$("bt-wp-page");
+            var fmPage=$("bt-fm-page");
             var changePwPage=$("bt-changepw-page");
             var domainsPage=$("bt-domains-page");
             var databasesPage=$("bt-databases-page");
@@ -620,6 +650,7 @@ function bindSidebarActions(){
             var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
+            if(fmPage) fmPage.style.display="none";
             if(changePwPage) changePwPage.style.display="none";
             if(domainsPage) domainsPage.style.display="none";
             if(databasesPage) databasesPage.style.display="none";
@@ -651,6 +682,16 @@ function bindSidebarActions(){
                     }
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabWordpress");
+            }else if(page==="filemanager"){
+                if(heroSection) heroSection.style.display="none";
+                if(fmPage){
+                    fmPage.style.display="";
+                    if(!fmPage.dataset.loaded){
+                        fmPage.dataset.loaded="1";
+                        buildFileManagerPageInto(fmPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabFilemanager");
             }else if(page==="domains"){
                 if(heroSection) heroSection.style.display="none";
                 if(domainsPage){
@@ -706,6 +747,7 @@ function buildTabs(){
 
     var tabs=[
         {id:"overview",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',label:"Overview"},
+        {id:"cpanel",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="3"/><path d="M3 12h2M19 12h2M12 3v2M12 19v2"/></svg>',label:"cPanel Credentials"},
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
         {id:"errorlogs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',label:"Error Logs",check:"logsEnabled"},
@@ -736,6 +778,7 @@ function buildTabs(){
             }
             /* Show tabs, hide other pages */
             var wpPage=$("bt-wp-page");if(wpPage) wpPage.style.display="none";
+            var fmPage=$("bt-fm-page");if(fmPage) fmPage.style.display="none";
             var changePwPage=$("bt-changepw-page");if(changePwPage) changePwPage.style.display="none";
             var domainsPage=$("bt-domains-page");if(domainsPage) domainsPage.style.display="none";
             var databasesPage=$("bt-databases-page");if(databasesPage) databasesPage.style.display="none";
@@ -760,6 +803,7 @@ function buildTabs(){
     wrap.appendChild(nav);wrap.appendChild(panes);
 
     buildOverviewPane();
+    buildCpanelPane();
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
     if(C.logsEnabled) buildLogsPane();
@@ -772,11 +816,13 @@ function activateTabFromHash(){
     var tabName=hash.replace(/^tab/,"").toLowerCase();
     var hashMap={
         "wordpress":"wordpress","wp":"wordpress",
+        "filemanager":"filemanager","files":"filemanager","fm":"filemanager",
         "overview":"overview","domains":"domains","domain":"domains",
         "ssl":"ssl","email":"email","emailaccounts":"email",
         "databases":"databases","database":"databases","db":"databases",
         "dns":"domains","dnsmanager":"domains","cronjobs":"cronjobs","cron":"cronjobs",
         "php":"phpversion","phpversion":"phpversion",
+        "cpanel":"cpanel","cpanelcredentials":"cpanel",
         "errorlogs":"errorlogs","errors":"errorlogs","logs":"errorlogs",
         "addons":"overview","addonsextras":"overview",
         "changepw":"changepw","changepassword":"changepw"
@@ -786,6 +832,11 @@ function activateTabFromHash(){
     if(targetId==="wordpress"){
         var wpItem=document.querySelector('.bt-sidebar-item[data-page="wordpress"]');
         if(wpItem) wpItem.click();
+        return;
+    }
+    if(targetId==="filemanager"){
+        var fmItem=document.querySelector('.bt-sidebar-item[data-page="filemanager"]');
+        if(fmItem) fmItem.click();
         return;
     }
     if(targetId==="changepw"){
@@ -834,9 +885,6 @@ function buildOverviewPane(){
 
     /* Billing & service info cards */
     if(C.domains&&C.domains.main) pairs.push({label:"Primary Domain",value:'<a href="https://'+esc(C.domains.main)+'" target="_blank">'+esc(C.domains.main)+'</a>'});
-    if(C.serverIp) pairs.push({label:"Server IP",value:esc(C.serverIp)});
-    if(C.username) pairs.push({label:"cPanel Username",value:esc(C.username)});
-    if(C.serverName) pairs.push({label:"Server",value:esc(C.serverName)});
     if(C.regDate) pairs.push({label:"Registration Date",value:esc(C.regDate)});
     if(C.nextDueDate){
         var dueVal=esc(C.nextDueDate);
@@ -852,13 +900,6 @@ function buildOverviewPane(){
     }
     if(C.price) pairs.push({label:"Recurring Amount",value:esc(C.price)+(C.billingCycle?' <span style="font-size:11px;color:var(--text-muted,#9ca3af);font-weight:400">('+esc(C.billingCycle)+')</span>':'')});
     if(C.paymentMethod) pairs.push({label:"Payment Method",value:esc(C.paymentMethod.charAt(0).toUpperCase()+C.paymentMethod.slice(1))});
-
-    /* Resource counts */
-    var countCards=[];
-    if(typeof C.emailCount==="number") countCards.push({label:"Email Accounts",value:String(C.emailCount)});
-    if(typeof C.addonDomainCount==="number") countCards.push({label:"Addon Domains",value:String(C.addonDomainCount)});
-    if(typeof C.subdomainCount==="number") countCards.push({label:"Subdomains",value:String(C.subdomainCount)});
-    countCards.forEach(function(c){pairs.push(c);});
 
     if(pairs.length){
         html+='<div class="bt-ov-grid">';
@@ -885,6 +926,63 @@ function buildOverviewPane(){
     html+='<div id="btAccAddons"></div>';
 
     pane.innerHTML=html;
+    pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
+}
+
+/* ─── cPanel Credentials Pane ─── */
+function buildCpanelPane(){
+    var pane=$("bt-pane-cpanel");if(!pane) return;
+    var cpUrl=C.cpanelUrl||"";
+    var cpUser=C.username||"";
+    var cpPass=C.cpanelPassword||"";
+
+    var svgCopy='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    var svgEye='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var svgEyeOff='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    var svgLink='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+
+    var html='<div class="bt-cpanel-creds">';
+    html+='<div class="bt-cred-header"><div class="bt-cred-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff6c2c" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M12 8v4l3 3"/></svg></div><div><h4 style="margin:0;font-size:18px;font-weight:600;color:var(--text-primary,#1e293b)">cPanel Credentials</h4><p style="margin:2px 0 0;font-size:13px;color:var(--text-muted,#64748b)">Access your hosting control panel</p></div></div>';
+
+    /* Login URL */
+    html+='<div class="bt-cred-row">';
+    html+='<div class="bt-cred-label">Login URL</div>';
+    html+='<div class="bt-cred-field"><span class="bt-cred-value mono" id="btCpUrl">'+esc(cpUrl)+'</span><div class="bt-cred-actions"><button type="button" class="bt-cred-btn bt-copy" data-copy="'+esc(cpUrl)+'" title="Copy">'+svgCopy+'</button><a href="'+esc(cpUrl)+'" target="_blank" class="bt-cred-btn" title="Open cPanel">'+svgLink+'</a></div></div>';
+    html+='</div>';
+
+    /* Username */
+    html+='<div class="bt-cred-row">';
+    html+='<div class="bt-cred-label">Username</div>';
+    html+='<div class="bt-cred-field"><span class="bt-cred-value mono" id="btCpUser">'+esc(cpUser)+'</span><div class="bt-cred-actions"><button type="button" class="bt-cred-btn bt-copy" data-copy="'+esc(cpUser)+'" title="Copy">'+svgCopy+'</button></div></div>';
+    html+='</div>';
+
+    /* Password */
+    html+='<div class="bt-cred-row">';
+    html+='<div class="bt-cred-label">Password</div>';
+    html+='<div class="bt-cred-field"><span class="bt-cred-value mono" id="btCpPass" data-hidden="1">'+("•".repeat(Math.max(cpPass.length,8)))+'</span><div class="bt-cred-actions"><button type="button" class="bt-cred-btn" id="btCpToggle" title="Show/Hide">'+svgEye+'</button><button type="button" class="bt-cred-btn bt-copy" data-copy="'+esc(cpPass)+'" title="Copy">'+svgCopy+'</button></div></div>';
+    html+='</div>';
+
+    /* Server info */
+    if(C.serverName||C.serverIp){
+        html+='<div class="bt-cred-extra">';
+        if(C.serverName) html+='<div class="bt-cred-extra-item"><span class="bt-cred-extra-label">Server</span><span class="bt-cred-extra-val">'+esc(C.serverName)+'</span></div>';
+        if(C.serverIp) html+='<div class="bt-cred-extra-item"><span class="bt-cred-extra-label">IP Address</span><span class="bt-cred-extra-val">'+esc(C.serverIp)+'</span></div>';
+        html+='</div>';
+    }
+
+    html+='</div>';
+    pane.innerHTML=html;
+
+    /* Toggle password visibility */
+    var toggleBtn=$("btCpToggle");
+    var passEl=$("btCpPass");
+    if(toggleBtn&&passEl){
+        toggleBtn.addEventListener("click",function(){
+            var hidden=passEl.getAttribute("data-hidden")==="1";
+            if(hidden){passEl.textContent=cpPass;passEl.setAttribute("data-hidden","0");toggleBtn.innerHTML=svgEyeOff;}
+            else{passEl.textContent="•".repeat(Math.max(cpPass.length,8));passEl.setAttribute("data-hidden","1");toggleBtn.innerHTML=svgEye;}
+        });
+    }
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
 }
 
