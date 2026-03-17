@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.67');
+    define('BROODLE_TOOLS_VERSION', '3.10.68');
 }
 
 if (!defined('WHMCS')) {
@@ -2649,7 +2649,33 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     font-size: 13px;
     color: var(--text-muted, #6b7280);
     margin: 0;
-    line-height: 1.4;
+    line-height: 1.6;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc p {
+    margin: 0 0 6px;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc p:last-child {
+    margin-bottom: 0;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc ul,
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc ol {
+    margin: 4px 0 6px 18px;
+    padding: 0;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc li {
+    margin-bottom: 3px;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc strong,
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc b {
+    color: var(--heading-color, #374151);
+    font-weight: 600;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc a {
+    color: var(--primary-color, #0a5ed3);
+    text-decoration: none;
+}
+.bt-upgrade-list-row .bt-upg-info .bt-upg-desc a:hover {
+    text-decoration: underline;
 }
 
 /* Pricing + button area */
@@ -2721,6 +2747,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
     if (!upgradeForms.length) return;
 
+    // Helper: strip price patterns from text/HTML
+    function stripPrices(str) {
+        if (!str) return str;
+        // Remove patterns like $X.XX, $X.XX/mo, $X,XXX.XX/yr, €X.XX, £X.XX, etc.
+        str = str.replace(/[\\$€£¥₹]\\s*[\\d,]+\\.?\\d*\\s*(\\/\\s*(mo|month|monthly|qtr|quarterly|yr|year|annually|semi-annually|biennially|triennially|one[- ]?time))?/gi, "");
+        // Remove patterns like "X.XX USD", "X.XX EUR" etc.
+        str = str.replace(/[\\d,]+\\.\\d{2}\\s*(USD|EUR|GBP|INR|AUD|CAD|NZD|SGD|HKD|JPY|CNY|BRL|MXN|ZAR|AED|SAR|KWD|BHD|OMR|QAR|TRY|RUB|PLN|CZK|HUF|SEK|NOK|DKK|CHF|ILS|THB|MYR|PHP|IDR|VND|KRW|TWD|PKR|BDT|LKR|NGN|KES|GHS|TZS|UGX|EGP|MAD|DZD|TND|LYD|JOD|IQD|AFN|MMK|KHR|LAK|MNT|NPR|BTN|MVR|SCR|MUR|BWP|NAD|SZL|LSL|ZMW|MWK|MZN|AOA|CDF|XOF|XAF|XPF|FJD|PGK|WST|TOP|VUV|SBD|KPW|ERN|ETB|DJF|SOS|SDG|SSP|GMD|SLL|GNF|LRD|CVE|STN|CUP|HTG|NIO|HNL|GTQ|BZD|JMD|TTD|BBD|BSD|KYD|BMD|AWG|ANG|SRD|GYD|FKP|SHP|GIP|XCD)\\b/gi, "");
+        // Remove "Starting from", "From", "Price:" prefixes left orphaned
+        str = str.replace(/(starting\\s+from|from|price\\s*:?)\\s*$/gi, "").trim();
+        // Clean up double spaces and orphaned separators
+        str = str.replace(/\\s*[\\-–—|]\\s*$/g, "").replace(/^\\s*[\\-–—|]\\s*/g, "").replace(/\\s{2,}/g, " ").trim();
+        return str;
+    }
+
     upgradeForms.forEach(function(form) {
         // Walk up to find the card/box container
         var container = form.closest("[class*=col]") || form.closest(".product-box") || form.closest(".panel") || form.closest("td") || form.parentElement;
@@ -2730,61 +2770,69 @@ document.addEventListener("DOMContentLoaded", function() {
         var nameEl = container.querySelector("h3, h4, h5, .product-name, .panel-title, strong");
         var name = nameEl ? nameEl.textContent.trim() : "";
 
-        // Extract description — gather all visible text from the container
-        // that is NOT the package name, not inside the form, and not empty
+        // Extract description — prefer innerHTML to preserve HTML formatting
         var desc = "";
-        // Strategy 1: explicit description elements
+        // Strategy 1: explicit description elements (preserve HTML)
         var descEl = container.querySelector(".product-description, .product-desc, .product-info, .package-description, .card-text, .panel-body p, .product-details");
         if (descEl && descEl.textContent.trim() && descEl.textContent.trim() !== name) {
-            desc = descEl.textContent.trim();
+            desc = descEl.innerHTML.trim();
         }
-        // Strategy 2: walk the container children outside the form for text/br content
+        // Strategy 2: walk the container children outside the form for HTML content
         if (!desc) {
-            var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
-                acceptNode: function(node) {
-                    // Skip anything inside the form
-                    if (form.contains(node) && node !== container) return NodeFilter.FILTER_REJECT;
-                    // Skip the name element itself
-                    if (nameEl && nameEl.contains(node)) return NodeFilter.FILTER_REJECT;
-                    if (node.nodeType === 3) return NodeFilter.FILTER_ACCEPT;
-                    return NodeFilter.FILTER_SKIP;
+            var htmlParts = [];
+            var children = container.childNodes;
+            for (var ci = 0; ci < children.length; ci++) {
+                var child = children[ci];
+                if (form.contains(child) && child !== container) continue;
+                if (nameEl && (child === nameEl || (child.contains && child.contains(nameEl)))) continue;
+                if (child.nodeType === 1) {
+                    if (child.tagName === "FORM") continue;
+                    var h = child.innerHTML || child.textContent || "";
+                    if (h.trim()) htmlParts.push(child.outerHTML || h);
+                } else if (child.nodeType === 3) {
+                    var t = child.textContent.trim();
+                    if (t && t !== name) htmlParts.push(t);
                 }
-            });
-            var parts = [];
-            var tNode;
-            while (tNode = walker.nextNode()) {
-                var t = tNode.textContent.trim();
-                if (t && t !== name) parts.push(t);
             }
-            desc = parts.join(" ").trim();
+            desc = htmlParts.join(" ").trim();
         }
-        // Strategy 3: look for text after <br> inside the same parent as the name
+        // Strategy 3: look for content after name element
         if (!desc && nameEl) {
             var sib = nameEl.nextSibling;
             var parts2 = [];
             while (sib) {
                 if (sib.nodeType === 1 && sib.tagName === "FORM") break;
-                if (sib.nodeType === 1 && (sib.tagName === "BR")) { sib = sib.nextSibling; continue; }
-                var txt = (sib.textContent || "").trim();
-                if (txt) parts2.push(txt);
+                if (sib.nodeType === 1 && sib.tagName === "BR") { sib = sib.nextSibling; continue; }
+                if (sib.nodeType === 1) {
+                    parts2.push(sib.outerHTML || sib.textContent || "");
+                } else if (sib.nodeType === 3) {
+                    var txt = sib.textContent.trim();
+                    if (txt) parts2.push(txt);
+                }
                 sib = sib.nextSibling;
             }
             if (parts2.length) desc = parts2.join(" ").trim();
         }
-        // Strategy 4: inside the form itself, look for text before the .form-group / select / submit
+        // Strategy 4: inside the form itself
         if (!desc) {
             var formChildren = form.childNodes;
             var parts3 = [];
             for (var fi = 0; fi < formChildren.length; fi++) {
                 var fc = formChildren[fi];
-                // Stop at form controls
                 if (fc.nodeType === 1 && (fc.tagName === "INPUT" || fc.tagName === "SELECT" || fc.tagName === "BUTTON" || fc.classList.contains("form-group"))) continue;
                 if (fc.nodeType === 1 && fc.tagName === "BR") continue;
-                var ftxt = (fc.textContent || "").trim();
-                if (ftxt && ftxt !== name) parts3.push(ftxt);
+                if (fc.nodeType === 1) {
+                    parts3.push(fc.outerHTML || fc.textContent || "");
+                } else {
+                    var ftxt = (fc.textContent || "").trim();
+                    if (ftxt && ftxt !== name) parts3.push(ftxt);
+                }
             }
             if (parts3.length) desc = parts3.join(" ").trim();
         }
+
+        // Strip prices from description
+        desc = stripPrices(desc);
 
         // Build list row
         var row = document.createElement("div");

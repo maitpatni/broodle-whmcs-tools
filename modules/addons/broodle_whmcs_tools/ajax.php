@@ -88,6 +88,158 @@ if ($action === 'get_addon_description') {
     exit;
 }
 
+// Handle addons list for service (no cPanel needed)
+if ($action === 'get_addons') {
+    $clientCurrency = Capsule::table('tblclients')->where('id', $clientId)->value('currency') ?: 1;
+    $currency = Capsule::table('tblcurrencies')->where('id', $clientCurrency)->first();
+    $prefix = $currency->prefix ?? '';
+    $suffix = $currency->suffix ?? '';
+
+    // Active addons on this service
+    $activeAddons = Capsule::table('tblhostingaddons')
+        ->where('hostingid', $serviceId)
+        ->get()
+        ->map(function ($ha) use ($prefix, $suffix, $clientCurrency) {
+            $addon = Capsule::table('tbladdons')->where('id', $ha->addonid)->first();
+            $name = $ha->name ?: ($addon ? $addon->name : 'Addon #' . $ha->addonid);
+            $status = ucfirst($ha->status ?? 'active');
+            $nextDue = $ha->nextduedate ?? '';
+            $cycle = $ha->billingcycle ?? '';
+            $amount = $ha->recurring ?? '0.00';
+            $priceStr = '';
+            if ((float)$amount > 0) {
+                $cycleLabel = '';
+                $cl = strtolower($cycle);
+                if ($cl === 'monthly') $cycleLabel = '/mo';
+                elseif ($cl === 'quarterly') $cycleLabel = '/qtr';
+                elseif ($cl === 'semi-annually' || $cl === 'semiannually') $cycleLabel = '/6mo';
+                elseif ($cl === 'annually') $cycleLabel = '/yr';
+                elseif ($cl === 'biennially') $cycleLabel = '/2yr';
+                elseif ($cl === 'triennially') $cycleLabel = '/3yr';
+                elseif ($cl === 'one time' || $cl === 'onetime') $cycleLabel = ' one-time';
+                $priceStr = $prefix . number_format((float)$amount, 2) . $suffix . $cycleLabel;
+            }
+            return [
+                'id' => $ha->id,
+                'addonId' => $ha->addonid,
+                'name' => $name,
+                'description' => $addon ? ($addon->description ?? '') : '',
+                'status' => $status,
+                'nextDue' => $nextDue,
+                'price' => $priceStr,
+                'billingCycle' => $cycle,
+            ];
+        })->toArray();
+
+    // Available addons for this product (not yet purchased or can be purchased again)
+    $productId = $service->packageid;
+    $availableAddons = [];
+    $allAddons = Capsule::table('tbladdons')
+        ->where(function ($q) use ($productId) {
+            $q->where('packages', '')
+              ->orWhereNull('packages')
+              ->orWhere('packages', 'like', '%,' . $productId . ',%')
+              ->orWhere('packages', 'like', $productId . ',%')
+              ->orWhere('packages', 'like', '%,' . $productId)
+              ->orWhere('packages', $productId);
+        })
+        ->where('showorder', 1)
+        ->get();
+
+    foreach ($allAddons as $addon) {
+        // Check if already active on this service
+        $alreadyActive = Capsule::table('tblhostingaddons')
+            ->where('hostingid', $serviceId)
+            ->where('addonid', $addon->id)
+            ->whereIn('status', ['Active', 'Pending', 'Suspended'])
+            ->exists();
+
+        // Get pricing
+        $pricing = Capsule::table('tblpricing')
+            ->where('type', 'addon')
+            ->where('relid', $addon->id)
+            ->where('currency', $clientCurrency)
+            ->first();
+        $priceStr = '';
+        if ($pricing) {
+            if ($pricing->monthly > 0) $priceStr = $prefix . number_format($pricing->monthly, 2) . $suffix . '/mo';
+            elseif ($pricing->quarterly > 0) $priceStr = $prefix . number_format($pricing->quarterly, 2) . $suffix . '/qtr';
+            elseif ($pricing->semiannually > 0) $priceStr = $prefix . number_format($pricing->semiannually, 2) . $suffix . '/6mo';
+            elseif ($pricing->annually > 0) $priceStr = $prefix . number_format($pricing->annually, 2) . $suffix . '/yr';
+            elseif ($pricing->biennially > 0) $priceStr = $prefix . number_format($pricing->biennially, 2) . $suffix . '/2yr';
+            elseif ($pricing->triennially > 0) $priceStr = $prefix . number_format($pricing->triennially, 2) . $suffix . '/3yr';
+            $cl = strtolower($addon->billingcycle ?? '');
+            if ($cl === 'onetime' && $pricing->monthly > 0) $priceStr = $prefix . number_format($pricing->monthly, 2) . $suffix . ' one-time';
+        }
+
+        $availableAddons[] = [
+            'id' => $addon->id,
+            'name' => $addon->name,
+            'description' => $addon->description ?? '',
+            'price' => $priceStr,
+            'billingCycle' => $addon->billingcycle ?? '',
+            'alreadyActive' => $alreadyActive,
+        ];
+    }
+
+    // Configurable options for this product
+    $configOptions = [];
+    $configGroup = Capsule::table('tblproductconfiglinks')
+        ->where('pid', $productId)
+        ->pluck('gid');
+    if ($configGroup && count($configGroup) > 0) {
+        $options = Capsule::table('tblproductconfigoptions')
+            ->whereIn('gid', $configGroup)
+            ->where('hidden', 0)
+            ->orderBy('order')
+            ->get();
+        foreach ($options as $opt) {
+            $subs = Capsule::table('tblproductconfigoptionssub')
+                ->where('configid', $opt->id)
+                ->where('hidden', 0)
+                ->orderBy('sortorder')
+                ->get();
+            $choices = [];
+            foreach ($subs as $sub) {
+                $subPricing = Capsule::table('tblpricing')
+                    ->where('type', 'configoptions')
+                    ->where('relid', $sub->id)
+                    ->where('currency', $clientCurrency)
+                    ->first();
+                $subPrice = '';
+                if ($subPricing && $subPricing->monthly > 0) {
+                    $subPrice = $prefix . number_format($subPricing->monthly, 2) . $suffix . '/mo';
+                }
+                $choices[] = [
+                    'id' => $sub->id,
+                    'name' => $sub->optionname,
+                    'price' => $subPrice,
+                ];
+            }
+            // Get current selection for this service
+            $currentVal = Capsule::table('tblhostingconfigoptions')
+                ->where('relid', $serviceId)
+                ->where('configid', $opt->id)
+                ->value('optionid');
+            $configOptions[] = [
+                'id' => $opt->id,
+                'name' => $opt->optionname,
+                'type' => $opt->optiontype, // 1=dropdown, 2=radio, 3=yesno, 4=quantity
+                'choices' => $choices,
+                'currentValue' => $currentVal ? (int)$currentVal : null,
+            ];
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'activeAddons' => $activeAddons,
+        'availableAddons' => $availableAddons,
+        'configOptions' => $configOptions,
+    ]);
+    exit;
+}
+
 // Handle cPanel resource stats (CPU, Memory, I/O, Processes)
 if ($action === 'cpanel_resource_stats') {
     $server = Capsule::table('tblservers')->where('id', $service->server)->first();

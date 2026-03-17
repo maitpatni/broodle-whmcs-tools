@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.67");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.68");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -576,6 +576,12 @@ function init(){
     emailPage.style.display="none";
     mainArea.appendChild(emailPage);
 
+    /* ── Addons page (hidden by default) ── */
+    var addonsPage=document.createElement("div");
+    addonsPage.id="bt-addons-page";
+    addonsPage.style.display="none";
+    mainArea.appendChild(addonsPage);
+
     /* ── Change Password page (hidden by default) ── */
     var changePwPage=document.createElement("div");
     changePwPage.id="bt-changepw-page";
@@ -608,7 +614,7 @@ function init(){
 function buildSidebarHtml(){
     var html='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Overview</div>';
     html+='<a class="bt-sidebar-item active" data-page="tabs" data-tab="overview"><div class="bt-si-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="bt-si-label">Information<span>Service Details</span></div></a>';
-    html+='<a class="bt-sidebar-item" data-page="tabs" data-tab="overview" data-scroll="addons"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="bt-si-label">Addons<span>Extra Services</span></div></a>';
+    html+='<a class="bt-sidebar-item" data-page="addons"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="bt-si-label">Addons<span>Extra Services</span></div></a>';
     html+='</div>';
 
     /* Management panel */
@@ -665,6 +671,7 @@ function bindSidebarActions(){
             var databasesPage=$("bt-databases-page");
             var sslPage=$("bt-ssl-page");
             var emailPage=$("bt-email-page");
+            var addonsPage=$("bt-addons-page");
             var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
@@ -674,6 +681,7 @@ function bindSidebarActions(){
             if(databasesPage) databasesPage.style.display="none";
             if(sslPage) sslPage.style.display="none";
             if(emailPage) emailPage.style.display="none";
+            if(addonsPage) addonsPage.style.display="none";
 
             if(page==="tabs"){
                 if(heroSection) heroSection.style.display="";
@@ -683,10 +691,6 @@ function bindSidebarActions(){
                     if(tabBtn) tabBtn.click();
                 }
                 var scrollTarget=this.getAttribute("data-scroll");
-                if(scrollTarget==="addons"){
-                    var acc=$("btAccAddons");
-                    if(acc){acc.classList.add("open");setTimeout(function(){acc.scrollIntoView({behavior:"smooth",block:"start"});},100);}
-                }
                 var hashName="tab"+(tab?tab.charAt(0).toUpperCase()+tab.slice(1):"Overview");
                 if(history.replaceState) history.replaceState(null,null,"#"+hashName);
             }else if(page==="wordpress"){
@@ -750,6 +754,16 @@ function bindSidebarActions(){
                     }
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabEmail");
+            }else if(page==="addons"){
+                if(heroSection) heroSection.style.display="none";
+                if(addonsPage){
+                    addonsPage.style.display="";
+                    if(!addonsPage.dataset.loaded){
+                        addonsPage.dataset.loaded="1";
+                        buildAddonsPageInto(addonsPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabAddons");
             }else if(page==="changepw"){
                 if(heroSection) heroSection.style.display="none";
                 if(changePwPage) changePwPage.style.display="";
@@ -842,7 +856,7 @@ function activateTabFromHash(){
         "php":"phpversion","phpversion":"phpversion",
         "cpanel":"cpanel","cpanelcredentials":"cpanel",
         "errorlogs":"errorlogs","errors":"errorlogs","logs":"errorlogs",
-        "addons":"overview","addonsextras":"overview",
+        "addons":"addons","addonsextras":"addons","extras":"addons",
         "changepw":"changepw","changepassword":"changepw"
     };
     var targetId=hashMap[tabName]||tabName;
@@ -877,6 +891,10 @@ function activateTabFromHash(){
     if(targetId==="email"){
         var emItem=document.querySelector('.bt-sidebar-item[data-page="email"]');
         if(emItem){emItem.click();return;}
+    }
+    if(targetId==="addons"){
+        var adItem=document.querySelector('.bt-sidebar-item[data-page="addons"]');
+        if(adItem){adItem.click();return;}
     }
     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
     if(tabBtn) tabBtn.click();
@@ -939,9 +957,7 @@ function buildOverviewPane(){
         html+='</div></div></div>';
     }
 
-    /* Addons/Upgrades — we can't parse from DOM anymore since we nuked it.
-       We'll add a placeholder that loads via AJAX if needed */
-    html+='<div id="btAccAddons"></div>';
+    /* Addons are now on their own page */
 
     pane.innerHTML=html;
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
@@ -1542,6 +1558,145 @@ function injectStyles9(){
 '@media(max-width:480px){.fm-table .fm-size,.fm-table th:nth-child(3){display:none}}',
     ].join('\n');
     document.head.appendChild(s);
+}
+
+/* ─── CSS Part 10: Addons Page ─── */
+function injectStyles10(){
+    if(document.getElementById("bt-injected-styles10")) return;
+    var s=document.createElement("style");s.id="bt-injected-styles10";
+    s.textContent=[
+'.bt-addons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:16px}',
+'.bt-addon-card{background:var(--bt-card-bg,#fff);border:1px solid var(--bt-border,#e5e7eb);border-radius:12px;padding:20px;transition:box-shadow .2s,border-color .2s}',
+'.bt-addon-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:#d1d5db}',
+'.bt-addon-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}',
+'.bt-addon-card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+'.bt-addon-card-title{font-size:15px;font-weight:600;color:var(--bt-text,#111827);line-height:1.3}',
+'.bt-addon-card-desc{font-size:13px;color:var(--bt-text-secondary,#6b7280);line-height:1.6;margin-bottom:14px}',
+'.bt-addon-card-desc p{margin:0 0 8px}',
+'.bt-addon-card-desc ul,.bt-addon-card-desc ol{margin:4px 0 8px 16px;padding:0}',
+'.bt-addon-card-desc li{margin-bottom:4px}',
+'.bt-addon-card-desc strong{color:var(--bt-text,#111827)}',
+'.bt-addon-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:14px;border-top:1px solid var(--bt-border,#e5e7eb)}',
+'.bt-addon-price{font-size:15px;font-weight:600;color:var(--bt-text,#111827)}',
+'.bt-addon-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500}',
+'.bt-addon-badge.active{background:rgba(5,150,105,.1);color:#059669}',
+'.bt-addon-badge.pending{background:rgba(234,179,8,.1);color:#ca8a04}',
+'.bt-addon-badge.suspended{background:rgba(239,68,68,.1);color:#ef4444}',
+'.bt-addon-badge.cancelled{background:rgba(107,114,128,.1);color:#6b7280}',
+'.bt-addon-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;text-decoration:none;transition:background .15s}',
+'.bt-addon-btn-primary{background:#0a5ed3;color:#fff}',
+'.bt-addon-btn-primary:hover{background:#0850b5}',
+'.bt-addon-btn-outline{background:transparent;border:1px solid var(--bt-border,#d1d5db);color:var(--bt-text,#374151)}',
+'.bt-addon-btn-outline:hover{background:var(--bt-hover,#f9fafb)}',
+'.bt-addons-section{margin-bottom:28px}',
+'.bt-addons-section-title{font-size:16px;font-weight:600;color:var(--bt-text,#111827);margin-bottom:4px}',
+'.bt-addons-section-sub{font-size:13px;color:var(--bt-text-secondary,#6b7280);margin-bottom:0}',
+'.bt-addons-empty{text-align:center;padding:40px 20px;color:var(--bt-text-secondary,#9ca3af)}',
+'.bt-addons-empty svg{margin-bottom:12px;opacity:.4}',
+'.bt-addons-loading{text-align:center;padding:60px 20px;color:var(--bt-text-secondary,#9ca3af)}',
+'.bt-config-option{background:var(--bt-card-bg,#fff);border:1px solid var(--bt-border,#e5e7eb);border-radius:10px;padding:16px;margin-bottom:12px}',
+'.bt-config-option-name{font-size:14px;font-weight:600;color:var(--bt-text,#111827);margin-bottom:8px}',
+'.bt-config-option-current{font-size:13px;color:var(--bt-text-secondary,#6b7280)}',
+'@media(max-width:640px){.bt-addons-grid{grid-template-columns:1fr}}',
+    ].join('\n');
+    document.head.appendChild(s);
+}
+
+/* ─── Build Addons Page ─── */
+function buildAddonsPageInto(container){
+    injectStyles10();
+    container.innerHTML='<div class="bt-card" style="padding:24px"><div class="bt-addons-loading"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="bt-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><div style="margin-top:8px">Loading addons...</div></div></div>';
+
+    post({action:'get_addons'},function(r){
+        if(!r.success){
+            container.innerHTML='<div class="bt-card" style="padding:24px"><div class="bt-addons-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><div>Could not load addons</div></div></div>';
+            return;
+        }
+        var html='';
+        var activeAddons=r.activeAddons||[];
+        var availableAddons=r.availableAddons||[];
+        var configOptions=r.configOptions||[];
+
+        /* Active Addons Section */
+        if(activeAddons.length>0){
+            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Active Addons</div><p class="bt-addons-section-sub">Addons currently active on this service</p>';
+            html+='<div class="bt-addons-grid">';
+            activeAddons.forEach(function(a){
+                var statusClass=a.status.toLowerCase();
+                var iconBg='rgba(5,150,105,.1)';var iconColor='#059669';
+                if(statusClass==='suspended'){iconBg='rgba(239,68,68,.1)';iconColor='#ef4444';}
+                else if(statusClass==='pending'){iconBg='rgba(234,179,8,.1)';iconColor='#ca8a04';}
+                else if(statusClass==='cancelled'||statusClass==='terminated'){iconBg='rgba(107,114,128,.1)';iconColor='#6b7280';}
+                html+='<div class="bt-addon-card">';
+                html+='<div class="bt-addon-card-head"><div style="flex:1"><div class="bt-addon-card-title">'+esc(a.name)+'</div></div>';
+                html+='<div class="bt-addon-card-icon" style="background:'+iconBg+';color:'+iconColor+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div></div>';
+                if(a.description){
+                    html+='<div class="bt-addon-card-desc">'+a.description+'</div>';
+                }
+                html+='<div class="bt-addon-card-footer">';
+                html+='<div><span class="bt-addon-badge '+statusClass+'">'+esc(a.status)+'</span></div>';
+                html+='<div style="text-align:right">';
+                if(a.price) html+='<div class="bt-addon-price">'+esc(a.price)+'</div>';
+                if(a.nextDue&&a.nextDue!=='0000-00-00') html+='<div style="font-size:12px;color:var(--bt-text-secondary,#9ca3af)">Due: '+esc(a.nextDue)+'</div>';
+                html+='</div></div></div>';
+            });
+            html+='</div></div>';
+        }
+
+        /* Available Addons Section */
+        var notYetActive=availableAddons.filter(function(a){return !a.alreadyActive;});
+        if(notYetActive.length>0){
+            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Available Addons</div><p class="bt-addons-section-sub">Additional services you can add to your hosting</p>';
+            html+='<div class="bt-addons-grid">';
+            notYetActive.forEach(function(a){
+                html+='<div class="bt-addon-card">';
+                html+='<div class="bt-addon-card-head"><div style="flex:1"><div class="bt-addon-card-title">'+esc(a.name)+'</div></div>';
+                html+='<div class="bt-addon-card-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>';
+                if(a.description){
+                    html+='<div class="bt-addon-card-desc">'+a.description+'</div>';
+                }
+                html+='<div class="bt-addon-card-footer">';
+                if(a.price) html+='<div class="bt-addon-price">'+esc(a.price)+'</div>';
+                else html+='<div></div>';
+                html+='<a href="cart.php?a=add&aid='+a.id+'&serviceid='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Order</a>';
+                html+='</div></div>';
+            });
+            html+='</div></div>';
+        }
+
+        /* Configurable Options Section */
+        if(configOptions.length>0){
+            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Configurable Options</div><p class="bt-addons-section-sub">Current configuration for this service</p>';
+            configOptions.forEach(function(opt){
+                html+='<div class="bt-config-option"><div class="bt-config-option-name">'+esc(opt.name)+'</div>';
+                if(opt.choices&&opt.choices.length>0){
+                    var currentChoice=null;
+                    opt.choices.forEach(function(ch){if(ch.id===opt.currentValue) currentChoice=ch;});
+                    if(currentChoice){
+                        var choiceName=currentChoice.name.indexOf('|')>-1?currentChoice.name.split('|')[0]:currentChoice.name;
+                        html+='<div class="bt-config-option-current">Current: <strong>'+esc(choiceName)+'</strong>';
+                        if(currentChoice.price) html+=' — '+esc(currentChoice.price);
+                        html+='</div>';
+                    }
+                }
+                html+='</div>';
+            });
+            html+='<div style="margin-top:12px"><a href="upgrade.php?type=configoptions&id='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Change Options</a></div>';
+            html+='</div>';
+        }
+
+        /* Empty state */
+        if(activeAddons.length===0&&notYetActive.length===0&&configOptions.length===0){
+            html+='<div class="bt-addons-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><div style="font-size:15px;font-weight:500;margin-bottom:4px">No addons available</div><div>There are no addons configured for this product</div></div>';
+        }
+
+        /* Upgrade/Downgrade link */
+        html+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--bt-border,#e5e7eb);display:flex;gap:10px;flex-wrap:wrap">';
+        html+='<a href="upgrade.php?type=package&id='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Upgrade / Downgrade Plan</a>';
+        html+='</div>';
+
+        container.innerHTML='<div class="bt-card" style="padding:24px">'+html+'</div>';
+    });
 }
 
 /* ─── File Manager State ─── */
