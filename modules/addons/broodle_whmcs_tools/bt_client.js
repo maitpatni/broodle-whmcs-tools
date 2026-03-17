@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.64");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.65");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -1503,8 +1503,6 @@ function injectStyles9(){
 '.fm-table .fm-perms{font-family:"SFMono-Regular",Consolas,monospace;font-size:12px;color:var(--text-muted,#6b7280)}',
 '.fm-table .fm-date{color:var(--text-muted,#6b7280);font-size:12px}',
 '.fm-table .fm-check{width:16px;height:16px;accent-color:#0a5ed3;cursor:pointer}',
-/* Editor panel — now a popup modal, minimal CSS needed */
-'.fm-editor-wrap{display:none}',
 /* Context menu */
 '.fm-ctx{position:fixed;z-index:100001;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:4px;min-width:180px;animation:btFadeIn .12s}',
 '.fm-ctx-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;font-weight:500;color:var(--heading-color,#374151);cursor:pointer;border-radius:6px;transition:background .1s}',
@@ -1793,68 +1791,99 @@ function fmBindDragDrop(){
     });
 }
 
-/* ─── FM: Editor is now a popup — see fmOpenFile ─── */
+/* ─── CodeMirror CDN Loader ─── */
+var _cmLoaded=false;
+var _cmCallbacks=[];
+function fmLoadCodeMirror(cb){
+    if(_cmLoaded&&window.CodeMirror){cb();return;}
+    _cmCallbacks.push(cb);
+    if(_cmCallbacks.length>1) return; /* already loading */
+    var cdnBase="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/";
+    /* Load CSS */
+    var link=document.createElement("link");link.rel="stylesheet";link.href=cdnBase+"codemirror.min.css";document.head.appendChild(link);
+    /* Load main JS */
+    var sc=document.createElement("script");sc.src=cdnBase+"codemirror.min.js";
+    sc.onload=function(){
+        /* Load addons and modes */
+        var assets=[
+            "addon/search/search.min.js","addon/search/searchcursor.min.js","addon/search/jump-to-line.min.js",
+            "addon/dialog/dialog.min.js","addon/edit/matchbrackets.min.js","addon/edit/closebrackets.min.js",
+            "addon/fold/foldcode.min.js","addon/fold/foldgutter.min.js","addon/fold/brace-fold.min.js",
+            "addon/fold/comment-fold.min.js","addon/selection/active-line.min.js","addon/comment/comment.min.js",
+            "mode/javascript/javascript.min.js","mode/xml/xml.min.js","mode/css/css.min.js",
+            "mode/htmlmixed/htmlmixed.min.js","mode/php/php.min.js","mode/python/python.min.js",
+            "mode/ruby/ruby.min.js","mode/sql/sql.min.js","mode/yaml/yaml.min.js",
+            "mode/shell/shell.min.js","mode/markdown/markdown.min.js","mode/clike/clike.min.js"
+        ];
+        var cssList=["addon/dialog/dialog.min.css","addon/fold/foldgutter.min.css"];
+        cssList.forEach(function(c){var l2=document.createElement("link");l2.rel="stylesheet";l2.href=cdnBase+c;document.head.appendChild(l2);});
+        var loaded=0;var total=assets.length;
+        if(total===0){_cmLoaded=true;_cmCallbacks.forEach(function(fn){fn();});_cmCallbacks=[];return;}
+        assets.forEach(function(a){
+            var s2=document.createElement("script");s2.src=cdnBase+a;
+            s2.onload=s2.onerror=function(){loaded++;if(loaded>=total){_cmLoaded=true;_cmCallbacks.forEach(function(fn){fn();});_cmCallbacks=[];}};
+            document.head.appendChild(s2);
+        });
+    };
+    sc.onerror=function(){_cmCallbacks.forEach(function(fn){fn();});_cmCallbacks=[];};
+    document.head.appendChild(sc);
+}
 
-/* ─── FM: Open File in Editor (popup modal) ─── */
 function fmOpenFile(filePath){
     /* Remove any existing editor modal */
-    var old=$("fm-editor-overlay");if(old&&old.parentNode) old.parentNode.removeChild(old);
+    var old=document.getElementById("fm-editor-overlay");if(old&&old.parentNode) old.parentNode.removeChild(old);
 
-    /* Detect language from extension */
+    /* Detect CodeMirror mode from extension */
     var ext=(filePath||"").split(".").pop().toLowerCase();
-    var langMap={js:"javascript",jsx:"javascript",ts:"typescript",tsx:"typescript",php:"php",py:"python",rb:"ruby",css:"css",scss:"css",less:"css",html:"html",htm:"html",xml:"xml",svg:"xml",json:"json",yml:"yaml",yaml:"yaml",sh:"bash",bash:"bash",sql:"sql",md:"markdown",txt:"text",conf:"text",ini:"text",log:"text",htaccess:"text",env:"text"};
-    var lang=langMap[ext]||"text";
+    var modeMap={
+        js:"javascript",jsx:"javascript",mjs:"javascript",ts:{name:"javascript",typescript:true},tsx:{name:"javascript",typescript:true},
+        php:"application/x-httpd-php",phtml:"application/x-httpd-php",
+        py:"python",rb:"ruby",css:"css",scss:"text/x-scss",less:"text/x-less",
+        html:"htmlmixed",htm:"htmlmixed",tpl:"htmlmixed",blade:"htmlmixed",
+        xml:"xml",svg:"xml",xsl:"xml",
+        json:{name:"javascript",json:true},
+        yml:"yaml",yaml:"yaml",
+        sh:"shell",bash:"shell",zsh:"shell",
+        sql:"sql",
+        md:"markdown",
+        c:"text/x-csrc",cpp:"text/x-c++src",h:"text/x-csrc",java:"text/x-java",cs:"text/x-csharp",
+        txt:null,conf:null,ini:null,log:null,htaccess:null,env:null,gitignore:null
+    };
+    var cmMode=modeMap[ext]!==undefined?modeMap[ext]:"javascript";
+    var langLabel=typeof cmMode==="string"?(cmMode||"text"):(cmMode&&cmMode.name?cmMode.name:"text");
     var fileName=filePath.split("/").pop();
 
+    /* Build overlay */
     var overlay=document.createElement("div");overlay.className="bt-overlay";overlay.id="fm-editor-overlay";
-    overlay.style.zIndex="100002";overlay.style.padding="20px";
+    overlay.style.zIndex="100002";overlay.style.padding="16px";
 
     var modal=document.createElement("div");
-    modal.style.cssText="background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:1100px;height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:btSlideUp .25s;overflow:hidden";
+    modal.style.cssText="background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:1200px;height:92vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:btSlideUp .25s;overflow:hidden";
 
     /* Header */
     var head=document.createElement("div");
-    head.style.cssText="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-shrink:0;background:var(--input-bg,#f9fafb)";
+    head.style.cssText="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-shrink:0;background:var(--input-bg,#f9fafb)";
     head.innerHTML='<button class="fm-toolbar-btn" id="fm-ed-close" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
     +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0;color:var(--text-muted,#6b7280)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
     +'<div style="flex:1;font-size:13px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="fm-ed-title"></div>'
     +'<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(10,94,211,.08);color:#0a5ed3;font-weight:600;text-transform:uppercase" id="fm-ed-lang"></span>'
     +'<div class="fm-toolbar-sep"></div>'
-    +'<button class="fm-toolbar-btn" id="fm-ed-find" title="Find (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Find</span></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-find" title="Find & Replace (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Find</span></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-goto" title="Go to Line (Ctrl+G)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><polyline points="10 3 8 6 6 3"/></svg><span>Go to</span></button>'
     +'<button class="fm-toolbar-btn" id="fm-ed-copy" title="Copy All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span></button>'
     +'<button class="fm-toolbar-btn" id="fm-ed-save" style="background:#0a5ed3;color:#fff;border-color:#0a5ed3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Save</span></button>'
     +'<button class="fm-toolbar-btn" id="fm-ed-dl" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>';
     modal.appendChild(head);
 
-    /* Find bar (hidden by default) */
-    var findBar=document.createElement("div");findBar.id="fm-ed-findbar";
-    findBar.style.cssText="display:none;align-items:center;gap:8px;padding:6px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);background:var(--input-bg,#fefce8);flex-shrink:0";
-    findBar.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" width="14" height="14" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
-    +'<input type="text" id="fm-ed-find-input" placeholder="Find..." style="flex:1;padding:4px 8px;border:1px solid var(--border-color,#d1d5db);border-radius:5px;font-size:12px;outline:none;background:var(--card-bg,#fff);color:var(--heading-color,#111827);min-width:0">'
-    +'<span id="fm-ed-find-count" style="font-size:11px;color:var(--text-muted,#6b7280);white-space:nowrap">0 results</span>'
-    +'<button class="fm-toolbar-btn" id="fm-ed-find-prev" title="Previous" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg></button>'
-    +'<button class="fm-toolbar-btn" id="fm-ed-find-next" title="Next" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg></button>'
-    +'<button class="fm-toolbar-btn" id="fm-ed-find-close" title="Close" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
-    modal.appendChild(findBar);
-
-    /* Editor body with line numbers */
-    var body=document.createElement("div");
-    body.style.cssText="flex:1;display:flex;overflow:hidden;position:relative";
-
-    var gutter=document.createElement("div");gutter.id="fm-ed-gutter";
-    gutter.style.cssText="width:50px;flex-shrink:0;background:var(--input-bg,#f8fafc);border-right:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-align:right;padding:12px 8px 12px 4px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--text-muted,#c0c4cc);user-select:none";
-    body.appendChild(gutter);
-
-    var ta=document.createElement("textarea");
-    ta.id="fm-ed-textarea";ta.spellcheck=false;ta.autocomplete="off";ta.autocapitalize="off";
-    ta.style.cssText="flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 16px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--heading-color,#111827);background:var(--card-bg,#fff);tab-size:4;-moz-tab-size:4;box-sizing:border-box;white-space:pre;overflow-wrap:normal;overflow-x:auto";
-    ta.value="Loading...";ta.readOnly=true;
-    body.appendChild(ta);
-    modal.appendChild(body);
+    /* Editor container */
+    var edWrap=document.createElement("div");edWrap.id="fm-ed-cm-wrap";
+    edWrap.style.cssText="flex:1;overflow:hidden;position:relative";
+    edWrap.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted,#9ca3af);font-size:13px"><div class="bt-spinner" style="margin-right:10px"></div>Loading editor...</div>';
+    modal.appendChild(edWrap);
 
     /* Footer status */
     var foot=document.createElement("div");
-    foot.style.cssText="padding:6px 16px;font-size:11px;color:var(--text-muted,#9ca3af);border-top:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f9fafb);display:flex;align-items:center;gap:12px;flex-shrink:0";
+    foot.style.cssText="padding:5px 14px;font-size:11px;color:var(--text-muted,#9ca3af);border-top:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f9fafb);display:flex;align-items:center;gap:12px;flex-shrink:0";
     foot.innerHTML='<span id="fm-ed-fpath" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>'
     +'<span style="flex:1"></span>'
     +'<span id="fm-ed-cursor" style="font-family:SFMono-Regular,Consolas,monospace">Ln 1, Col 1</span>'
@@ -1867,193 +1896,190 @@ function fmOpenFile(filePath){
 
     /* Set title, lang, path */
     var titleEl=overlay.querySelector("#fm-ed-title");if(titleEl) titleEl.textContent=fileName;
-    var langEl=overlay.querySelector("#fm-ed-lang");if(langEl) langEl.textContent=lang;
+    var langEl=overlay.querySelector("#fm-ed-lang");if(langEl) langEl.textContent=langLabel.replace("application/x-httpd-","");
     var fpathEl=overlay.querySelector("#fm-ed-fpath");if(fpathEl){fpathEl.textContent=filePath;fpathEl.dataset.path=filePath;}
 
-    /* Track if file was modified */
     var fmEditorDirty=false;
-
-    /* Line numbers */
-    function updateLineNumbers(){
-        var lines=ta.value.split("\n").length;
-        var html="";for(var i=1;i<=lines;i++) html+=i+"\n";
-        gutter.textContent=html;
-    }
-
-    /* Sync scroll between gutter and textarea */
-    ta.addEventListener("scroll",function(){gutter.scrollTop=ta.scrollTop;});
-
-    /* Update line numbers on input */
-    ta.addEventListener("input",updateLineNumbers);
-
-    /* Cursor position */
-    function updateCursor(){
-        var cursorEl=overlay.querySelector("#fm-ed-cursor");if(!cursorEl) return;
-        var val=ta.value.substring(0,ta.selectionStart);
-        var ln=val.split("\n").length;
-        var col=val.length-val.lastIndexOf("\n");
-        cursorEl.textContent="Ln "+ln+", Col "+col;
-    }
-    ta.addEventListener("click",updateCursor);
-    ta.addEventListener("keyup",updateCursor);
-    ta.addEventListener("select",updateCursor);
+    var cmEditor=null;
 
     /* Close handler */
     function closeEditor(){
-        if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
         document.removeEventListener("keydown",escHandler);
+        if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
         if(fmEditorDirty) fmLoadDir(fmState.dir);
     }
     overlay.querySelector("#fm-ed-close").addEventListener("click",closeEditor);
     overlay.addEventListener("click",function(e){if(e.target===overlay) closeEditor();});
 
     /* Save handler */
-    overlay.querySelector("#fm-ed-save").addEventListener("click",function(){
+    function doSave(){
+        if(!cmEditor) return;
         var msgEl=overlay.querySelector("#fm-ed-msg");
         var saveBtn=overlay.querySelector("#fm-ed-save");
         btnLoad(saveBtn,"Saving...");
         if(msgEl){msgEl.textContent="Saving...";msgEl.style.color="";}
-        post({action:"fm_save",file:filePath,content:ta.value},function(r){
+        post({action:"fm_save",file:filePath,content:cmEditor.getValue()},function(r){
             btnDone(saveBtn);
             if(msgEl){msgEl.textContent=r.success?"Saved":(r.message||"Failed");msgEl.style.color=r.success?"#059669":"#ef4444";}
-            if(r.success){fmEditorDirty=true;if(msgEl) setTimeout(function(){msgEl.textContent="";},3000);}
+            if(r.success){fmEditorDirty=true;cmEditor.markClean();if(msgEl) setTimeout(function(){msgEl.textContent="";},3000);}
         });
-    });
+    }
+    overlay.querySelector("#fm-ed-save").addEventListener("click",doSave);
 
     /* Download handler */
     overlay.querySelector("#fm-ed-dl").addEventListener("click",function(){fmDownload(filePath);});
 
     /* Copy all */
     overlay.querySelector("#fm-ed-copy").addEventListener("click",function(){
+        if(!cmEditor) return;
+        var text=cmEditor.getValue();
         if(navigator.clipboard&&navigator.clipboard.writeText){
-            navigator.clipboard.writeText(ta.value).then(function(){fmToast("Copied to clipboard",true);});
+            navigator.clipboard.writeText(text).then(function(){fmToast("Copied to clipboard",true);});
         }else{
-            ta.select();document.execCommand("copy");fmToast("Copied to clipboard",true);
+            var tmp=document.createElement("textarea");tmp.value=text;document.body.appendChild(tmp);tmp.select();document.execCommand("copy");document.body.removeChild(tmp);
+            fmToast("Copied to clipboard",true);
         }
     });
 
-    /* ── Find functionality ── */
-    var findMatches=[];var findIdx=-1;
-    var findInput=overlay.querySelector("#fm-ed-find-input");
-    var findCount=overlay.querySelector("#fm-ed-find-count");
-
-    function doFind(){
-        var q=findInput.value;findMatches=[];findIdx=-1;
-        if(!q){findCount.textContent="0 results";return;}
-        var text=ta.value.toLowerCase();var ql=q.toLowerCase();var pos=0;
-        while((pos=text.indexOf(ql,pos))!==-1){findMatches.push(pos);pos+=ql.length;}
-        findCount.textContent=findMatches.length+" result"+(findMatches.length!==1?"s":"");
-        if(findMatches.length>0){findIdx=0;selectMatch();}
-    }
-    function selectMatch(){
-        if(findIdx<0||findIdx>=findMatches.length) return;
-        var pos=findMatches[findIdx];var q=findInput.value;
-        ta.focus();ta.setSelectionRange(pos,pos+q.length);
-        findCount.textContent=(findIdx+1)+"/"+findMatches.length;
-        /* Scroll textarea to selection */
-        var linesBefore=ta.value.substring(0,pos).split("\n").length;
-        var lineH=parseFloat(getComputedStyle(ta).lineHeight)||20.8;
-        ta.scrollTop=Math.max(0,(linesBefore-5)*lineH);
-    }
-    function findNext(){if(findMatches.length===0) return;findIdx=(findIdx+1)%findMatches.length;selectMatch();}
-    function findPrev(){if(findMatches.length===0) return;findIdx=(findIdx-1+findMatches.length)%findMatches.length;selectMatch();}
-
+    /* Find button */
     overlay.querySelector("#fm-ed-find").addEventListener("click",function(){
-        var fb=overlay.querySelector("#fm-ed-findbar");
-        if(fb.style.display==="none"||!fb.style.display){fb.style.display="flex";findInput.focus();findInput.select();}
-        else{fb.style.display="none";}
-    });
-    overlay.querySelector("#fm-ed-find-close").addEventListener("click",function(){overlay.querySelector("#fm-ed-findbar").style.display="none";ta.focus();});
-    overlay.querySelector("#fm-ed-find-next").addEventListener("click",findNext);
-    overlay.querySelector("#fm-ed-find-prev").addEventListener("click",findPrev);
-    findInput.addEventListener("input",doFind);
-    findInput.addEventListener("keydown",function(e){
-        if(e.key==="Enter"){e.preventDefault();if(e.shiftKey) findPrev();else findNext();}
-        if(e.key==="Escape"){overlay.querySelector("#fm-ed-findbar").style.display="none";ta.focus();}
+        if(cmEditor) cmEditor.execCommand("findPersistent");
     });
 
-    /* Keyboard shortcuts */
-    ta.addEventListener("keydown",function(e){
-        /* Ctrl+S save */
-        if((e.ctrlKey||e.metaKey)&&e.key==="s"){
-            e.preventDefault();
-            overlay.querySelector("#fm-ed-save").click();
-        }
-        /* Ctrl+F find */
-        if((e.ctrlKey||e.metaKey)&&e.key==="f"){
-            e.preventDefault();
-            var fb=overlay.querySelector("#fm-ed-findbar");
-            fb.style.display="flex";findInput.focus();
-            var sel=ta.value.substring(ta.selectionStart,ta.selectionEnd);
-            if(sel){findInput.value=sel;doFind();}else{findInput.select();}
-        }
-        /* Tab key inserts tab */
-        if(e.key==="Tab"){
-            e.preventDefault();
-            var start=ta.selectionStart;var end=ta.selectionEnd;
-            if(start===end){
-                ta.value=ta.value.substring(0,start)+"\t"+ta.value.substring(end);
-                ta.selectionStart=ta.selectionEnd=start+1;
-            }else{
-                /* Indent/unindent selection */
-                var val=ta.value;var lineStart=val.lastIndexOf("\n",start-1)+1;
-                var block=val.substring(lineStart,end);
-                if(e.shiftKey){
-                    block=block.replace(/^(\t| {1,4})/gm,"");
-                }else{
-                    block=block.replace(/^/gm,"\t");
-                }
-                ta.value=val.substring(0,lineStart)+block+val.substring(end);
-                ta.selectionStart=lineStart;ta.selectionEnd=lineStart+block.length;
-            }
-            updateLineNumbers();
-        }
-        /* Enter auto-indent */
-        if(e.key==="Enter"){
-            e.preventDefault();
-            var val=ta.value;var pos=ta.selectionStart;
-            var lineStart=val.lastIndexOf("\n",pos-1)+1;
-            var line=val.substring(lineStart,pos);
-            var indent=line.match(/^[\t ]*/)[0];
-            var lastChar=val.charAt(pos-1);
-            if(lastChar==="{"||lastChar==="("||lastChar==="[") indent+="\t";
-            ta.value=val.substring(0,pos)+"\n"+indent+val.substring(ta.selectionEnd);
-            ta.selectionStart=ta.selectionEnd=pos+1+indent.length;
-            updateLineNumbers();
-        }
-        /* Ctrl+D duplicate line */
-        if((e.ctrlKey||e.metaKey)&&e.key==="d"){
-            e.preventDefault();
-            var val=ta.value;var pos=ta.selectionStart;
-            var lineStart=val.lastIndexOf("\n",pos-1)+1;
-            var lineEnd=val.indexOf("\n",pos);if(lineEnd===-1) lineEnd=val.length;
-            var line=val.substring(lineStart,lineEnd);
-            ta.value=val.substring(0,lineEnd)+"\n"+line+val.substring(lineEnd);
-            ta.selectionStart=ta.selectionEnd=pos+line.length+1;
-            updateLineNumbers();
-        }
+    /* Go to line button */
+    overlay.querySelector("#fm-ed-goto").addEventListener("click",function(){
+        if(!cmEditor) return;
+        fmPrompt("Go to Line","Line number:","",function(v){
+            var ln=parseInt(v,10);if(isNaN(ln)||ln<1) return;
+            cmEditor.setCursor(ln-1,0);cmEditor.scrollIntoView(null,100);cmEditor.focus();
+        });
     });
 
-    /* Escape to close (only if find bar is not open) */
+    /* Escape handler */
     function escHandler(e){
         if(e.key==="Escape"){
-            var fb=overlay.querySelector("#fm-ed-findbar");
-            if(fb&&fb.style.display==="flex"){fb.style.display="none";ta.focus();return;}
+            /* Let CodeMirror handle Escape for its own dialogs first */
+            var dialogs=overlay.querySelectorAll(".CodeMirror-dialog");
+            if(dialogs.length>0) return;
             closeEditor();
         }
     }
     document.addEventListener("keydown",escHandler);
 
-    /* Load file content */
-    post({action:"fm_read",file:filePath},function(r){
-        if(!r.success){ta.value="Error: "+(r.message||"Failed to read file");updateLineNumbers();return;}
-        ta.value=r.content||"";ta.readOnly=false;
-        updateLineNumbers();updateCursor();
-        var fsizeEl=overlay.querySelector("#fm-ed-fsize");
-        if(fsizeEl) fsizeEl.textContent=fmFormatSize((r.content||"").length);
-        ta.focus();
+    /* Inject CodeMirror overrides for our modal */
+    if(!document.getElementById("bt-cm-overrides")){
+        var cmStyle=document.createElement("style");cmStyle.id="bt-cm-overrides";
+        cmStyle.textContent=[
+            '#fm-ed-cm-wrap .CodeMirror{height:100%;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;line-height:1.55;border:none}',
+            '#fm-ed-cm-wrap .CodeMirror-gutters{background:var(--input-bg,#f8fafc);border-right:1px solid var(--border-color,#e5e7eb)}',
+            '#fm-ed-cm-wrap .CodeMirror-linenumber{color:var(--text-muted,#b0b8c4);padding:0 8px 0 4px;min-width:32px}',
+            '#fm-ed-cm-wrap .CodeMirror-activeline-background{background:rgba(10,94,211,.04)}',
+            '#fm-ed-cm-wrap .CodeMirror-matchingbracket{color:#0a5ed3 !important;font-weight:700;text-decoration:underline}',
+            '#fm-ed-cm-wrap .CodeMirror-cursor{border-left:2px solid #0a5ed3}',
+            '#fm-ed-cm-wrap .CodeMirror-selected{background:rgba(10,94,211,.15)}',
+            '#fm-ed-cm-wrap .CodeMirror-focused .CodeMirror-selected{background:rgba(10,94,211,.2)}',
+            '#fm-ed-cm-wrap .CodeMirror-dialog{background:var(--input-bg,#f9fafb);border-bottom:1px solid var(--border-color,#e5e7eb);padding:6px 12px;font-size:13px}',
+            '#fm-ed-cm-wrap .CodeMirror-dialog input{border:1px solid var(--border-color,#d1d5db);border-radius:5px;padding:4px 8px;font-size:12px;outline:none;background:var(--card-bg,#fff);color:var(--heading-color,#111827)}',
+            '#fm-ed-cm-wrap .CodeMirror-dialog input:focus{border-color:#0a5ed3;box-shadow:0 0 0 2px rgba(10,94,211,.1)}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter{width:14px}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter-open:after{content:"\\25BE";color:var(--text-muted,#b0b8c4)}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter-folded:after{content:"\\25B8";color:#0a5ed3}',
+            '#fm-ed-cm-wrap .cm-searching{background:rgba(255,200,0,.4);border-radius:2px}',
+            /* Syntax colors */
+            '#fm-ed-cm-wrap .cm-keyword{color:#8959a8}',
+            '#fm-ed-cm-wrap .cm-def{color:#4271ae}',
+            '#fm-ed-cm-wrap .cm-variable{color:#374151}',
+            '#fm-ed-cm-wrap .cm-variable-2{color:#c08b30}',
+            '#fm-ed-cm-wrap .cm-variable-3{color:#3e999f}',
+            '#fm-ed-cm-wrap .cm-type{color:#3e999f}',
+            '#fm-ed-cm-wrap .cm-property{color:#374151}',
+            '#fm-ed-cm-wrap .cm-operator{color:#3e999f}',
+            '#fm-ed-cm-wrap .cm-number{color:#f5871f}',
+            '#fm-ed-cm-wrap .cm-string{color:#718c00}',
+            '#fm-ed-cm-wrap .cm-string-2{color:#f5871f}',
+            '#fm-ed-cm-wrap .cm-comment{color:#8e908c;font-style:italic}',
+            '#fm-ed-cm-wrap .cm-atom{color:#8959a8}',
+            '#fm-ed-cm-wrap .cm-tag{color:#c82829}',
+            '#fm-ed-cm-wrap .cm-attribute{color:#f5871f}',
+            '#fm-ed-cm-wrap .cm-qualifier{color:#4271ae}',
+            '#fm-ed-cm-wrap .cm-builtin{color:#4271ae}',
+            '#fm-ed-cm-wrap .cm-meta{color:#8e908c}',
+            '#fm-ed-cm-wrap .cm-bracket{color:#374151}',
+            '#fm-ed-cm-wrap .cm-header{color:#c82829;font-weight:700}',
+            '#fm-ed-cm-wrap .cm-link{color:#4271ae;text-decoration:underline}',
+        ].join('\n');
+        document.head.appendChild(cmStyle);
+    }
+
+    /* Load CodeMirror then file content */
+    fmLoadCodeMirror(function(){
+        post({action:"fm_read",file:filePath},function(r){
+            if(!r.success){
+                edWrap.innerHTML='<div style="padding:24px;color:#ef4444;font-size:13px">Error: '+esc(r.message||"Failed to read file")+'</div>';
+                return;
+            }
+            edWrap.innerHTML="";
+            var content=r.content||"";
+
+            /* Init CodeMirror */
+            cmEditor=CodeMirror(edWrap,{
+                value:content,
+                mode:cmMode,
+                lineNumbers:true,
+                lineWrapping:false,
+                matchBrackets:true,
+                autoCloseBrackets:true,
+                styleActiveLine:true,
+                indentUnit:4,
+                tabSize:4,
+                indentWithTabs:false,
+                foldGutter:true,
+                gutters:["CodeMirror-linenumber","CodeMirror-foldgutter"],
+                extraKeys:{
+                    "Ctrl-S":function(){doSave();},
+                    "Cmd-S":function(){doSave();},
+                    "Ctrl-F":"findPersistent",
+                    "Cmd-F":"findPersistent",
+                    "Ctrl-H":"replace",
+                    "Cmd-Alt-F":"replace",
+                    "Ctrl-G":function(cm){
+                        fmPrompt("Go to Line","Line number:","",function(v){
+                            var ln=parseInt(v,10);if(isNaN(ln)||ln<1) return;
+                            cm.setCursor(ln-1,0);cm.scrollIntoView(null,100);cm.focus();
+                        });
+                    },
+                    "Ctrl-D":function(cm){
+                        var cur=cm.getCursor();var line=cm.getLine(cur.line);
+                        cm.replaceRange(line+"\n",{line:cur.line,ch:0});
+                    },
+                    "Ctrl-/":"toggleComment",
+                    "Cmd-/":"toggleComment",
+                    "Tab":function(cm){
+                        if(cm.somethingSelected()){cm.indentSelection("add");}
+                        else{cm.replaceSelection("    ","end");}
+                    },
+                    "Shift-Tab":function(cm){cm.indentSelection("subtract");}
+                }
+            });
+
+            /* Update cursor position in footer */
+            cmEditor.on("cursorActivity",function(){
+                var cur=cmEditor.getCursor();
+                var cursorEl=overlay.querySelector("#fm-ed-cursor");
+                if(cursorEl) cursorEl.textContent="Ln "+(cur.line+1)+", Col "+(cur.ch+1);
+            });
+
+            /* File size */
+            var fsizeEl=overlay.querySelector("#fm-ed-fsize");
+            if(fsizeEl) fsizeEl.textContent=fmFormatSize(content.length);
+
+            /* Focus editor */
+            setTimeout(function(){cmEditor.refresh();cmEditor.focus();},50);
+        });
     });
 }
+
+
 
 /* (fmSaveFile and fmCloseEditor removed — editor is now a popup modal in fmOpenFile) */
 
