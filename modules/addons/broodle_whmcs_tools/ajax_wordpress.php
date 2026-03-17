@@ -496,192 +496,97 @@ switch ($action) {
 
         // Known measure titles for human-readable display
         $titles = [
-            'blockAccessToSensitiveFiles'        => 'Block access to sensitive files',
-            'blockAccessToHtaccess'              => 'Block access to .htaccess and .htpasswd',
-            'blockAccessToXmlrpc'                => 'Block unauthorized access to xmlrpc.php',
-            'blockAuthorScans'                   => 'Block author scans',
-            'blockDirectoryBrowsing'             => 'Block directory browsing',
-            'blockPhpExecutionInWpContent'       => 'Forbid PHP execution in wp-content/uploads',
-            'blockPhpExecutionInWpIncludes'      => 'Forbid PHP execution in wp-includes',
-            'blockPhpExecutionInCacheDir'        => 'Disable PHP execution in cache directories',
-            'changeDefaultAdminUsername'          => 'Change default administrator username',
-            'changeDefaultDbPrefix'              => 'Change default database table prefix',
-            'configureSecurityKeys'              => 'Configure security keys',
-            'disableFileEditing'                 => 'Disable file editing in WordPress Dashboard',
-            'disableScriptsConcatenation'        => 'Disable scripts concatenation for admin panel',
-            'enableBotProtection'                => 'Enable bot protection',
-            'restrictAccessToFilesAndDirectories' => 'Restrict access to files and directories',
-            'turnOffPingbacks'                   => 'Turn off pingbacks',
-            'enableHotlinkProtection'            => 'Enable hotlink protection',
-            'forbidPhpExecutionInWpContent'      => 'Forbid PHP execution in wp-content/uploads',
-            'forbidPhpExecutionInWpIncludes'     => 'Forbid PHP execution in wp-includes',
-            'blockAccessToWpConfig'              => 'Block unauthorized access to wp-config.php',
+            'adminUsername'                => 'Change default administrator username',
+            'dbPrefix'                     => 'Change default database table prefix',
+            'disableFileEditing'           => 'Disable file editing in WordPress Dashboard',
+            'disableUnusedScripting'       => 'Disable unused scripting languages',
+            'securityPermissions'          => 'Restrict access to files and directories',
+            'pingbacks'                    => 'Turn off pingbacks',
+            'scriptsConcatenation'         => 'Disable scripts concatenation for admin panel',
+            'securityKeys'                 => 'Configure security keys',
+            'blockAuthorsScan'             => 'Block author scans',
+            'blockHtFiles'                 => 'Block access to .htaccess and .htpasswd',
+            'blockPotentiallySensitiveFiles' => 'Block access to potentially sensitive files',
+            'blockSensitiveFiles'          => 'Block access to sensitive files',
+            'botProtection'                => 'Enable bot protection',
+            'secureConfig'                 => 'Block unauthorized access to wp-config.php',
+            'secureContent'                => 'Forbid PHP execution in wp-content/uploads',
+            'disableScriptInCache'         => 'Disable PHP execution in cache directories',
+            'secureIncludes'               => 'Forbid PHP execution in wp-includes',
+            'secureIndexing'               => 'Block directory browsing',
+            'secureXmlRpc'                 => 'Block unauthorized access to xmlrpc.php',
         ];
 
         $makeTitle = function ($id) use ($titles) {
             if (isset($titles[$id])) return $titles[$id];
-            // Convert camelCase or snake_case to readable title
             $words = preg_replace('/([a-z])([A-Z])/', '$1 $2', $id);
             $words = str_replace(['_', '-'], ' ', $words);
             return ucfirst(strtolower($words));
         };
 
-        // Try multiple endpoint patterns (most common first)
-        $raw = null;
-        $result = null;
-        $debugEndpoint = '';
-        $debugTriedEndpoints = [];
-
-        // Format 1: POST with installationsIds (plural, array) — most common WPT format
+        // The correct endpoint: GET /v1/security-measures/checker?installationsIds[]=<id>
+        // Returns array of installations, each with securityMeasures array
         $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            '/v1/security-measures/checker', 'POST', ['installationsIds' => [$instId]]);
-        $debugTriedEndpoints[] = 'POST /v1/security-measures/checker {installationsIds}';
-        if ($result['success'] && !empty($result['data'])) {
-            $raw = $result['data'];
-            $debugEndpoint = 'POST /v1/security-measures/checker (installationsIds)';
-        }
+            "/v1/security-measures/checker?installationsIds[]={$instId}");
 
-        // Format 2: GET with query param
-        if (empty($raw)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/security-measures/checker?installationsIds[]={$instId}");
-            $debugTriedEndpoints[] = "GET /v1/security-measures/checker?installationsIds[]={$instId}";
-            if ($result['success'] && !empty($result['data'])) {
-                $raw = $result['data'];
-                $debugEndpoint = "GET /v1/security-measures/checker?installationsIds[]";
-            }
-        }
+        $measures = [];
+        $debugEndpoint = "GET /v1/security-measures/checker?installationsIds[]={$instId}";
 
-        // Format 3: GET with singular installationId
-        if (empty($raw)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/security-measures/checker?installationId={$instId}");
-            $debugTriedEndpoints[] = "GET /v1/security-measures/checker?installationId={$instId}";
-            if ($result['success'] && !empty($result['data'])) {
-                $raw = $result['data'];
-                $debugEndpoint = "GET /v1/security-measures/checker?installationId";
-            }
-        }
-
-        // Format 4: POST with singular installationId
-        if (empty($raw)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                '/v1/security-measures/checker', 'POST', ['installationId' => $instId]);
-            $debugTriedEndpoints[] = 'POST /v1/security-measures/checker {installationId}';
-            if ($result['success'] && !empty($result['data'])) {
-                $raw = $result['data'];
-                $debugEndpoint = 'POST /v1/security-measures/checker (installationId)';
-            }
-        }
-
-        // Format 5: Per-installation security endpoint
-        if (empty($raw)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/security");
-            $debugTriedEndpoints[] = "GET /v1/installations/{$instId}/security";
-            if ($result['success'] && !empty($result['data'])) {
-                $raw = $result['data'];
-                $debugEndpoint = "/v1/installations/{$instId}/security";
-            }
-        }
-
-        if (!empty($raw) && is_array($raw)) {
-            $measures = [];
-            $rawBeforeUnwrap = $raw; // Keep for debug
-
-            // Unwrap: if response is keyed by installation ID (e.g. {"42": {...}})
-            if (isset($raw[(string)$instId]) && is_array($raw[(string)$instId])) {
-                $raw = $raw[(string)$instId];
-            } elseif (isset($raw[$instId]) && is_array($raw[$instId])) {
-                $raw = $raw[$instId];
-            }
-            // Also check if first element is keyed by instId (nested array)
-            elseif (count($raw) === 1 && isset($raw[0]) && is_array($raw[0])) {
-                $first = $raw[0];
-                if (isset($first['installationId']) && (int)$first['installationId'] === $instId && isset($first['measures'])) {
-                    $raw = $first['measures'];
-                } elseif (isset($first['installationId']) && (int)$first['installationId'] === $instId) {
-                    unset($first['installationId']);
-                    $raw = $first;
+        if ($result['success'] && is_array($result['data'])) {
+            // Response is an array of installation objects
+            // Find the one matching our installation ID
+            $instData = null;
+            foreach ($result['data'] as $item) {
+                if (isset($item['id']) && (int)$item['id'] === $instId) {
+                    $instData = $item;
+                    break;
                 }
             }
-
-            // Unwrap common wrappers
-            if (isset($raw['data']) && is_array($raw['data'])) $raw = $raw['data'];
-            if (isset($raw['measures']) && is_array($raw['measures'])) $raw = $raw['measures'];
-            elseif (isset($raw['securityMeasures']) && is_array($raw['securityMeasures'])) $raw = $raw['securityMeasures'];
-            elseif (isset($raw['results']) && is_array($raw['results'])) $raw = $raw['results'];
-
-            foreach ($raw as $key => $val) {
-                if (is_array($val)) {
-                    // Look for the measure identifier in multiple possible fields
-                    $mid = null;
-                    foreach (['measureId', 'measure_id', 'name', 'measure', 'securityMeasure', 'rule', 'id'] as $field) {
-                        if (!empty($val[$field]) && is_string($val[$field]) && !is_numeric($val[$field])) {
-                            $mid = $val[$field];
-                            break;
-                        }
-                    }
-                    // If key itself is a non-numeric string, use it as measure name
-                    if ($mid === null && is_string($key) && !is_numeric($key)) {
-                        $mid = $key;
-                    }
-
-                    // Get status from multiple possible fields
-                    $st = null;
-                    foreach (['status', 'result', 'state', 'value', 'applied'] as $sf) {
-                        if (isset($val[$sf])) { $st = $val[$sf]; break; }
-                    }
-                    if (is_bool($st)) $st = $st ? 'applied' : 'notApplied';
-
-                    if ($mid !== null) {
-                        $measures[] = [
-                            'id'     => $mid,
-                            'title'  => $makeTitle($mid),
-                            'status' => (string)($st ?? 'unknown'),
-                        ];
-                    } else {
-                        // Last resort: iterate sub-keys as measure names
-                        // This handles format: [{key1: val1, key2: val2, ...}] where keys are measure names
-                        foreach ($val as $subKey => $subVal) {
-                            if (is_string($subKey) && !is_numeric($subKey) && !in_array($subKey, ['id', 'installationId', 'installationsIds'], true)) {
-                                $subSt = is_bool($subVal) ? ($subVal ? 'applied' : 'notApplied') :
-                                         (is_string($subVal) ? $subVal :
-                                         (is_array($subVal) ? ($subVal['status'] ?? $subVal['result'] ?? 'unknown') : 'unknown'));
-                                $measures[] = [
-                                    'id'     => $subKey,
-                                    'title'  => $makeTitle($subKey),
-                                    'status' => (string)$subSt,
-                                ];
-                            }
-                        }
-                    }
-                } elseif (is_string($key) && !is_numeric($key)) {
-                    // Direct key-value format: {"measureName": "status"} or {"measureName": true}
-                    if (is_string($val)) {
-                        $measures[] = ['id' => $key, 'title' => $makeTitle($key), 'status' => $val];
-                    } elseif (is_bool($val)) {
-                        $measures[] = ['id' => $key, 'title' => $makeTitle($key), 'status' => $val ? 'applied' : 'notApplied'];
-                    }
-                }
+            // If only one result, use it regardless of ID match
+            if ($instData === null && count($result['data']) === 1) {
+                $instData = $result['data'][0];
             }
 
-            // Normalize status values to consistent set
-            foreach ($measures as &$m) {
-                $s = strtolower($m['status']);
-                if (in_array($s, ['applied', 'ok', 'true', 'enabled', 'active', 'pass', 'passed', 'secure'], true)) {
-                    $m['status'] = 'applied';
-                } elseif (in_array($s, ['notapplied', 'not_applied', 'false', 'disabled', 'inactive', 'fail', 'failed', 'insecure', 'warning'], true)) {
-                    $m['status'] = 'notApplied';
+            if ($instData !== null && isset($instData['securityMeasures']) && is_array($instData['securityMeasures'])) {
+                foreach ($instData['securityMeasures'] as $m) {
+                    $mid = $m['id'] ?? '';
+                    if (empty($mid)) continue;
+                    $measures[] = [
+                        'id'        => $mid,
+                        'title'     => $makeTitle($mid),
+                        'status'    => $m['status'] === true ? 'applied' : 'notApplied',
+                        'available' => $m['available'] ?? true,
+                    ];
                 }
             }
-            unset($m);
+        }
 
+        // Fallback: try GET /v1/security-measures (lists all measures metadata)
+        if (empty($measures)) {
+            $result2 = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                '/v1/security-measures');
+            $debugEndpoint .= ' + fallback GET /v1/security-measures';
+            if ($result2['success'] && is_array($result2['data'])) {
+                // This endpoint returns measure definitions, not per-installation status
+                // But it's useful as a last resort
+                foreach ($result2['data'] as $m) {
+                    $mid = $m['id'] ?? $m['name'] ?? '';
+                    if (empty($mid) || is_numeric($mid)) continue;
+                    $measures[] = [
+                        'id'        => $mid,
+                        'title'     => $makeTitle($mid),
+                        'status'    => 'unknown',
+                        'available' => true,
+                    ];
+                }
+            }
+        }
+
+        if (!empty($measures)) {
             echo json_encode([
                 'success'  => true,
                 'security' => $measures,
                 'debug_endpoint' => $debugEndpoint,
-                'debug_raw_sample' => json_encode(array_slice($rawBeforeUnwrap, 0, 2, true)),
             ]);
         } else {
             $msg = $result['message'] ?? 'Security scan failed';
@@ -689,9 +594,9 @@ switch ($action) {
             echo json_encode([
                 'success' => false,
                 'message' => $msg,
-                'debug_tried' => $debugTriedEndpoints,
+                'debug_endpoint' => $debugEndpoint,
                 'debug_status' => $result['status'] ?? null,
-                'debug_raw' => $result['raw'] ?? (is_array($result['data'] ?? null) ? json_encode($result['data']) : null),
+                'debug_raw' => is_array($result['data'] ?? null) ? json_encode(array_slice($result['data'], 0, 1, true)) : ($result['raw'] ?? null),
             ]);
         }
         break;
@@ -706,65 +611,25 @@ switch ($action) {
             exit;
         }
 
-        $applyResult = null;
-        $applySuccess = false;
-        $debugApplyEndpoint = '';
-
-        // Format 1: POST /v1/security-measures/resolver with installationsIds (plural array)
-        $applyResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+        // POST /v1/security-measures/resolver with installationsIds (plural, array)
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
             '/v1/security-measures/resolver', 'POST', [
                 'installationsIds' => [$instId],
                 'securityMeasures' => [$measureId],
             ]);
-        if ($applyResult['success']) {
-            $applySuccess = true;
-            $debugApplyEndpoint = 'resolver (installationsIds)';
-        }
 
-        // Format 2: POST with singular installationId
-        if (!$applySuccess) {
-            $applyResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                '/v1/security-measures/resolver', 'POST', [
-                    'installationId' => $instId,
-                    'securityMeasures' => [$measureId],
-                ]);
-            if ($applyResult['success']) {
-                $applySuccess = true;
-                $debugApplyEndpoint = 'resolver (installationId)';
-            }
-        }
-
-        // Format 3: Per-installation endpoint
-        if (!$applySuccess) {
-            $applyResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/security-measures/{$measureId}/apply", 'POST');
-            if ($applyResult['success']) {
-                $applySuccess = true;
-                $debugApplyEndpoint = "installations/{$instId}/security-measures/{$measureId}/apply";
-            }
-        }
-
-        // Format 4: PUT on security-measures
-        if (!$applySuccess) {
-            $applyResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/security-measures/{$measureId}", 'PUT', ['status' => true]);
-            if ($applyResult['success']) {
-                $applySuccess = true;
-                $debugApplyEndpoint = "PUT installations/{$instId}/security-measures/{$measureId}";
-            }
-        }
+        // HTTP 201 = background task created = success
+        $applySuccess = $result['success'];
 
         $errMsg = 'Failed to apply security fix';
-        if (!$applySuccess && is_array($applyResult['data'] ?? null)) {
-            $errMsg = $applyResult['data']['meta']['message'] ?? $applyResult['data']['message'] ?? $applyResult['data']['error'] ?? $errMsg;
+        if (!$applySuccess && is_array($result['data'] ?? null)) {
+            $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? $errMsg;
             if (is_array($errMsg)) $errMsg = json_encode($errMsg);
         }
 
         echo json_encode([
             'success' => $applySuccess,
             'message' => $applySuccess ? 'Security fix applied' : $errMsg,
-            'debug_endpoint' => $debugApplyEndpoint,
-            'debug_status' => $applyResult['status'] ?? null,
         ]);
         break;
 
@@ -778,65 +643,24 @@ switch ($action) {
             exit;
         }
 
-        $revertResult = null;
-        $revertSuccess = false;
-        $debugRevertEndpoint = '';
-
-        // Format 1: POST /v1/security-measures/reverter with installationsIds (plural array)
-        $revertResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+        // POST /v1/security-measures/reverter with installationsIds (plural, array)
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
             '/v1/security-measures/reverter', 'POST', [
                 'installationsIds' => [$instId],
                 'securityMeasures' => [$measureId],
             ]);
-        if ($revertResult['success']) {
-            $revertSuccess = true;
-            $debugRevertEndpoint = 'reverter (installationsIds)';
-        }
 
-        // Format 2: POST with singular installationId
-        if (!$revertSuccess) {
-            $revertResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                '/v1/security-measures/reverter', 'POST', [
-                    'installationId' => $instId,
-                    'securityMeasures' => [$measureId],
-                ]);
-            if ($revertResult['success']) {
-                $revertSuccess = true;
-                $debugRevertEndpoint = 'reverter (installationId)';
-            }
-        }
-
-        // Format 3: Per-installation endpoint
-        if (!$revertSuccess) {
-            $revertResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/security-measures/{$measureId}/revert", 'POST');
-            if ($revertResult['success']) {
-                $revertSuccess = true;
-                $debugRevertEndpoint = "installations/{$instId}/security-measures/{$measureId}/revert";
-            }
-        }
-
-        // Format 4: PUT on security-measures with status false
-        if (!$revertSuccess) {
-            $revertResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/security-measures/{$measureId}", 'PUT', ['status' => false]);
-            if ($revertResult['success']) {
-                $revertSuccess = true;
-                $debugRevertEndpoint = "PUT installations/{$instId}/security-measures/{$measureId}";
-            }
-        }
+        $revertSuccess = $result['success'];
 
         $errMsg = 'Failed to revert security fix';
-        if (!$revertSuccess && is_array($revertResult['data'] ?? null)) {
-            $errMsg = $revertResult['data']['meta']['message'] ?? $revertResult['data']['message'] ?? $revertResult['data']['error'] ?? $errMsg;
+        if (!$revertSuccess && is_array($result['data'] ?? null)) {
+            $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? $errMsg;
             if (is_array($errMsg)) $errMsg = json_encode($errMsg);
         }
 
         echo json_encode([
             'success' => $revertSuccess,
             'message' => $revertSuccess ? 'Security fix reverted' : $errMsg,
-            'debug_endpoint' => $debugRevertEndpoint,
-            'debug_status' => $revertResult['status'] ?? null,
         ]);
         break;
 
