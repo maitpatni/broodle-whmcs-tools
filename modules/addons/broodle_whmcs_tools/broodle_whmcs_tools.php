@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.60');
+define('BROODLE_TOOLS_VERSION', '3.10.61');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -63,6 +63,7 @@ function broodle_whmcs_tools_activate()
             'tweak_cron_management' => '1',
             'tweak_php_version'     => '1',
             'tweak_error_logs'      => '1',
+            'tweak_file_manager'    => '1',
             'tweak_upgrade_list_layout' => '0',
             'auto_update_enabled'   => '0',
         ];
@@ -212,6 +213,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_cron_management',
             'tweak_php_version',
             'tweak_error_logs',
+            'tweak_file_manager',
             'tweak_upgrade_list_layout',
             'auto_update_enabled',
         ];
@@ -282,6 +284,7 @@ function broodle_tools_render_admin($vars, $settings)
     $cronMgmtEnabled = !empty($settings['tweak_cron_management']) && $settings['tweak_cron_management'] === '1';
     $phpVersionEnabled = !empty($settings['tweak_php_version']) && $settings['tweak_php_version'] === '1';
     $errorLogsEnabled = !empty($settings['tweak_error_logs']) && $settings['tweak_error_logs'] === '1';
+    $fileManagerEnabled = !empty($settings['tweak_file_manager']) && $settings['tweak_file_manager'] === '1';
     $upgradeListEnabled = !empty($settings['tweak_upgrade_list_layout']) && $settings['tweak_upgrade_list_layout'] === '1';
     $autoUpdateEnabled = !empty($settings['auto_update_enabled']) && $settings['auto_update_enabled'] === '1';
 
@@ -464,6 +467,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_error_logs" value="1" ' . ($errorLogsEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>File Manager</h4>
+                            <p>Add a File Manager to the sidebar for browsing, editing, uploading, and managing files directly via cPanel.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_file_manager" value="1" ' . ($fileManagerEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>
