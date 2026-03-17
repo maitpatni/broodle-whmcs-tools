@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.52");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.53");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -344,6 +344,11 @@ function injectStyles8(){
 '.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--heading-color,#111827)}',
 '.bt-gauge-label{margin-top:6px;font-size:11px;font-weight:600;color:var(--heading-color,#111827)}',
 '.bt-gauge-sub{font-size:10px;color:var(--text-muted,#6b7280);margin-top:1px}',
+/* ── Hero Mini Stats ── */
+'.bt-hero-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border-color,#f3f4f6);width:100%;margin-top:4px}',
+'.bt-hero-stat{text-align:center}',
+'.bt-hero-stat-num{display:block;font-size:16px;font-weight:700;color:var(--heading-color,#111827)}',
+'.bt-hero-stat-lbl{font-size:10px;color:var(--text-muted,#9ca3af);font-weight:500}',
 /* ── Quick Shortcuts ── */
 '.bt-shortcuts{margin-bottom:24px}',
 '.bt-shortcuts-title{font-size:16px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 14px}',
@@ -364,6 +369,16 @@ function injectStyles8(){
     document.head.appendChild(s);
 }
 var savedChangePwPane=null;
+
+/* ─── Open specific cPanel page via SSO ─── */
+window.btOpenCpanelPage=function(page,el){
+    if(el){el.style.opacity='.5';el.style.pointerEvents='none';}
+    post({action:'get_cpanel_sso_url',page:page},function(r){
+        if(el){el.style.opacity='';el.style.pointerEvents='';}
+        if(r.success&&r.url) window.open(r.url,'_blank');
+        else window.open('clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1','_blank');
+    });
+};
 
 function init(){
     injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();
@@ -403,23 +418,29 @@ function init(){
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+diskColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+diskOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+diskPct+'%</div></div><div class="bt-gauge-label">Disk</div><div class="bt-gauge-sub">'+fmtSize(C.diskUsed)+' / '+fmtSize(C.diskLimit)+'</div></div>';
     /* BW gauge */
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
-    heroHtml+='</div></div></div>';
+    heroHtml+='</div>';
+    /* Mini stats row */
+    heroHtml+='<div class="bt-hero-stats">';
+    if(typeof C.emailCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.emailCount+'</span><span class="bt-hero-stat-lbl">Emails</span></div>';
+    if(typeof C.addonDomainCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.addonDomainCount+'</span><span class="bt-hero-stat-lbl">Addon Domains</span></div>';
+    if(typeof C.subdomainCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.subdomainCount+'</span><span class="bt-hero-stat-lbl">Subdomains</span></div>';
+    heroHtml+='</div>';
+    heroHtml+='</div></div>';
 
-    /* ── Quick Shortcuts — open cPanel features in new tab ── */
-    var cpBase='clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1';
+    /* ── Quick Shortcuts — open cPanel features in new tab via SSO ── */
     heroHtml+='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Shortcuts</h3><div class="bt-shortcuts-grid">';
     var shortcuts=[
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',cpanel:'EMAIL_ACCOUNTS'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/><path d="M22 6l-10 7L2 6"/></svg>',label:'Forwarders',cpanel:'EMAIL_FWD'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',label:'Backup',cpanel:'BACKUP'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',label:'File Manager',cpanel:'FILE_MANAGER'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',cpanel:'ADDON_DOMAINS'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',cpanel:'CRON_JOBS'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'MySQL Databases',cpanel:'DATABASES'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',label:'Awstats',cpanel:'AWSTATS'}
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',page:'mail/pops'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',label:'Forwarders',page:'mail/fwds'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',label:'Backup',page:'backup/wizard-backup.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',label:'File Manager',page:'filemanager/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',page:'addon/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',page:'cron/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'MySQL Databases',page:'sql/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',label:'Awstats',page:'awstats/index.html'}
     ];
     shortcuts.forEach(function(sc){
-        heroHtml+='<a class="bt-sc-item" href="'+cpBase+'&goto='+sc.cpanel+'" target="_blank">'+sc.icon+' '+esc(sc.label)+'</a>';
+        heroHtml+='<a class="bt-sc-item" href="#" data-cpanel-page="'+esc(sc.page)+'" onclick="btOpenCpanelPage(\''+esc(sc.page)+'\',this);return false;">'+sc.icon+' '+esc(sc.label)+'</a>';
     });
     heroHtml+='</div></div>';
 
@@ -681,19 +702,35 @@ function buildModalsHtml(){
 function buildOverviewPane(){
     var pane=$("bt-pane-overview");if(!pane) return;
     var pairs=[];
-    /* Try to get billing info from config data */
-    /* Since we nuked the DOM, we rely on C (config) for overview data */
-    /* The config doesn't include billing pairs directly — they were in the DOM */
-    /* We'll show what we have from config */
     var html="";
 
-    /* Build overview cards from available config data */
-    if(C.domains&&C.domains.main){
-        pairs.push({label:"Primary Domain",value:'<a href="https://'+esc(C.domains.main)+'" target="_blank">'+esc(C.domains.main)+'</a>'});
+    /* Billing & service info cards */
+    if(C.domains&&C.domains.main) pairs.push({label:"Primary Domain",value:'<a href="https://'+esc(C.domains.main)+'" target="_blank">'+esc(C.domains.main)+'</a>'});
+    if(C.serverIp) pairs.push({label:"Server IP",value:esc(C.serverIp)});
+    if(C.username) pairs.push({label:"cPanel Username",value:esc(C.username)});
+    if(C.serverName) pairs.push({label:"Server",value:esc(C.serverName)});
+    if(C.regDate) pairs.push({label:"Registration Date",value:esc(C.regDate)});
+    if(C.nextDueDate){
+        var dueVal=esc(C.nextDueDate);
+        /* Color-code due date */
+        var now=new Date();var due=new Date(C.nextDueDate);
+        var diffDays=Math.ceil((due-now)/(1000*60*60*24));
+        var dueCls="bt-ov-due-ok";var daysText="";
+        if(diffDays<0){dueCls="bt-ov-due-past";daysText='<span class="bt-ov-days" style="color:#ef4444">'+Math.abs(diffDays)+' days overdue</span>';}
+        else if(diffDays<=7){dueCls="bt-ov-due-danger";daysText='<span class="bt-ov-days" style="color:#ef4444">'+diffDays+' days left</span>';}
+        else if(diffDays<=30){dueCls="bt-ov-due-warn";daysText='<span class="bt-ov-days" style="color:#d97706">'+diffDays+' days left</span>';}
+        else{daysText='<span class="bt-ov-days" style="color:#059669">'+diffDays+' days left</span>';}
+        pairs.push({label:"Next Due Date",value:'<span class="'+dueCls+'">'+dueVal+'</span>'+daysText});
     }
-    if(C.serviceId){
-        pairs.push({label:"Service ID",value:esc(String(C.serviceId))});
-    }
+    if(C.price) pairs.push({label:"Recurring Amount",value:esc(C.price)+(C.billingCycle?' <span style="font-size:11px;color:var(--text-muted,#9ca3af);font-weight:400">('+esc(C.billingCycle)+')</span>':'')});
+    if(C.paymentMethod) pairs.push({label:"Payment Method",value:esc(C.paymentMethod.charAt(0).toUpperCase()+C.paymentMethod.slice(1))});
+
+    /* Resource counts */
+    var countCards=[];
+    if(typeof C.emailCount==="number") countCards.push({label:"Email Accounts",value:String(C.emailCount)});
+    if(typeof C.addonDomainCount==="number") countCards.push({label:"Addon Domains",value:String(C.addonDomainCount)});
+    if(typeof C.subdomainCount==="number") countCards.push({label:"Subdomains",value:String(C.subdomainCount)});
+    countCards.forEach(function(c){pairs.push(c);});
 
     if(pairs.length){
         html+='<div class="bt-ov-grid">';

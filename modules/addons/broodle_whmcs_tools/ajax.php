@@ -87,6 +87,47 @@ if ($action === 'get_addon_description') {
     exit;
 }
 
+// Handle cPanel SSO URL generation for shortcuts
+if ($action === 'get_cpanel_sso_url') {
+    $gotoPage = isset($_POST['page']) ? trim($_POST['page']) : '';
+    $server = Capsule::table('tblservers')->where('id', $service->server)->first();
+    if (!$server) { echo json_encode(['success' => false, 'message' => 'Server not found']); exit; }
+    $hostname = $server->hostname;
+    $port = !empty($server->port) ? (int) $server->port : 2087;
+    $serverUser = $server->username;
+    $secure = !empty($server->secure) && ($server->secure === 'on' || $server->secure === '1' || $server->secure === 1);
+    $protocol = $secure ? 'https' : 'http';
+    $cpUsername = $service->username;
+    $accessHash = ''; $password = '';
+    if (!empty($server->accesshash)) {
+        $raw = trim($server->accesshash);
+        if (preg_match('/^[A-Za-z0-9]{10,64}$/', $raw)) $accessHash = $raw;
+        else { $accessHash = trim(decrypt($raw)); if (empty($accessHash) || !preg_match('/^[A-Za-z0-9]{10,64}$/', $accessHash)) $accessHash = ''; }
+    }
+    if (empty($accessHash) && !empty($server->password)) $password = trim(decrypt($server->password));
+    if (empty($accessHash) && empty($password)) { echo json_encode(['success' => false, 'message' => 'Server credentials unavailable']); exit; }
+    $headers = [];
+    if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
+    // Create user session via WHM API
+    $ssoUrl = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session?api.version=1&user=" . urlencode($cpUsername) . "&service=cpaneld";
+    $ch = curl_init();
+    curl_setopt_array($ch, [CURLOPT_URL => $ssoUrl, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
+    if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+    $resp = curl_exec($ch); curl_close($ch);
+    $json = json_decode($resp, true);
+    $sessionUrl = $json['data']['url'] ?? '';
+    if (empty($sessionUrl)) { echo json_encode(['success' => false, 'message' => 'Could not create cPanel session']); exit; }
+    // Append the goto page path
+    if ($gotoPage) {
+        // The session URL is like https://server:2083/cpsess.../frontend/jupiter/...
+        // We need to redirect to a specific page after login
+        $sessionUrl .= (strpos($sessionUrl, '?') !== false ? '&' : '?') . 'goto_uri=' . urlencode('/' . ltrim($gotoPage, '/'));
+    }
+    echo json_encode(['success' => true, 'url' => $sessionUrl]);
+    exit;
+}
+
 if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_domain_management';
 } elseif (in_array($action, $dbActions)) {

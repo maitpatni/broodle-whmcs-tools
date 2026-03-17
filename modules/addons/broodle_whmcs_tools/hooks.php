@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.52');
+    define('BROODLE_TOOLS_VERSION', '3.10.53');
 }
 
 if (!defined('WHMCS')) {
@@ -255,6 +255,35 @@ function broodle_tools_gather_data($vars)
 
     $service = $cpData['service'];
     $product = $cpData['product'];
+    $server  = $cpData['server'];
+
+    // Billing info
+    $regDate     = $service->regdate ?? '';
+    $nextDueDate = $service->nextduedate ?? '';
+    $amount      = $service->amount ?? '0.00';
+    $billingCycle = $service->billingcycle ?? '';
+    $firstPayment = $service->firstpaymentamount ?? $amount;
+    $paymentMethod = $service->paymentmethod ?? '';
+    $dedicatedIp  = $service->dedicatedip ?? '';
+    $assignedIps  = $service->assignedips ?? '';
+    $username     = $service->username ?? '';
+    $serverName   = $server->name ?? ($server->hostname ?? '');
+    $serverIp     = $dedicatedIp ?: ($server->ipaddress ?? '');
+
+    // Currency
+    $clientCurrency = Capsule::table('tblclients')->where('id', $vars['userid'] ?? ($service->userid ?? 0))->value('currency') ?: 1;
+    $currency = Capsule::table('tblcurrencies')->where('id', $clientCurrency)->first();
+    $currPrefix = $currency->prefix ?? '';
+    $currSuffix = $currency->suffix ?? '';
+
+    // Format price
+    $priceFormatted = $currPrefix . number_format((float)$amount, 2) . $currSuffix;
+    $firstPayFormatted = $currPrefix . number_format((float)$firstPayment, 2) . $currSuffix;
+
+    // Addon domains / subdomains / email counts from gathered data
+    $addonCount = ($domains && isset($domains['addon'])) ? count($domains['addon']) : 0;
+    $subCount   = ($domains && isset($domains['sub'])) ? count($domains['sub']) : 0;
+    $emailCount = count($emails);
 
     $cache = [
         'serviceId' => $serviceId,
@@ -265,6 +294,23 @@ function broodle_tools_gather_data($vars)
         'diskLimit' => (int) ($service->disklimit ?? 0),
         'bwUsed' => (int) ($service->bwusage ?? 0),
         'bwLimit' => (int) ($service->bwlimit ?? 0),
+        // Billing
+        'regDate' => $regDate,
+        'nextDueDate' => $nextDueDate,
+        'billingCycle' => $billingCycle,
+        'price' => $priceFormatted,
+        'firstPayment' => $firstPayFormatted,
+        'paymentMethod' => $paymentMethod,
+        // Server
+        'username' => $username,
+        'serverName' => $serverName,
+        'serverIp' => $serverIp,
+        'dedicatedIp' => $dedicatedIp,
+        // Counts
+        'addonDomainCount' => $addonCount,
+        'subdomainCount' => $subCount,
+        'emailCount' => $emailCount,
+        // Existing
         'ns' => $nsData,
         'emails' => $emails,
         'domains' => $domains,
