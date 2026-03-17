@@ -47,7 +47,7 @@ $sslActions = ['ssl_status', 'start_autossl', 'autossl_progress', 'autossl_probl
 $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_edit_record', 'dns_delete_record', 'dns_bulk_delete'];
 $cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
 $phpActions = ['php_get_versions', 'php_set_version'];
-$logActions = ['error_log_read'];
+$logActions = ['error_log_read', 'error_log_clear'];
 $fileActions = ['fm_list', 'fm_read', 'fm_save', 'fm_create_file', 'fm_create_folder', 'fm_delete', 'fm_rename', 'fm_copy', 'fm_move', 'fm_upload', 'fm_permissions', 'fm_compress', 'fm_extract', 'fm_search', 'fm_download_url'];
 
 // Handle addon description lookup (no cPanel needed)
@@ -1826,7 +1826,7 @@ switch ($action) {
 
         // Strategy 3: Try WHM API php_get_installed_versions directly
         if (empty($installed)) {
-            $urlWhm = "{$protocol}://{$hostname}:{$port}/json-api/php_get_installed_versions";
+            $urlWhm = "{$protocol}://{$hostname}:{$port}/json-api/php_get_installed_versions?api.version=1";
             $rWhm = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlWhm);
             if ($rWhm['code'] === 200 && $rWhm['body']) {
                 $jsonWhm = json_decode($rWhm['body'], true);
@@ -1835,6 +1835,24 @@ switch ($action) {
                     foreach ($whmVersions as $v) {
                         if (is_string($v)) $installed[] = $v;
                         elseif (is_array($v) && isset($v['version'])) $installed[] = $v['version'];
+                    }
+                }
+            }
+        }
+
+        // Strategy 4: Try WHM API php_get_handlers to extract available PHP versions
+        if (empty($installed)) {
+            $urlHandlers = "{$protocol}://{$hostname}:{$port}/json-api/php_get_handlers?api.version=1";
+            $rHandlers = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlHandlers);
+            if ($rHandlers['code'] === 200 && $rHandlers['body']) {
+                $jsonH = json_decode($rHandlers['body'], true);
+                $handlers = $jsonH['data']['php'] ?? ($jsonH['data'] ?? []);
+                if (is_array($handlers)) {
+                    foreach ($handlers as $h) {
+                        if (is_array($h) && isset($h['version'])) {
+                            $ver = $h['version'];
+                            if (!in_array($ver, $installed)) $installed[] = $ver;
+                        }
                     }
                 }
             }
@@ -2239,6 +2257,48 @@ switch ($action) {
             'total'      => $totalLines,
             'showing'    => count($returnLines),
         ]);
+        break;
+
+    case 'error_log_clear':
+        /* Clear the error log by writing empty content to it */
+        $homedir = '/home/' . $cpUsername;
+        $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=getdir";
+        $rHome = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlHomedir);
+        if ($rHome['code'] === 200 && $rHome['body']) {
+            $json = json_decode($rHome['body'], true);
+            $h = $json['cpanelresult']['data'][0]['homedir'] ?? ($json['cpanelresult']['data'][0]['dir'] ?? '');
+            if (!empty($h)) $homedir = $h;
+        }
+        $cleared = false;
+        $logPaths = [$homedir . '/public_html/error_log', $homedir . '/logs/error.log'];
+        /* Get main domain for domain-specific logs */
+        $urlDomain = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=DomainInfo&cpanel_jsonapi_func=list_domains";
+        $rDomain = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlDomain);
+        if ($rDomain['code'] === 200 && $rDomain['body']) {
+            $jsonD = json_decode($rDomain['body'], true);
+            $mainDomain = $jsonD['result']['data']['main_domain'] ?? '';
+            if (!empty($mainDomain)) {
+                array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '.error.log');
+                array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '-error.log');
+            }
+        }
+        foreach ($logPaths as $path) {
+            $urlSave = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=save_file_content"
+                 . "&dir=" . urlencode(dirname($path)) . "&file=" . urlencode(basename($path))
+                 . "&from_charset=utf-8&to_charset=utf-8&content=";
+            $rSave = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlSave);
+            if ($rSave['code'] === 200 && $rSave['body']) {
+                $json = json_decode($rSave['body'], true);
+                if (($json['result']['status'] ?? 0) == 1) $cleared = true;
+            }
+        }
+        echo json_encode(['success' => $cleared, 'message' => $cleared ? 'Error log cleared' : 'Could not clear error log']);
         break;
 
     /* ═══ FILE MANAGER ═══ */

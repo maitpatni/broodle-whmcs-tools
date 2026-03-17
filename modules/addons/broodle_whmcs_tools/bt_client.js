@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.80");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.81");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -792,7 +792,8 @@ function buildTabs(){
 
     var tabs=[
         {id:"overview",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',label:"Overview"},
-        {id:"cpanel",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="3"/><path d="M3 12h2M19 12h2M12 3v2M12 19v2"/></svg>',label:"cPanel Credentials"},
+        {id:"nameservers",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:"Nameservers",check:"nsEnabled"},
+        {id:"cpanel",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',label:"cPanel Credentials"},
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
         {id:"errorlogs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',label:"Error Logs",check:"logsEnabled"},
@@ -833,6 +834,7 @@ function buildTabs(){
             wrap.style.display="";
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
             if(history.replaceState) history.replaceState(null,null,"#"+hashName);
+            if(t.id==="nameservers"&&!pane.dataset.loaded){pane.dataset.loaded="1";}
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
             if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
             if(t.id==="errorlogs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadErrorLogs();}
@@ -848,6 +850,7 @@ function buildTabs(){
     wrap.appendChild(nav);wrap.appendChild(panes);
 
     buildOverviewPane();
+    if(C.nsEnabled) buildNameserversPane();
     buildCpanelPane();
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
@@ -862,7 +865,7 @@ function activateTabFromHash(){
     var hashMap={
         "wordpress":"wordpress","wp":"wordpress",
         "filemanager":"filemanager","files":"filemanager","fm":"filemanager",
-        "overview":"overview","domains":"domains","domain":"domains",
+        "overview":"overview","nameservers":"nameservers","ns":"nameservers","domains":"domains","domain":"domains",
         "ssl":"ssl","email":"email","emailaccounts":"email",
         "databases":"databases","database":"databases","db":"databases",
         "dns":"domains","dnsmanager":"domains","cronjobs":"cronjobs","cron":"cronjobs",
@@ -935,17 +938,18 @@ function buildOverviewPane(){
     /* Billing & service info cards */
     if(C.domains&&C.domains.main) pairs.push({label:"Primary Domain",value:'<a href="https://'+esc(C.domains.main)+'" target="_blank">'+esc(C.domains.main)+'</a>'});
     if(C.regDate) pairs.push({label:"Registration Date",value:esc(C.regDate)});
-    if(C.nextDueDate){
+    if(C.nextDueDate&&C.nextDueDate!=="0000-00-00"){
         var dueVal=esc(C.nextDueDate);
         /* Color-code due date */
         var now=new Date();var due=new Date(C.nextDueDate);
         var diffDays=Math.ceil((due-now)/(1000*60*60*24));
-        var dueCls="bt-ov-due-ok";var daysText="";
-        if(diffDays<0){dueCls="bt-ov-due-past";daysText='<span class="bt-ov-days" style="color:#ef4444">'+Math.abs(diffDays)+' days overdue</span>';}
-        else if(diffDays<=7){dueCls="bt-ov-due-danger";daysText='<span class="bt-ov-days" style="color:#ef4444">'+diffDays+' days left</span>';}
-        else if(diffDays<=30){dueCls="bt-ov-due-warn";daysText='<span class="bt-ov-days" style="color:#d97706">'+diffDays+' days left</span>';}
+        var dueCls="bt-ov-due-ok";var daysText="";var cardStyle="";
+        if(isNaN(diffDays)){/* skip if invalid date */}
+        else if(diffDays<0){dueCls="bt-ov-due-past";daysText='<span class="bt-ov-days" style="color:#ef4444">'+Math.abs(diffDays)+' days overdue</span>';cardStyle="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04)";}
+        else if(diffDays<=7){dueCls="bt-ov-due-danger";daysText='<span class="bt-ov-days" style="color:#ef4444">'+diffDays+' days left</span>';cardStyle="border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.03)";}
+        else if(diffDays<=30){dueCls="bt-ov-due-warn";daysText='<span class="bt-ov-days" style="color:#d97706">'+diffDays+' days left</span>';cardStyle="border-color:rgba(217,119,6,.25);background:rgba(217,119,6,.03)";}
         else{daysText='<span class="bt-ov-days" style="color:#059669">'+diffDays+' days left</span>';}
-        pairs.push({label:"Next Due Date",value:'<span class="'+dueCls+'">'+dueVal+'</span>'+daysText});
+        pairs.push({label:"Next Due Date",value:'<span class="'+dueCls+'">'+dueVal+'</span>'+daysText,style:cardStyle});
     }
     if(C.price) pairs.push({label:"Recurring Amount",value:esc(C.price)+(C.billingCycle?' <span style="font-size:11px;color:var(--text-muted,#9ca3af);font-weight:400">('+esc(C.billingCycle)+')</span>':'')});
     if(C.paymentMethod) pairs.push({label:"Payment Method",value:esc(C.paymentMethod.charAt(0).toUpperCase()+C.paymentMethod.slice(1))});
@@ -953,25 +957,41 @@ function buildOverviewPane(){
     if(pairs.length){
         html+='<div class="bt-ov-grid">';
         pairs.forEach(function(p){
-            html+='<div class="bt-ov-card"><div class="bt-ov-label">'+esc(p.label)+'</div><div class="bt-ov-value">'+p.value+'</div></div>';
+            html+='<div class="bt-ov-card"'+(p.style?' style="'+p.style+'"':'')+'><div class="bt-ov-label">'+esc(p.label)+'</div><div class="bt-ov-value">'+p.value+'</div></div>';
         });
         html+='</div>';
     }
 
-    /* Nameservers accordion */
-    if(C.nsEnabled&&C.ns&&C.ns.ns&&C.ns.ns.length){
-        html+='<div class="bt-accordion" id="btAccNs"><div class="bt-accordion-head" onclick="this.parentElement.classList.toggle(\'open\')"><div class="bt-accordion-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div class="bt-accordion-info"><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div><svg class="bt-accordion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div><div class="bt-accordion-body"><div class="bt-list" style="padding:4px 10px 10px">';
+    /* cPanel details on overview */
+    if(C.username||C.serverName||C.serverIp){
+        html+='<div style="margin-top:16px"><div class="bt-ov-grid">';
+        if(C.username) html+='<div class="bt-ov-card"><div class="bt-ov-label">cPanel Username</div><div class="bt-ov-value" style="font-family:SFMono-Regular,Consolas,monospace;font-size:13px">'+esc(C.username)+'</div></div>';
+        if(C.serverName) html+='<div class="bt-ov-card"><div class="bt-ov-label">Server</div><div class="bt-ov-value">'+esc(C.serverName)+'</div></div>';
+        if(C.serverIp) html+='<div class="bt-ov-card"><div class="bt-ov-label">IP Address</div><div class="bt-ov-value" style="font-family:SFMono-Regular,Consolas,monospace;font-size:13px">'+esc(C.serverIp)+'</div></div>';
+        html+='</div></div>';
+    }
+
+    /* Addons are now on their own page */
+
+    pane.innerHTML=html;
+    pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
+}
+
+/* ─── Nameservers Pane ─── */
+function buildNameserversPane(){
+    var pane=$("bt-pane-nameservers");if(!pane) return;
+    var html='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div></div></div><div class="bt-list" style="padding:4px 10px 10px">';
+    if(C.ns&&C.ns.ns&&C.ns.ns.length){
         C.ns.ns.forEach(function(ns,i){
             html+='<div class="bt-row"><div class="bt-row-icon ns">NS'+(i+1)+'</div><div class="bt-row-info"><span class="bt-row-name mono">'+esc(ns)+'</span></div><button type="button" class="bt-copy" data-copy="'+esc(ns)+'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>';
         });
         if(C.ns.ip){
             html+='<div class="bt-row"><div class="bt-row-icon ip">IP</div><div class="bt-row-info"><span class="bt-row-name mono">'+esc(C.ns.ip)+'</span></div><button type="button" class="bt-copy" data-copy="'+esc(C.ns.ip)+'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>';
         }
-        html+='</div></div></div>';
+    } else {
+        html+='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg><span>No nameservers configured</span></div>';
     }
-
-    /* Addons are now on their own page */
-
+    html+='</div></div>';
     pane.innerHTML=html;
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
 }
@@ -1421,13 +1441,14 @@ function loadPhpVersions(){
     var list=$("bt-php-list");if(!list) return;
     list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP versions...</span></div>';
     post({action:"php_get_versions"},function(r){
-        if(!r.success){list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load PHP versions")+'</span></div>';return;}
+        if(!r.success){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>'+(r.message||"Failed to load PHP versions")+'</span></div>';return;}
         phpInstalledVersions=r.installed||[];
         var vhosts=r.vhosts||[];
         var defaultVer=r["default"]||"";
         var sub=document.querySelector(".bt-php-subtitle");
         if(sub) sub.textContent=phpInstalledVersions.length+" version"+(phpInstalledVersions.length!==1?"s":"")+" available"+(defaultVer?" · Default: "+defaultVer:"");
-        if(!vhosts.length&&!phpInstalledVersions.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>PHP version management not available</span></div>';return;}
+        if(!vhosts.length&&!phpInstalledVersions.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>PHP version management not available on this server</span></div>';return;}
+        /* If we have vhosts but no installed versions, show vhosts with current version only */
         var html="";
         vhosts.forEach(function(vh){
             var ver=vh.version||defaultVer||"Unknown";
@@ -1455,9 +1476,20 @@ function loadPhpVersions(){
 var logsAutoRefresh=null;
 function buildLogsPane(){
     var pane=$("bt-pane-errorlogs");if(!pane) return;
-    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div><h5>Error Logs</h5><p class="bt-logs-subtitle">Loading...</p></div></div><div class="bt-card-head-right" style="display:flex;gap:8px;align-items:center"><select id="btLogsLines" class="bt-select" style="padding:6px 10px;font-size:12px"><option value="50">50 lines</option><option value="100" selected>100 lines</option><option value="200">200 lines</option><option value="500">500 lines</option></select><button type="button" class="bt-btn-outline" id="btLogsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-logs-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading error logs...</span></div></div></div>';
+    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div><h5>Error Logs</h5><p class="bt-logs-subtitle">Loading...</p></div></div><div class="bt-card-head-right" style="display:flex;gap:8px;align-items:center"><select id="btLogsLines" class="bt-select" style="padding:6px 10px;font-size:12px"><option value="50">50 lines</option><option value="100" selected>100 lines</option><option value="200">200 lines</option><option value="500">500 lines</option></select><button type="button" class="bt-btn-outline" id="btLogsClear" style="padding:6px 12px;font-size:12px;color:#ef4444;border-color:rgba(239,68,68,.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear</button><button type="button" class="bt-btn-outline" id="btLogsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-logs-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading error logs...</span></div></div></div>';
     $("btLogsRefresh").addEventListener("click",function(){loadErrorLogs();});
     $("btLogsLines").addEventListener("change",function(){loadErrorLogs();});
+    $("btLogsClear").addEventListener("click",function(){
+        var btn=this;
+        fmConfirm("Clear Error Logs","Are you sure you want to clear the error log? This cannot be undone.",function(){
+            btnLoad(btn,"Clearing...");
+            post({action:"error_log_clear"},function(r){
+                btnDone(btn);
+                if(r.success){fmToast("Error log cleared",true);loadErrorLogs();}
+                else fmToast(r.message||"Failed to clear log",false);
+            });
+        });
+    });
 }
 
 function loadErrorLogs(){
@@ -1469,15 +1501,36 @@ function loadErrorLogs(){
         var lines=r.lines||[];
         var sub=document.querySelector(".bt-logs-subtitle");
         if(sub) sub.textContent=(r.file||"Error Log")+" · Showing "+lines.length+" of "+(r.total||lines.length)+" entries";
-        if(!lines.length){body.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>No error log entries found</span></div>';return;}
-        var html='<div class="bt-log-pre"><div class="bt-log-summary"><span style="color:#94a3b8;font-size:12px">'+lines.length+' entries</span></div><div style="padding:0 4px">';
+        if(!lines.length){body.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="color:#059669;font-weight:600">No error log entries found — all clear!</span></div>';return;}
+        /* Count by level */
+        var counts={fatal:0,error:0,warn:0,notice:0,other:0};
         lines.forEach(function(line){
-            var cls="bt-log-line";
-            var lower=line.toLowerCase();
-            if(lower.indexOf("[error]")!==-1||lower.indexOf("fatal")!==-1) cls+=" error";
-            else if(lower.indexOf("[warn")!==-1||lower.indexOf("warning")!==-1) cls+=" warning";
-            else if(lower.indexOf("[notice")!==-1||lower.indexOf("[info")!==-1) cls+=" notice";
-            html+='<div class="'+cls+'">'+esc(line)+'</div>';
+            var l=line.toLowerCase();
+            if(l.indexOf("fatal")!==-1) counts.fatal++;
+            else if(l.indexOf("[error")!==-1||l.indexOf("error]")!==-1||l.indexOf(" error ")!==-1) counts.error++;
+            else if(l.indexOf("[warn")!==-1||l.indexOf("warning")!==-1) counts.warn++;
+            else if(l.indexOf("[notice")!==-1||l.indexOf("[info")!==-1) counts.notice++;
+            else counts.other++;
+        });
+        var html='<div class="bt-log-pre"><div class="bt-log-summary">';
+        html+='<span style="color:#94a3b8;font-size:12px;font-weight:600">'+lines.length+' entries</span>';
+        if(counts.fatal) html+='<span class="bt-log-badge bt-log-badge-fatal">'+counts.fatal+' Fatal</span>';
+        if(counts.error) html+='<span class="bt-log-badge bt-log-badge-error">'+counts.error+' Error</span>';
+        if(counts.warn) html+='<span class="bt-log-badge bt-log-badge-warn">'+counts.warn+' Warning</span>';
+        if(counts.notice) html+='<span class="bt-log-badge bt-log-badge-ok">'+counts.notice+' Notice</span>';
+        html+='</div><div class="bt-log-lines">';
+        lines.forEach(function(line,idx){
+            var l=line.toLowerCase();
+            var cls="bt-log-entry bt-log-other";
+            if(l.indexOf("fatal")!==-1) cls="bt-log-entry bt-log-fatal";
+            else if(l.indexOf("[error")!==-1||l.indexOf("error]")!==-1||l.indexOf(" error ")!==-1) cls="bt-log-entry bt-log-error";
+            else if(l.indexOf("[warn")!==-1||l.indexOf("warning")!==-1) cls="bt-log-entry bt-log-warn";
+            else if(l.indexOf("[notice")!==-1||l.indexOf("[info")!==-1) cls="bt-log-entry bt-log-info";
+            /* Try to extract timestamp */
+            var ts="";var msg=line;
+            var tsMatch=line.match(/^\[([^\]]+)\]/);
+            if(tsMatch){ts=tsMatch[1];msg=line.substring(tsMatch[0].length).trim();}
+            html+='<div class="'+cls+'"><span class="bt-log-num">'+(idx+1)+'</span><span class="bt-log-level-dot"></span>'+(ts?'<span class="bt-log-ts">'+esc(ts)+'</span>':'')+'<span class="bt-log-msg">'+esc(msg)+'</span></div>';
         });
         html+='</div></div>';
         body.innerHTML=html;
