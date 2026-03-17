@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.68");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.69");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -1566,37 +1566,50 @@ function injectStyles10(){
     var s=document.createElement("style");s.id="bt-injected-styles10";
     s.textContent=[
 '.bt-addons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:16px}',
-'.bt-addon-card{background:var(--bt-card-bg,#fff);border:1px solid var(--bt-border,#e5e7eb);border-radius:12px;padding:20px;transition:box-shadow .2s,border-color .2s}',
+'.bt-addon-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:20px;transition:box-shadow .2s,border-color .2s}',
 '.bt-addon-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:#d1d5db}',
 '.bt-addon-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}',
 '.bt-addon-card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
-'.bt-addon-card-title{font-size:15px;font-weight:600;color:var(--bt-text,#111827);line-height:1.3}',
-'.bt-addon-card-desc{font-size:13px;color:var(--bt-text-secondary,#6b7280);line-height:1.6;margin-bottom:14px}',
+'.bt-addon-card-title{font-size:15px;font-weight:600;color:var(--heading-color,#111827);line-height:1.3}',
+'.bt-addon-card-desc{font-size:13px;color:var(--text-muted,#6b7280);line-height:1.6;margin-bottom:14px}',
 '.bt-addon-card-desc p{margin:0 0 8px}',
 '.bt-addon-card-desc ul,.bt-addon-card-desc ol{margin:4px 0 8px 16px;padding:0}',
 '.bt-addon-card-desc li{margin-bottom:4px}',
-'.bt-addon-card-desc strong{color:var(--bt-text,#111827)}',
-'.bt-addon-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:14px;border-top:1px solid var(--bt-border,#e5e7eb)}',
-'.bt-addon-price{font-size:15px;font-weight:600;color:var(--bt-text,#111827)}',
+'.bt-addon-card-desc strong{color:var(--heading-color,#111827)}',
+'.bt-addon-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:14px;border-top:1px solid var(--border-color,#e5e7eb)}',
+'.bt-addon-card .bt-addon-card-price{font-size:15px;font-weight:600;color:var(--heading-color,#111827)}',
 '.bt-addon-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500}',
 '.bt-addon-badge.active{background:rgba(5,150,105,.1);color:#059669}',
 '.bt-addon-badge.pending{background:rgba(234,179,8,.1);color:#ca8a04}',
 '.bt-addon-badge.suspended{background:rgba(239,68,68,.1);color:#ef4444}',
-'.bt-addon-badge.cancelled{background:rgba(107,114,128,.1);color:#6b7280}',
-'.bt-addon-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;text-decoration:none;transition:background .15s}',
-'.bt-addon-btn-primary{background:#0a5ed3;color:#fff}',
-'.bt-addon-btn-primary:hover{background:#0850b5}',
-'.bt-addon-btn-outline{background:transparent;border:1px solid var(--bt-border,#d1d5db);color:var(--bt-text,#374151)}',
-'.bt-addon-btn-outline:hover{background:var(--bt-hover,#f9fafb)}',
-'.bt-addons-section{margin-bottom:28px}',
-'.bt-addons-section-title{font-size:16px;font-weight:600;color:var(--bt-text,#111827);margin-bottom:4px}',
-'.bt-addons-section-sub{font-size:13px;color:var(--bt-text-secondary,#6b7280);margin-bottom:0}',
-'.bt-addons-empty{text-align:center;padding:40px 20px;color:var(--bt-text-secondary,#9ca3af)}',
+'.bt-addon-badge.cancelled,.bt-addon-badge.terminated{background:rgba(107,114,128,.1);color:#6b7280}',
+/* Addons page buttons — scoped to avoid conflict with carousel .bt-addon-btn */
+'.bt-addons-page-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;border:none}',
+'.bt-addons-page-btn.primary{background:#0a5ed3;color:#fff}',
+'.bt-addons-page-btn.primary:hover{background:#0850b5;color:#fff;text-decoration:none}',
+'.bt-addons-page-btn.primary svg{stroke:#fff}',
+'.bt-addons-page-btn.outline{background:var(--card-bg,#fff);border:1px solid var(--border-color,#d1d5db);color:var(--heading-color,#374151)}',
+'.bt-addons-page-btn.outline:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04);text-decoration:none}',
+'.bt-addons-section-wrap{margin-bottom:28px}',
+'.bt-addons-section-title{font-size:16px;font-weight:600;color:var(--heading-color,#111827);margin-bottom:4px}',
+'.bt-addons-section-sub{font-size:13px;color:var(--text-muted,#6b7280);margin-bottom:0}',
+'.bt-addons-empty{text-align:center;padding:40px 20px;color:var(--text-muted,#9ca3af)}',
 '.bt-addons-empty svg{margin-bottom:12px;opacity:.4}',
-'.bt-addons-loading{text-align:center;padding:60px 20px;color:var(--bt-text-secondary,#9ca3af)}',
-'.bt-config-option{background:var(--bt-card-bg,#fff);border:1px solid var(--bt-border,#e5e7eb);border-radius:10px;padding:16px;margin-bottom:12px}',
-'.bt-config-option-name{font-size:14px;font-weight:600;color:var(--bt-text,#111827);margin-bottom:8px}',
-'.bt-config-option-current{font-size:13px;color:var(--bt-text-secondary,#6b7280)}',
+'.bt-addons-loading{text-align:center;padding:60px 20px;color:var(--text-muted,#9ca3af)}',
+'.bt-config-option{background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:16px;margin-bottom:12px}',
+'.bt-config-option-name{font-size:14px;font-weight:600;color:var(--heading-color,#111827);margin-bottom:8px}',
+'.bt-config-option-current{font-size:13px;color:var(--text-muted,#6b7280)}',
+'.bt-config-option-current strong{color:var(--heading-color,#111827)}',
+/* Dark mode for addons page */
+'[data-theme="dark"] .bt-addon-card,.dark-mode .bt-addon-card{background:var(--card-bg,#1f2937);border-color:var(--border-color,#374151)}',
+'[data-theme="dark"] .bt-addon-card:hover,.dark-mode .bt-addon-card:hover{border-color:#4b5563;box-shadow:0 4px 12px rgba(0,0,0,.2)}',
+'[data-theme="dark"] .bt-addon-card-title,.dark-mode .bt-addon-card-title{color:var(--heading-color,#e5e7eb)}',
+'[data-theme="dark"] .bt-addon-card-desc,.dark-mode .bt-addon-card-desc{color:var(--text-muted,#9ca3af)}',
+'[data-theme="dark"] .bt-addon-card-desc strong,.dark-mode .bt-addon-card-desc strong{color:var(--heading-color,#e5e7eb)}',
+'[data-theme="dark"] .bt-addon-card-footer,.dark-mode .bt-addon-card-footer{border-top-color:var(--border-color,#374151)}',
+'[data-theme="dark"] .bt-addon-card .bt-addon-card-price,.dark-mode .bt-addon-card .bt-addon-card-price{color:var(--heading-color,#e5e7eb)}',
+'[data-theme="dark"] .bt-config-option,.dark-mode .bt-config-option{background:var(--input-bg,#111827);border-color:var(--border-color,#374151)}',
+'[data-theme="dark"] .bt-addons-page-btn.outline,.dark-mode .bt-addons-page-btn.outline{background:var(--card-bg,#1f2937);border-color:var(--border-color,#4b5563);color:var(--heading-color,#d1d5db)}',
 '@media(max-width:640px){.bt-addons-grid{grid-template-columns:1fr}}',
     ].join('\n');
     document.head.appendChild(s);
@@ -1605,7 +1618,28 @@ function injectStyles10(){
 /* ─── Build Addons Page ─── */
 function buildAddonsPageInto(container){
     injectStyles10();
-    container.innerHTML='<div class="bt-card" style="padding:24px"><div class="bt-addons-loading"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="bt-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><div style="margin-top:8px">Loading addons...</div></div></div>';
+    container.innerHTML='<div class="bt-card" style="padding:24px"><div class="bt-addons-loading"><div class="bt-spinner"></div><div style="margin-top:12px">Loading addons...</div></div></div>';
+
+    /* Sanitize HTML: allow safe tags only */
+    function sanitizeDesc(html){
+        if(!html) return '';
+        var tmp=document.createElement('div');
+        tmp.innerHTML=html;
+        /* Remove script, style, iframe, object, embed, form, input tags */
+        var dangerous=tmp.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,select,button,link,meta');
+        for(var i=0;i<dangerous.length;i++) dangerous[i].parentNode.removeChild(dangerous[i]);
+        /* Remove event handlers from all elements */
+        tmp.querySelectorAll('*').forEach(function(el){
+            var attrs=el.attributes;
+            for(var j=attrs.length-1;j>=0;j--){
+                var name=attrs[j].name.toLowerCase();
+                if(name.indexOf('on')===0||name==='style'&&attrs[j].value.indexOf('expression')!==-1) el.removeAttribute(name);
+            }
+            /* Remove javascript: hrefs */
+            if(el.tagName==='A'&&el.href&&el.href.toLowerCase().indexOf('javascript:')===0) el.removeAttribute('href');
+        });
+        return tmp.innerHTML;
+    }
 
     post({action:'get_addons'},function(r){
         if(!r.success){
@@ -1619,10 +1653,10 @@ function buildAddonsPageInto(container){
 
         /* Active Addons Section */
         if(activeAddons.length>0){
-            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Active Addons</div><p class="bt-addons-section-sub">Addons currently active on this service</p>';
+            html+='<div class="bt-addons-section-wrap"><div class="bt-addons-section-title">Active Addons</div><p class="bt-addons-section-sub">Addons currently active on this service</p>';
             html+='<div class="bt-addons-grid">';
             activeAddons.forEach(function(a){
-                var statusClass=a.status.toLowerCase();
+                var statusClass=(a.status||'').toLowerCase().replace(/[^a-z]/g,'');
                 var iconBg='rgba(5,150,105,.1)';var iconColor='#059669';
                 if(statusClass==='suspended'){iconBg='rgba(239,68,68,.1)';iconColor='#ef4444';}
                 else if(statusClass==='pending'){iconBg='rgba(234,179,8,.1)';iconColor='#ca8a04';}
@@ -1630,14 +1664,13 @@ function buildAddonsPageInto(container){
                 html+='<div class="bt-addon-card">';
                 html+='<div class="bt-addon-card-head"><div style="flex:1"><div class="bt-addon-card-title">'+esc(a.name)+'</div></div>';
                 html+='<div class="bt-addon-card-icon" style="background:'+iconBg+';color:'+iconColor+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div></div>';
-                if(a.description){
-                    html+='<div class="bt-addon-card-desc">'+a.description+'</div>';
-                }
+                var safeDesc=sanitizeDesc(a.description);
+                if(safeDesc) html+='<div class="bt-addon-card-desc">'+safeDesc+'</div>';
                 html+='<div class="bt-addon-card-footer">';
                 html+='<div><span class="bt-addon-badge '+statusClass+'">'+esc(a.status)+'</span></div>';
                 html+='<div style="text-align:right">';
-                if(a.price) html+='<div class="bt-addon-price">'+esc(a.price)+'</div>';
-                if(a.nextDue&&a.nextDue!=='0000-00-00') html+='<div style="font-size:12px;color:var(--bt-text-secondary,#9ca3af)">Due: '+esc(a.nextDue)+'</div>';
+                if(a.price) html+='<div class="bt-addon-card-price">'+esc(a.price)+'</div>';
+                if(a.nextDue&&a.nextDue!=='0000-00-00') html+='<div style="font-size:12px;color:var(--text-muted,#9ca3af)">Due: '+esc(a.nextDue)+'</div>';
                 html+='</div></div></div>';
             });
             html+='</div></div>';
@@ -1646,19 +1679,18 @@ function buildAddonsPageInto(container){
         /* Available Addons Section */
         var notYetActive=availableAddons.filter(function(a){return !a.alreadyActive;});
         if(notYetActive.length>0){
-            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Available Addons</div><p class="bt-addons-section-sub">Additional services you can add to your hosting</p>';
+            html+='<div class="bt-addons-section-wrap"><div class="bt-addons-section-title">Available Addons</div><p class="bt-addons-section-sub">Additional services you can add to your hosting</p>';
             html+='<div class="bt-addons-grid">';
             notYetActive.forEach(function(a){
                 html+='<div class="bt-addon-card">';
                 html+='<div class="bt-addon-card-head"><div style="flex:1"><div class="bt-addon-card-title">'+esc(a.name)+'</div></div>';
                 html+='<div class="bt-addon-card-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>';
-                if(a.description){
-                    html+='<div class="bt-addon-card-desc">'+a.description+'</div>';
-                }
+                var safeDesc2=sanitizeDesc(a.description);
+                if(safeDesc2) html+='<div class="bt-addon-card-desc">'+safeDesc2+'</div>';
                 html+='<div class="bt-addon-card-footer">';
-                if(a.price) html+='<div class="bt-addon-price">'+esc(a.price)+'</div>';
+                if(a.price) html+='<div class="bt-addon-card-price">'+esc(a.price)+'</div>';
                 else html+='<div></div>';
-                html+='<a href="cart.php?a=add&aid='+a.id+'&serviceid='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Order</a>';
+                html+='<a href="cart.php?a=add&aid='+a.id+'&serviceid='+C.serviceId+'" class="bt-addons-page-btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Order</a>';
                 html+='</div></div>';
             });
             html+='</div></div>';
@@ -1666,7 +1698,7 @@ function buildAddonsPageInto(container){
 
         /* Configurable Options Section */
         if(configOptions.length>0){
-            html+='<div class="bt-addons-section"><div class="bt-addons-section-title">Configurable Options</div><p class="bt-addons-section-sub">Current configuration for this service</p>';
+            html+='<div class="bt-addons-section-wrap"><div class="bt-addons-section-title">Configurable Options</div><p class="bt-addons-section-sub">Current configuration for this service</p><div style="margin-top:12px">';
             configOptions.forEach(function(opt){
                 html+='<div class="bt-config-option"><div class="bt-config-option-name">'+esc(opt.name)+'</div>';
                 if(opt.choices&&opt.choices.length>0){
@@ -1681,7 +1713,7 @@ function buildAddonsPageInto(container){
                 }
                 html+='</div>';
             });
-            html+='<div style="margin-top:12px"><a href="upgrade.php?type=configoptions&id='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Change Options</a></div>';
+            html+='</div><div style="margin-top:12px"><a href="upgrade.php?type=configoptions&id='+C.serviceId+'" class="bt-addons-page-btn outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Change Options</a></div>';
             html+='</div>';
         }
 
@@ -1691,8 +1723,8 @@ function buildAddonsPageInto(container){
         }
 
         /* Upgrade/Downgrade link */
-        html+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--bt-border,#e5e7eb);display:flex;gap:10px;flex-wrap:wrap">';
-        html+='<a href="upgrade.php?type=package&id='+C.serviceId+'" class="bt-addon-btn bt-addon-btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Upgrade / Downgrade Plan</a>';
+        html+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-color,#e5e7eb);display:flex;gap:10px;flex-wrap:wrap">';
+        html+='<a href="upgrade.php?type=package&id='+C.serviceId+'" class="bt-addons-page-btn outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Upgrade / Downgrade Plan</a>';
         html+='</div>';
 
         container.innerHTML='<div class="bt-card" style="padding:24px">'+html+'</div>';

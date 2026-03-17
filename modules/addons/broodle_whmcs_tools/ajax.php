@@ -123,7 +123,7 @@ if ($action === 'get_addons') {
                 'id' => $ha->id,
                 'addonId' => $ha->addonid,
                 'name' => $name,
-                'description' => $addon ? ($addon->description ?? '') : '',
+                'description' => $addon ? strip_tags($addon->description ?? '', '<p><br><ul><ol><li><strong><b><em><i><a><span><div><h1><h2><h3><h4><h5><h6>') : '',
                 'status' => $status,
                 'nextDue' => $nextDue,
                 'price' => $priceStr,
@@ -144,6 +144,9 @@ if ($action === 'get_addons') {
               ->orWhere('packages', $productId);
         })
         ->where('showorder', 1)
+        ->where(function ($q) {
+            $q->where('retired', 0)->orWhereNull('retired');
+        })
         ->get();
 
     foreach ($allAddons as $addon) {
@@ -175,7 +178,7 @@ if ($action === 'get_addons') {
         $availableAddons[] = [
             'id' => $addon->id,
             'name' => $addon->name,
-            'description' => $addon->description ?? '',
+            'description' => strip_tags($addon->description ?? '', '<p><br><ul><ol><li><strong><b><em><i><a><span><div><h1><h2><h3><h4><h5><h6>'),
             'price' => $priceStr,
             'billingCycle' => $addon->billingcycle ?? '',
             'alreadyActive' => $alreadyActive,
