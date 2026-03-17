@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.77");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.78");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -2458,47 +2458,160 @@ function fmOpenFile(filePath){
 
 /* (fmSaveFile and fmCloseEditor removed — editor is now a popup modal in fmOpenFile) */
 
+/* ─── FM: Helper to build a table row HTML for a file object ─── */
+function fmBuildRow(f){
+    var isDir=f.type==="dir";
+    var sel=fmState.selected.indexOf(f.path)!==-1;
+    var html='<tr data-fmpath="'+esc(f.path)+'" data-fmtype="'+f.type+'"'+(sel?' class="selected"':'')+'>';
+    html+='<td><input type="checkbox" class="fm-check fm-item-check" data-fmpath="'+esc(f.path)+'"'+(sel?' checked':'')+'></td>';
+    html+='<td><div class="fm-name-cell" data-fmopen="'+esc(f.path)+'" data-fmtype="'+f.type+'"><div class="fm-icon">'+fmFileIcon(f)+'</div><div class="fm-fname">'+esc(f.name)+'</div></div></td>';
+    html+='<td class="fm-size">'+(isDir?"-":fmFormatSize(f.size))+'</td>';
+    html+='<td class="fm-perms">'+esc(f.perms||"")+'</td>';
+    html+='<td class="fm-date">'+esc(fmFormatDate(f.mtime))+'</td>';
+    html+='</tr>';
+    return html;
+}
+
+/* ─── FM: Bind events on a single new row ─── */
+function fmBindRowEvents(tr){
+    var nameCell=tr.querySelector(".fm-name-cell[data-fmopen]");
+    if(nameCell) nameCell.addEventListener("click",function(){
+        var p=this.getAttribute("data-fmopen");var t=this.getAttribute("data-fmtype");
+        if(t==="dir") fmLoadDir(p); else fmOpenFile(p);
+    });
+    var cb=tr.querySelector(".fm-item-check");
+    if(cb) cb.addEventListener("change",function(){
+        var p=this.getAttribute("data-fmpath");var row=this.closest("tr");
+        if(this.checked){if(fmState.selected.indexOf(p)===-1) fmState.selected.push(p);if(row) row.classList.add("selected");}
+        else{fmState.selected=fmState.selected.filter(function(s){return s!==p;});if(row) row.classList.remove("selected");}
+        fmUpdateToolbarState();
+    });
+    tr.addEventListener("contextmenu",function(e){
+        e.preventDefault();
+        var p=tr.getAttribute("data-fmpath");var t=tr.getAttribute("data-fmtype");
+        if(fmState.selected.indexOf(p)===-1){fmState.selected=[p];fmRenderFiles();}
+        fmShowContextMenu(e.clientX,e.clientY,p,t);
+    });
+}
+
+/* ─── FM: Insert a new row into the table for a newly created item ─── */
+function fmInsertRow(fileObj){
+    /* Add to fmState.files */
+    fmState.files.push(fileObj);
+    /* Find the tbody */
+    var listWrap=$("fm-list-wrap");if(!listWrap) return;
+    var tbody=listWrap.querySelector(".fm-table tbody");
+    if(!tbody){/* Table doesn't exist yet (was empty), re-render */fmRenderFiles();return;}
+    var tmp=document.createElement("tbody");
+    tmp.innerHTML=fmBuildRow(fileObj);
+    var newTr=tmp.firstElementChild;
+    /* Insert in sorted position: dirs first, then files, alphabetical */
+    var rows=tbody.querySelectorAll("tr[data-fmpath]");
+    var inserted=false;
+    for(var i=0;i<rows.length;i++){
+        var rType=rows[i].getAttribute("data-fmtype");
+        var rPath=rows[i].getAttribute("data-fmpath");
+        var rName=(rPath||"").split("/").pop().toLowerCase();
+        var nName=fileObj.name.toLowerCase();
+        if(fileObj.type==="dir"&&rType!=="dir"){tbody.insertBefore(newTr,rows[i]);inserted=true;break;}
+        if(fileObj.type==="dir"&&rType==="dir"&&nName<rName){tbody.insertBefore(newTr,rows[i]);inserted=true;break;}
+        if(fileObj.type!=="dir"&&rType!=="dir"&&nName<rName){tbody.insertBefore(newTr,rows[i]);inserted=true;break;}
+    }
+    if(!inserted) tbody.appendChild(newTr);
+    fmBindRowEvents(newTr);
+}
+
+/* ─── FM: Remove rows from table by path ─── */
+function fmRemoveRows(paths){
+    var listWrap=$("fm-list-wrap");if(!listWrap) return;
+    paths.forEach(function(p){
+        var tr=listWrap.querySelector('tr[data-fmpath="'+CSS.escape(p)+'"]');
+        if(tr&&tr.parentNode) tr.parentNode.removeChild(tr);
+        /* Remove from fmState.files */
+        fmState.files=fmState.files.filter(function(f){return f.path!==p;});
+        fmState.selected=fmState.selected.filter(function(s){return s!==p;});
+    });
+    fmUpdateToolbarState();
+    /* If no files left, show empty state */
+    if(!fmState.files.length){fmRenderFiles();}
+}
+
 /* ─── FM: Create File ─── */
 function fmCreateFile(name){
     post({action:"fm_create_file",dir:fmState.dir,name:name},function(r){
-        fmLoadDir(fmState.dir);
-        if(!r.success) fmToast(r.message||"Failed to create file",false);
+        if(r.success){
+            fmToast("File created",true);
+            fmInsertRow({name:name,type:"file",size:0,mtime:"",perms:"0644",rawperms:"0644",mime:"",path:fmState.dir.replace(/\/+$/,"")+"/"+name});
+        } else fmToast(r.message||"Failed to create file",false);
     });
 }
 
 /* ─── FM: Create Folder ─── */
 function fmCreateFolder(name){
     post({action:"fm_create_folder",dir:fmState.dir,name:name},function(r){
-        fmLoadDir(fmState.dir);
-        if(!r.success) fmToast(r.message||"Failed to create folder",false);
+        if(r.success){
+            fmToast("Folder created",true);
+            fmInsertRow({name:name,type:"dir",size:0,mtime:"",perms:"0755",rawperms:"0755",mime:"",path:fmState.dir.replace(/\/+$/,"")+"/"+name});
+        } else fmToast(r.message||"Failed to create folder",false);
     });
 }
 
 /* ─── FM: Delete ─── */
 function fmConfirmDelete(){
-    var items=fmState.selected;
+    var items=fmState.selected.slice();
+    if(!items.length) return;
     var names=items.map(function(p){return p.split("/").pop();}).join(", ");
     fmConfirm("Delete","Delete "+items.length+" item(s)?\n\n"+names,function(){
         var tid=btProgress.add("Delete "+items.length+" item(s)","Deleting files...");
-        post({action:"fm_delete",items:JSON.stringify(items)},function(r){
-            fmLoadDir(fmState.dir);
-            if(r.success) btProgress.update(tid,"success","Deleted successfully");
-            else{btProgress.update(tid,"error",r.message||"Failed to delete");fmToast(r.message||"Failed to delete",false);}
-        });
+        var itemsJson=JSON.stringify(items);
+        /* Use XMLHttpRequest directly to ensure items is sent as a proper string */
+        var fd=new FormData();
+        fd.append("action","fm_delete");
+        fd.append("service_id",C.serviceId);
+        fd.append("items",itemsJson);
+        var x=new XMLHttpRequest();
+        x.open("POST",ajaxUrl,true);
+        x.onload=function(){
+            try{var r=JSON.parse(x.responseText);}catch(e){var r={success:false,message:"Invalid response"};}
+            if(r.success){
+                btProgress.update(tid,"success","Deleted successfully");
+                fmToast("Deleted successfully",true);
+                fmRemoveRows(items);
+            } else{
+                btProgress.update(tid,"error",r.message||"Failed to delete");
+                fmToast(r.message||"Failed to delete",false);
+            }
+        };
+        x.onerror=function(){btProgress.update(tid,"error","Network error");fmToast("Network error",false);};
+        x.send(fd);
     });
 }
 
 /* ─── FM: Rename ─── */
 function fmRename(oldPath,newName){
     post({action:"fm_rename",old:oldPath,new_name:newName},function(r){
-        fmLoadDir(fmState.dir);
-        if(!r.success) fmToast(r.message||"Failed to rename",false);
+        if(r.success){
+            fmToast("Renamed",true);
+            var listWrap=$("fm-list-wrap");
+            var tr=listWrap?listWrap.querySelector('tr[data-fmpath="'+CSS.escape(oldPath)+'"]'):null;
+            var newPath=oldPath.substring(0,oldPath.lastIndexOf("/")+1)+newName;
+            if(tr){
+                tr.setAttribute("data-fmpath",newPath);
+                var fname=tr.querySelector(".fm-fname");if(fname) fname.textContent=newName;
+                var nameCell=tr.querySelector(".fm-name-cell[data-fmopen]");if(nameCell) nameCell.setAttribute("data-fmopen",newPath);
+                var cb=tr.querySelector(".fm-item-check");if(cb) cb.setAttribute("data-fmpath",newPath);
+            }
+            /* Update fmState */
+            var fi=fmState.files.find(function(f){return f.path===oldPath;});
+            if(fi){fi.path=newPath;fi.name=newName;}
+            fmState.selected=fmState.selected.map(function(s){return s===oldPath?newPath:s;});
+        } else fmToast(r.message||"Failed to rename",false);
     });
 }
 
 /* ─── FM: Copy/Move ─── */
 function fmCopyMove(action,items,dest){
-    var done=0;var errors=[];
+    var done=0;var errors=[];var isCopy=action==="fm_copy";
     items.forEach(function(src){
         var destPath=dest.replace(/\/+$/,"")+"/"+src.split("/").pop();
         post({action:action,source:src,dest:destPath},function(r){
@@ -2506,7 +2619,13 @@ function fmCopyMove(action,items,dest){
             if(!r.success) errors.push(r.message||"Failed");
             if(done===items.length){
                 if(errors.length) fmToast(errors.join("; "),false);
-                fmLoadDir(fmState.dir);
+                else fmToast((isCopy?"Copied":"Moved")+" successfully",true);
+                if(!isCopy){
+                    /* Move: remove source rows from current view */
+                    fmRemoveRows(items);
+                }
+                /* If dest is current dir, reload to show new items */
+                if(dest===fmState.dir) fmLoadDir(fmState.dir);
             }
         });
     });
@@ -2515,13 +2634,18 @@ function fmCopyMove(action,items,dest){
 /* ─── FM: Upload ─── */
 function fmUploadFiles(fileList){
     var bar=$("fm-upload-bar");var fill=$("fm-upload-fill");var pct=$("fm-upload-pct");var uname=$("fm-upload-name");
-    var total=fileList.length;var done=0;var errors=[];
+    var total=fileList.length;var done=0;var errors=[];var uploadedNames=[];
     if(bar) bar.classList.add("active");
     function uploadNext(idx){
         if(idx>=total){
             if(bar) setTimeout(function(){bar.classList.remove("active");},1500);
             if(errors.length) fmToast("Upload errors: "+errors.join("; "),false);
-            fmLoadDir(fmState.dir);
+            else fmToast("Uploaded "+total+" file(s)",true);
+            /* Insert rows for uploaded files */
+            uploadedNames.forEach(function(name){
+                var exists=fmState.files.find(function(f){return f.name===name;});
+                if(!exists) fmInsertRow({name:name,type:"file",size:0,mtime:"",perms:"0644",rawperms:"0644",mime:"",path:fmState.dir.replace(/\/+$/,"")+"/"+name});
+            });
             return;
         }
         var f=fileList[idx];
@@ -2545,7 +2669,7 @@ function fmUploadFiles(fileList){
             var overallPct=Math.round(done/total*100);
             if(fill) fill.style.width=overallPct+"%";
             if(pct) pct.textContent=done+"/"+total;
-            try{var r=JSON.parse(x.responseText);if(!r.success) errors.push(f.name+": "+(r.message||"Failed"));}catch(e){errors.push(f.name+": Invalid response");}
+            try{var r=JSON.parse(x.responseText);if(r.success) uploadedNames.push(f.name); else errors.push(f.name+": "+(r.message||"Failed"));}catch(e){errors.push(f.name+": Invalid response");}
             uploadNext(idx+1);
         };
         x.onerror=function(){done++;errors.push(f.name+": Network error");uploadNext(idx+1);};
@@ -2567,9 +2691,10 @@ function fmCompress(archiveName){
     var dest=fmState.dir.replace(/\/+$/,"")+"/"+archiveName;
     var tid=btProgress.add("Compress to "+archiveName,"Compressing files...");
     post({action:"fm_compress",items:JSON.stringify(fmState.selected),dest:dest},function(r){
-        fmLoadDir(fmState.dir);
-        if(r.success){btProgress.update(tid,"success","Compressed successfully");fmToast("Compressed successfully",true);}
-        else{btProgress.update(tid,"error",r.message||"Failed to compress");fmToast(r.message||"Failed to compress",false);}
+        if(r.success){
+            btProgress.update(tid,"success","Compressed successfully");fmToast("Compressed successfully",true);
+            fmInsertRow({name:archiveName,type:"file",size:0,mtime:"",perms:"0644",rawperms:"0644",mime:"application/zip",path:dest});
+        } else{btProgress.update(tid,"error",r.message||"Failed to compress");fmToast(r.message||"Failed to compress",false);}
     });
 }
 
@@ -2578,9 +2703,11 @@ function fmExtract(filePath,dest){
     var fileName=filePath.split("/").pop();
     var tid=btProgress.add("Extract "+fileName,"Extracting archive...");
     post({action:"fm_extract",file:filePath,dest:dest},function(r){
-        fmLoadDir(fmState.dir);
-        if(r.success){btProgress.update(tid,"success","Extracted successfully");fmToast("Extracted successfully",true);}
-        else{btProgress.update(tid,"error",r.message||"Failed to extract");fmToast(r.message||"Failed to extract",false);}
+        if(r.success){
+            btProgress.update(tid,"success","Extracted successfully");fmToast("Extracted successfully",true);
+            /* Extraction creates many files — reload if extracting to current dir */
+            if(dest===fmState.dir||dest===fmState.dir.replace(/\/+$/,"")) fmLoadDir(fmState.dir);
+        } else{btProgress.update(tid,"error",r.message||"Failed to extract");fmToast(r.message||"Failed to extract",false);}
     });
 }
 
@@ -2661,8 +2788,15 @@ function fmPromptPerms(){
     fmPrompt("Change Permissions","Enter permissions (e.g. 0755):",currentPerms,function(perms){
         if(!perms) return;
         post({action:"fm_permissions",file:filePath,perms:perms},function(r){
-            fmLoadDir(fmState.dir);
-            if(!r.success) fmToast(r.message||"Failed to change permissions",false);
+            if(r.success){
+                fmToast("Permissions updated",true);
+                /* Update in-place */
+                var listWrap=$("fm-list-wrap");
+                var tr=listWrap?listWrap.querySelector('tr[data-fmpath="'+CSS.escape(filePath)+'"]'):null;
+                if(tr){var permCell=tr.querySelector(".fm-perms");if(permCell) permCell.textContent=perms;}
+                var fi=fmState.files.find(function(f){return f.path===filePath;});
+                if(fi){fi.perms=perms;fi.rawperms=perms;}
+            } else fmToast(r.message||"Failed to change permissions",false);
         });
     });
 }

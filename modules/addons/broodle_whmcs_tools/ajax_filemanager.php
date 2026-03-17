@@ -157,7 +157,16 @@ case 'fm_create_folder':
 case 'fm_delete':
     $items = isset($_POST['items']) ? $_POST['items'] : '';
     if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); break; }
-    $itemList = json_decode($items, true);
+    /* Handle both JSON string and array (FormData may send as string or array) */
+    if (is_array($items)) {
+        $itemList = $items;
+    } else {
+        $itemList = json_decode(stripslashes($items), true);
+        if (!is_array($itemList)) {
+            /* Try without stripslashes */
+            $itemList = json_decode($items, true);
+        }
+    }
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid items']); break; }
     $errors = [];
     foreach ($itemList as $item) {
@@ -271,7 +280,12 @@ case 'fm_compress':
     $items = isset($_POST['items']) ? $_POST['items'] : '';
     $dest = isset($_POST['dest']) ? trim($_POST['dest']) : '';
     if (!$items || !$dest) { echo json_encode(['success' => false, 'message' => 'Missing parameters']); break; }
-    $itemList = json_decode($items, true);
+    if (is_array($items)) {
+        $itemList = $items;
+    } else {
+        $itemList = json_decode(stripslashes($items), true);
+        if (!is_array($itemList)) $itemList = json_decode($items, true);
+    }
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid']); break; }
     // Use UAPI Fileman::save_file_content won't work for compress — use API2 fileop
     // API2 fileop compress: sourcefiles is comma-separated list, destfiles is the archive name
