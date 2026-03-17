@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.84');
+define('BROODLE_TOOLS_VERSION', '3.10.85');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -64,6 +64,7 @@ function broodle_whmcs_tools_activate()
             'tweak_php_version'     => '1',
             'tweak_error_logs'      => '1',
             'tweak_file_manager'    => '1',
+            'tweak_analytics'       => '1',
             'tweak_upgrade_list_layout' => '0',
             'tweak_manage_v2_dropdown' => '1',
             'tweak_manage_v2_banner'   => '1',
@@ -216,6 +217,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_php_version',
             'tweak_error_logs',
             'tweak_file_manager',
+            'tweak_analytics',
             'tweak_upgrade_list_layout',
             'tweak_manage_v2_dropdown',
             'tweak_manage_v2_banner',
@@ -289,6 +291,7 @@ function broodle_tools_render_admin($vars, $settings)
     $phpVersionEnabled = !empty($settings['tweak_php_version']) && $settings['tweak_php_version'] === '1';
     $errorLogsEnabled = !empty($settings['tweak_error_logs']) && $settings['tweak_error_logs'] === '1';
     $fileManagerEnabled = !empty($settings['tweak_file_manager']) && $settings['tweak_file_manager'] === '1';
+    $analyticsEnabled = !empty($settings['tweak_analytics']) && $settings['tweak_analytics'] === '1';
     $upgradeListEnabled = !empty($settings['tweak_upgrade_list_layout']) && $settings['tweak_upgrade_list_layout'] === '1';
     $manageV2DropdownEnabled = !empty($settings['tweak_manage_v2_dropdown']) && $settings['tweak_manage_v2_dropdown'] === '1';
     $manageV2BannerEnabled = !empty($settings['tweak_manage_v2_banner']) && $settings['tweak_manage_v2_banner'] === '1';
@@ -483,6 +486,16 @@ function broodle_tools_render_admin($vars, $settings)
                         </div>
                         <label class="bt-toggle">
                             <input type="checkbox" name="tweak_file_manager" value="1" ' . ($fileManagerEnabled ? 'checked' : '') . '>
+                            <span class="bt-slider"></span>
+                        </label>
+                    </div>
+                    <div class="bt-row">
+                        <div class="bt-row-info">
+                            <h4>Analytics</h4>
+                            <p>Show bandwidth usage, visitor statistics, and log archives in a dedicated Analytics tab.</p>
+                        </div>
+                        <label class="bt-toggle">
+                            <input type="checkbox" name="tweak_analytics" value="1" ' . ($analyticsEnabled ? 'checked' : '') . '>
                             <span class="bt-slider"></span>
                         </label>
                     </div>

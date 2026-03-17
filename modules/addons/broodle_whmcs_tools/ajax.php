@@ -48,6 +48,7 @@ $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_e
 $cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
 $phpActions = ['php_get_versions', 'php_set_version'];
 $logActions = ['error_log_read', 'error_log_clear'];
+$analyticsActions = ['analytics_bandwidth', 'analytics_visitors', 'analytics_log_archives'];
 $fileActions = ['fm_list', 'fm_read', 'fm_save', 'fm_create_file', 'fm_create_folder', 'fm_delete', 'fm_rename', 'fm_copy', 'fm_move', 'fm_upload', 'fm_permissions', 'fm_compress', 'fm_extract', 'fm_search', 'fm_download_url'];
 
 // Handle addon description lookup (no cPanel needed)
@@ -432,19 +433,17 @@ if ($action === 'get_cpanel_sso_url') {
                 // Map common shortcut names to actual cPanel paths
                 $pageMap = [
                     'filemanager' => 'frontend/jupiter/filemanager/index.html',
-                    'email' => 'frontend/jupiter/mail/pops.html',
+                    'email' => 'frontend/jupiter/email_accounts/index.html',
                     'databases' => 'frontend/jupiter/sql/index.html',
                     'phpmyadmin' => '3rdparty/phpMyAdmin/index.php',
-                    'domains' => 'frontend/jupiter/addon/index.html',
-                    'subdomains' => 'frontend/jupiter/subdomain/index.html',
+                    'domains' => 'frontend/jupiter/domains/index.html',
+                    'subdomains' => 'frontend/jupiter/domains/index.html',
                     'ssl' => 'frontend/jupiter/ssl/index.html',
                     'cron' => 'frontend/jupiter/cron/index.html',
                     'dns' => 'frontend/jupiter/zone_editor/index.html',
-                    'php' => 'frontend/jupiter/multiphp/index.html',
-                    'errorlog' => 'frontend/jupiter/errors/index.html',
+                    'php' => 'frontend/jupiter/multiphp_manager/index.html',
                     'backup' => 'frontend/jupiter/backup/index.html',
-                    'metrics' => 'frontend/jupiter/visitors/index.html',
-                    'softaculous' => 'frontend/jupiter/softaculous/index.live',
+                    'rawlogs' => 'frontend/jupiter/raw/index.html',
                     'terminal' => 'frontend/jupiter/terminal/index.html',
                 ];
                 $mappedPage = $pageMap[strtolower($gotoPage)] ?? null;
@@ -480,6 +479,8 @@ if (in_array($action, $domainActions)) {
     $featureKey = 'tweak_php_version';
 } elseif (in_array($action, $logActions)) {
     $featureKey = 'tweak_error_logs';
+} elseif (in_array($action, $analyticsActions)) {
+    $featureKey = 'tweak_analytics';
 } elseif (in_array($action, $fileActions)) {
     $featureKey = 'tweak_file_manager';
 } else {
@@ -2357,6 +2358,92 @@ switch ($action) {
             }
         }
         echo json_encode(['success' => $cleared, 'message' => $cleared ? 'Error log cleared' : 'No error logs found to clear']);
+        break;
+
+    /* ═══ ANALYTICS ═══ */
+    case 'analytics_bandwidth':
+        /* Get bandwidth data via UAPI Stats::get_bandwidth */
+        $urlBw = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Stats"
+             . "&cpanel_jsonapi_func=get_bandwidth";
+        $rBw = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlBw, 30);
+        if ($rBw['code'] === 200 && $rBw['body']) {
+            $json = json_decode($rBw['body'], true);
+            $status = $json['result']['status'] ?? 0;
+            if ($status == 1) {
+                echo json_encode(['success' => true, 'data' => $json['result']['data'] ?? []]);
+            } else {
+                echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to get bandwidth']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'analytics_visitors':
+        /* Get visitor stats links via API2 Stats::listwebalizer + Stats::listanalog */
+        $domain = isset($_POST['domain']) ? trim($_POST['domain']) : '';
+        $visitors = ['webalizer' => [], 'analog' => []];
+        /* Webalizer */
+        $urlW = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=Stats"
+             . "&cpanel_jsonapi_func=listwebalizer";
+        $rW = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlW, 20);
+        if ($rW['code'] === 200 && $rW['body']) {
+            $json = json_decode($rW['body'], true);
+            $data = $json['cpanelresult']['data'] ?? [];
+            if (is_array($data)) {
+                foreach ($data as $d) {
+                    if (isset($d['domain'])) {
+                        $visitors['webalizer'][] = ['domain' => $d['domain'], 'link' => $d['link'] ?? ''];
+                    }
+                }
+            }
+        }
+        /* Analog */
+        $urlA = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2"
+             . "&cpanel_jsonapi_module=Stats"
+             . "&cpanel_jsonapi_func=listanalog";
+        $rA = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlA, 20);
+        if ($rA['code'] === 200 && $rA['body']) {
+            $json = json_decode($rA['body'], true);
+            $data = $json['cpanelresult']['data'] ?? [];
+            if (is_array($data)) {
+                foreach ($data as $d) {
+                    if (isset($d['domain'])) {
+                        $visitors['analog'][] = ['domain' => $d['domain'], 'link' => $d['link'] ?? ''];
+                    }
+                }
+            }
+        }
+        echo json_encode(['success' => true, 'visitors' => $visitors]);
+        break;
+
+    case 'analytics_log_archives':
+        /* Get archived log files via UAPI LogManager::list_archives */
+        $urlLogs = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LogManager"
+             . "&cpanel_jsonapi_func=list_archives";
+        $rLogs = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlLogs, 20);
+        if ($rLogs['code'] === 200 && $rLogs['body']) {
+            $json = json_decode($rLogs['body'], true);
+            $status = $json['result']['status'] ?? 0;
+            if ($status == 1) {
+                echo json_encode(['success' => true, 'archives' => $json['result']['data'] ?? []]);
+            } else {
+                echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to list archives']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
         break;
 
     /* ═══ FILE MANAGER ═══ */

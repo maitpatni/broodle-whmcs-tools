@@ -463,7 +463,7 @@ window.btOpenCpanelPage=function(page,el){
 };
 
 function init(){
-    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();injectStyles9();injectStyles11();
+    injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();injectStyles9();injectStyles11();injectStyles12();
 
     /* ── Parse config ── */
     var dataEl=$("bt-data");
@@ -787,6 +787,7 @@ function buildTabs(){
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
         {id:"errorlogs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',label:"Error Logs",check:"logsEnabled"},
+        {id:"analytics",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',label:"Analytics",check:"analyticsEnabled"},
     ];
 
     var nav=document.createElement("div");nav.className="bt-tabs-nav";
@@ -828,6 +829,7 @@ function buildTabs(){
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
             if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
             if(t.id==="errorlogs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadErrorLogs();}
+            if(t.id==="analytics"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadAnalytics();}
         });
         nav.appendChild(btn);
         var pane=document.createElement("div");
@@ -845,6 +847,7 @@ function buildTabs(){
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
     if(C.logsEnabled) buildLogsPane();
+    if(C.analyticsEnabled) buildAnalyticsPane();
 }
 
 /* ─── Deep link from URL hash ─── */
@@ -2891,6 +2894,191 @@ function fmHideContextMenu(){
     var m=$("fm-ctx-menu");if(m&&m.parentNode) m.parentNode.removeChild(m);
     document.removeEventListener("click",fmHideContextMenu);
     document.removeEventListener("contextmenu",fmHideContextMenu);
+}
+
+/* ─── CSS Part 12: Analytics ─── */
+function injectStyles12(){
+    if(document.getElementById("bt-injected-styles12")) return;
+    var s=document.createElement("style");s.id="bt-injected-styles12";
+    s.textContent=".bt-analytics-bw-list{display:flex;flex-direction:column;gap:12px}"
+    +".bt-analytics-bw-row{padding:10px 14px;border-radius:8px;background:var(--bg-secondary,#f8fafc);border:1px solid var(--border-color,#e2e8f0)}"
+    +".bt-analytics-bw-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}"
+    +".bt-analytics-bw-domain{font-size:13px;font-weight:600;color:var(--text-primary,#1e293b)}"
+    +".bt-analytics-bw-size{font-size:12px;font-weight:600;color:#7c3aed;font-family:SFMono-Regular,Consolas,monospace}"
+    +".bt-analytics-bw-bar-wrap{height:6px;border-radius:3px;background:var(--border-color,#e2e8f0);overflow:hidden}"
+    +".bt-analytics-bw-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .4s ease}"
+    +".bt-analytics-bw-protos{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}"
+    +".bt-analytics-bw-proto{font-size:11px;color:var(--text-muted,#64748b);background:var(--bg-primary,#fff);padding:2px 8px;border-radius:4px;border:1px solid var(--border-color,#e2e8f0)}"
+    +".bt-analytics-stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:8px}"
+    +".bt-analytics-stat-card{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:var(--bg-secondary,#f8fafc);border:1px solid var(--border-color,#e2e8f0);font-size:13px;font-weight:500;color:var(--text-primary,#1e293b);text-decoration:none;transition:border-color .15s,background .15s;cursor:pointer}"
+    +".bt-analytics-stat-card:hover{border-color:#7c3aed;background:rgba(124,58,237,.04)}"
+    +".bt-analytics-archives{display:flex;flex-direction:column;gap:4px}"
+    +".bt-analytics-archive-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--text-primary,#1e293b);background:var(--bg-secondary,#f8fafc);border:1px solid var(--border-color,#e2e8f0)}"
+    +".bt-analytics-archive-name{flex:1;font-family:SFMono-Regular,Consolas,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    +".bt-analytics-archive-size{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);white-space:nowrap}"
+    +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}}";
+    document.head.appendChild(s);
+}
+
+/* ─── Analytics Pane ─── */
+function buildAnalyticsPane(){
+    var pane=$("bt-pane-analytics");if(!pane) return;
+    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div><h5>Analytics</h5><p>Bandwidth usage, visitor stats &amp; log archives</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-outline" id="btAnalyticsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-analytics-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div></div></div>';
+    $("btAnalyticsRefresh").addEventListener("click",function(){loadAnalytics();});
+}
+
+function loadAnalytics(){
+    var body=$("bt-analytics-body");if(!body) return;
+    body.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div>';
+    var results={bandwidth:null,visitors:null,archives:null};
+    var done=0;var total=3;
+    function checkDone(){
+        done++;if(done<total) return;
+        renderAnalytics(results);
+    }
+    post({action:"analytics_bandwidth"},function(r){results.bandwidth=r;checkDone();});
+    post({action:"analytics_visitors"},function(r){results.visitors=r;checkDone();});
+    post({action:"analytics_log_archives"},function(r){results.archives=r;checkDone();});
+}
+
+function renderAnalytics(results){
+    var body=$("bt-analytics-body");if(!body) return;
+    var html="";
+
+    /* ── Bandwidth Section ── */
+    html+='<div style="padding:16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Bandwidth Usage</h6>';
+    if(results.bandwidth&&results.bandwidth.success&&results.bandwidth.data){
+        var bwData=results.bandwidth.data;
+        /* Parse bandwidth — data can be nested by protocol/domain */
+        var rows=[];
+        if(Array.isArray(bwData)){
+            bwData.forEach(function(item){
+                if(item.domain) rows.push(item);
+            });
+        } else if(typeof bwData==="object"){
+            /* Object keyed by domain or protocol */
+            Object.keys(bwData).forEach(function(key){
+                var val=bwData[key];
+                if(typeof val==="object"&&!Array.isArray(val)){
+                    Object.keys(val).forEach(function(sub){
+                        var v=val[sub];
+                        if(typeof v==="number"||typeof v==="string"){
+                            rows.push({domain:key,protocol:sub,bytes:parseInt(v)||0});
+                        } else if(typeof v==="object"){
+                            Object.keys(v).forEach(function(proto){
+                                rows.push({domain:key,protocol:proto,bytes:parseInt(v[proto])||0});
+                            });
+                        }
+                    });
+                } else {
+                    rows.push({domain:key,bytes:parseInt(val)||0});
+                }
+            });
+        }
+        if(rows.length){
+            /* Aggregate by domain */
+            var domainMap={};
+            rows.forEach(function(r){
+                var d=r.domain||"unknown";
+                if(!domainMap[d]) domainMap[d]={domain:d,total:0,protocols:{}};
+                var bytes=r.bytes||0;
+                domainMap[d].total+=bytes;
+                if(r.protocol){
+                    if(!domainMap[d].protocols[r.protocol]) domainMap[d].protocols[r.protocol]=0;
+                    domainMap[d].protocols[r.protocol]+=bytes;
+                }
+            });
+            var domains=Object.values(domainMap).sort(function(a,b){return b.total-a.total;});
+            var maxBw=domains[0]?domains[0].total:1;
+            html+='<div class="bt-analytics-bw-list">';
+            domains.forEach(function(d){
+                var pct=maxBw>0?Math.round(d.total/maxBw*100):0;
+                html+='<div class="bt-analytics-bw-row"><div class="bt-analytics-bw-info"><span class="bt-analytics-bw-domain">'+esc(d.domain)+'</span><span class="bt-analytics-bw-size">'+formatBytes(d.total)+'</span></div><div class="bt-analytics-bw-bar-wrap"><div class="bt-analytics-bw-bar" style="width:'+pct+'%"></div></div>';
+                var protos=Object.keys(d.protocols);
+                if(protos.length){
+                    html+='<div class="bt-analytics-bw-protos">';
+                    protos.forEach(function(p){
+                        html+='<span class="bt-analytics-bw-proto">'+esc(p)+': '+formatBytes(d.protocols[p])+'</span>';
+                    });
+                    html+='</div>';
+                }
+                html+='</div>';
+            });
+            html+='</div>';
+        } else {
+            html+='<div class="bt-empty" style="padding:20px"><span>No bandwidth data available</span></div>';
+        }
+    } else {
+        html+='<div class="bt-empty" style="padding:20px"><span>'+(results.bandwidth&&results.bandwidth.message?esc(results.bandwidth.message):'Failed to load bandwidth data')+'</span></div>';
+    }
+    html+='</div>';
+
+    /* ── Visitor Stats Section ── */
+    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Visitor Statistics</h6>';
+    if(results.visitors&&results.visitors.success){
+        var vis=results.visitors.visitors||{};
+        var hasStats=false;
+        if(vis.webalizer&&vis.webalizer.length){
+            hasStats=true;
+            html+='<div style="margin-bottom:12px"><span style="font-size:12px;font-weight:600;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Webalizer</span><div class="bt-analytics-stats-grid">';
+            vis.webalizer.forEach(function(w){
+                html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg> '+esc(w.domain)+'</a>';
+            });
+            html+='</div></div>';
+        }
+        if(vis.analog&&vis.analog.length){
+            hasStats=true;
+            html+='<div style="margin-bottom:12px"><span style="font-size:12px;font-weight:600;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Analog Stats</span><div class="bt-analytics-stats-grid">';
+            vis.analog.forEach(function(a){
+                html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg> '+esc(a.domain)+'</a>';
+            });
+            html+='</div></div>';
+        }
+        if(!hasStats){
+            html+='<div class="bt-empty" style="padding:20px"><span>No visitor statistics available. Webalizer/Analog may not be enabled on this server.</span></div>';
+        }
+    } else {
+        html+='<div class="bt-empty" style="padding:20px"><span>Failed to load visitor statistics</span></div>';
+    }
+    html+='</div>';
+
+    /* ── Log Archives Section ── */
+    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Log Archives</h6>';
+    if(results.archives&&results.archives.success){
+        var archives=results.archives.archives||[];
+        if(Array.isArray(archives)&&archives.length){
+            html+='<div class="bt-analytics-archives">';
+            archives.forEach(function(a){
+                var name=a.file||a.filename||a.path||"Unknown";
+                var size=a.size||a.filesize||0;
+                html+='<div class="bt-analytics-archive-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="bt-analytics-archive-name">'+esc(name)+'</span><span class="bt-analytics-archive-size">'+formatBytes(parseInt(size)||0)+'</span></div>';
+            });
+            html+='</div>';
+        } else {
+            html+='<div class="bt-empty" style="padding:20px"><span>No archived logs found</span></div>';
+        }
+    } else {
+        html+='<div class="bt-empty" style="padding:20px"><span>'+(results.archives&&results.archives.message?esc(results.archives.message):'Failed to load log archives')+'</span></div>';
+    }
+    html+='</div>';
+
+    /* ── Quick Access to cPanel Stats ── */
+    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>cPanel Stats Tools</h6>';
+    html+='<div class="bt-analytics-stats-grid">';
+    html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Raw Access Logs</a>';
+    html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'frontend/jupiter/bandwidth/index.html\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Bandwidth</a>';
+    html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'frontend/jupiter/awstats/index.html\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> AWStats</a>';
+    html+='</div></div>';
+
+    body.innerHTML=html;
+}
+
+function formatBytes(bytes){
+    if(!bytes||bytes===0) return "0 B";
+    var units=["B","KB","MB","GB","TB"];
+    var i=Math.floor(Math.log(bytes)/Math.log(1024));
+    if(i>=units.length) i=units.length-1;
+    return (bytes/Math.pow(1024,i)).toFixed(i>0?1:0)+" "+units[i];
 }
 
 /* ─── FM: Toast notification ─── */

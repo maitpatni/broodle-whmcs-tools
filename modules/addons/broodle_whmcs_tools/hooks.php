@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.84');
+    define('BROODLE_TOOLS_VERSION', '3.10.85');
 }
 
 if (!defined('WHMCS')) {
@@ -45,6 +45,7 @@ function broodle_tools_cron_enabled() { return broodle_tools_setting_enabled('tw
 function broodle_tools_php_enabled() { return broodle_tools_setting_enabled('tweak_php_version'); }
 function broodle_tools_logs_enabled() { return broodle_tools_setting_enabled('tweak_error_logs'); }
 function broodle_tools_fm_enabled() { return broodle_tools_setting_enabled('tweak_file_manager'); }
+function broodle_tools_analytics_enabled() { return broodle_tools_setting_enabled('tweak_analytics'); }
 function broodle_tools_upgrade_list_enabled() { return broodle_tools_setting_enabled('tweak_upgrade_list_layout'); }
 function broodle_tools_v2_dropdown_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_dropdown'); }
 function broodle_tools_v2_banner_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_banner'); }
@@ -173,6 +174,7 @@ function broodle_tools_ensure_defaults()
             'tweak_php_version'        => '1',
             'tweak_error_logs'         => '1',
             'tweak_file_manager'       => '1',
+            'tweak_analytics'          => '1',
             'tweak_upgrade_list_layout'=> '0',
             'tweak_manage_v2_dropdown' => '1',
             'tweak_manage_v2_banner'   => '1',
@@ -382,6 +384,7 @@ function broodle_tools_gather_data($vars)
         'emailEnabled' => broodle_tools_email_enabled(),
         'domainEnabled' => broodle_tools_domain_enabled(),
         'fmEnabled' => broodle_tools_fm_enabled(),
+        'analyticsEnabled' => broodle_tools_analytics_enabled(),
     ];
     return $cache;
 }
@@ -1390,7 +1393,8 @@ function buildTabs(){
         {id:"dns",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M12 2L2 7l10 5 10-5-10-5z\\x27/><path d=\\x27M2 17l10 5 10-5\\x27/><path d=\\x27M2 12l10 5 10-5\\x27/></svg>",label:"DNS Manager",check:"dnsEnabled"},
         {id:"cronjobs",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><circle cx=\\x2712\\x27 cy=\\x2712\\x27 r=\\x2710\\x27/><polyline points=\\x2712 6 12 12 16 14\\x27/></svg>",label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><polyline points=\\x2716 18 22 12 16 6\\x27/><polyline points=\\x278 6 2 12 8 18\\x27/><line x1=\\x2714\\x27 y1=\\x274\\x27 x2=\\x2710\\x27 y2=\\x2720\\x27/></svg>",label:"PHP",check:"phpEnabled"},
-        {id:"errorlogs",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\\x27/><polyline points=\\x2714 2 14 8 20 8\\x27/><line x1=\\x2716\\x27 y1=\\x2713\\x27 x2=\\x278\\x27 y2=\\x2713\\x27/><line x1=\\x2716\\x27 y1=\\x2717\\x27 x2=\\x278\\x27 y2=\\x2717\\x27/></svg>",label:"Error Logs",check:"logsEnabled"}
+        {id:"errorlogs",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\\x27/><polyline points=\\x2714 2 14 8 20 8\\x27/><line x1=\\x2716\\x27 y1=\\x2713\\x27 x2=\\x278\\x27 y2=\\x2713\\x27/><line x1=\\x2716\\x27 y1=\\x2717\\x27 x2=\\x278\\x27 y2=\\x2717\\x27/></svg>",label:"Error Logs",check:"logsEnabled"},
+        {id:"analytics",icon:"<svg viewBox=\\x270 0 24 24\\x27 fill=\\x27none\\x27 stroke=\\x27currentColor\\x27 stroke-width=\\x272\\x27><path d=\\x27M18 20V10\\x27/><path d=\\x27M12 20V4\\x27/><path d=\\x27M6 20v-6\\x27/></svg>",label:"Analytics",check:"analyticsEnabled"}
     ];
 
     var nav=document.createElement("div");nav.className="bt-tabs-nav";
@@ -1418,6 +1422,7 @@ function buildTabs(){
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
             if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
             if(t.id==="errorlogs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadErrorLogs();}
+            if(t.id==="analytics"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadAnalytics();}
         });
         nav.appendChild(btn);
 
@@ -1449,6 +1454,7 @@ function buildTabs(){
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
     if(C.logsEnabled) buildLogsPane();
+    if(C.analyticsEnabled) buildAnalyticsPane();
     // WordPress pane is built lazily when sidebar item is clicked (top-level page)
 }
 
