@@ -458,9 +458,30 @@ switch ($action) {
             if (is_array($errMsg)) $errMsg = json_encode($errMsg);
         }
 
+        // After update attempt, verify the actual status
+        $verifyUpdated = false;
+        if ($updateSuccess && !empty($slug) && in_array($type, ['plugins', 'themes'], true)) {
+            // Re-fetch the item to check if availableVersion is now null
+            $verifyResult = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/{$type}");
+            if ($verifyResult['success'] && is_array($verifyResult['data'])) {
+                foreach ($verifyResult['data'] as $item) {
+                    if (($item['slug'] ?? '') === $slug) {
+                        $verifyUpdated = empty($item['availableVersion']);
+                        break;
+                    }
+                }
+            }
+        } elseif ($updateSuccess && $type === 'core') {
+            $verifyUpdated = true; // Core updates are harder to verify inline
+        }
+
         echo json_encode([
-            'success' => $updateSuccess,
-            'message' => $updateSuccess ? ucfirst($type) . ' updated successfully' : $errMsg,
+            'success'  => $updateSuccess,
+            'verified' => $verifyUpdated,
+            'message'  => $updateSuccess
+                ? ($verifyUpdated ? ucfirst($type) . ' updated successfully' : ucfirst($type) . ' update initiated — verifying...')
+                : $errMsg,
             'debug_status' => $result['status'] ?? null,
         ]);
         break;
@@ -670,9 +691,21 @@ switch ($action) {
                 ]);
         }
 
+        // Try per-installation endpoint
+        if (!$result['success']) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/security-measures/{$measureId}/apply", 'POST');
+        }
+
+        $errMsg = 'Failed to apply security fix';
+        if (!$result['success'] && is_array($result['data'] ?? null)) {
+            $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? $errMsg;
+            if (is_array($errMsg)) $errMsg = json_encode($errMsg);
+        }
+
         echo json_encode([
             'success' => $result['success'],
-            'message' => $result['success'] ? 'Security fix applied' : ($result['data']['meta']['message'] ?? $result['data']['message'] ?? 'Failed to apply security fix'),
+            'message' => $result['success'] ? 'Security fix applied' : $errMsg,
         ]);
         break;
 
@@ -701,9 +734,21 @@ switch ($action) {
                 ]);
         }
 
+        // Try per-installation endpoint
+        if (!$result['success']) {
+            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+                "/v1/installations/{$instId}/security-measures/{$measureId}/revert", 'POST');
+        }
+
+        $errMsg = 'Failed to revert security fix';
+        if (!$result['success'] && is_array($result['data'] ?? null)) {
+            $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? $errMsg;
+            if (is_array($errMsg)) $errMsg = json_encode($errMsg);
+        }
+
         echo json_encode([
             'success' => $result['success'],
-            'message' => $result['success'] ? 'Security fix reverted' : 'Failed to revert security fix',
+            'message' => $result['success'] ? 'Security fix reverted' : $errMsg,
         ]);
         break;
 
@@ -777,6 +822,32 @@ switch ($action) {
             'success' => $result['success'],
             'message' => $result['success'] ? ('Debug mode ' . ($enable ? 'enabled' : 'disabled')) : 'Failed to toggle debug mode',
         ]);
+        break;
+
+    // ─── Theme Screenshot Proxy ─────────────────────────────────────────────
+    case 'wp_theme_screenshot':
+        $instId = isset($_GET['instance_id']) ? (int) $_GET['instance_id'] : (isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0);
+        $slug   = isset($_GET['slug']) ? trim($_GET['slug']) : (isset($_POST['slug']) ? trim($_POST['slug']) : '');
+
+        if ($instId <= 0 || empty($slug)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        // Fetch theme data to get screenshot URL
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/themes/{$slug}");
+
+        $screenshotUrl = '';
+        if ($result['success'] && is_array($result['data'])) {
+            $screenshotUrl = $result['data']['screenshot'] ?? $result['data']['screenshotUrl'] ?? '';
+        }
+
+        if (!empty($screenshotUrl)) {
+            echo json_encode(['success' => true, 'screenshot_url' => $screenshotUrl]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No screenshot available']);
+        }
         break;
 
     default:
