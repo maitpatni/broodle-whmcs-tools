@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.54');
+    define('BROODLE_TOOLS_VERSION', '3.10.55');
 }
 
 if (!defined('WHMCS')) {
@@ -285,6 +285,51 @@ function broodle_tools_gather_data($vars)
     $subCount   = ($domains && isset($domains['sub'])) ? count($domains['sub']) : 0;
     $emailCount = count($emails);
 
+    // Fetch cPanel account limits (maxaddons, maxpop, maxsub, maxftp, maxparked) via WHM accountsummary
+    $domainLimit = 0;
+    $emailLimit = 0;
+    $subdomainLimit = 0;
+    $parkedLimit = 0;
+    $ftpLimit = 0;
+    $totalDomainCount = $addonCount + $subCount + (($domains && !empty($domains['parked'])) ? count($domains['parked']) : 0);
+    if (!empty($username) && !empty($server)) {
+        $hostname = $server->hostname;
+        $port = !empty($server->port) ? (int) $server->port : 2087;
+        $serverUser = $server->username;
+        $secure = !empty($server->secure) && ($server->secure === 'on' || $server->secure === '1' || $server->secure === 1);
+        $protocol = $secure ? 'https' : 'http';
+        $accessHash = ''; $password = '';
+        if (!empty($server->accesshash)) {
+            $raw = trim($server->accesshash);
+            if (preg_match('/^[A-Za-z0-9]{10,64}$/', $raw)) $accessHash = $raw;
+            else { $accessHash = trim(decrypt($raw)); if (empty($accessHash) || !preg_match('/^[A-Za-z0-9]{10,64}$/', $accessHash)) $accessHash = ''; }
+        }
+        if (empty($accessHash) && !empty($server->password)) $password = trim(decrypt($server->password));
+        if (!empty($accessHash) || !empty($password)) {
+            $headers = [];
+            if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
+            $acctUrl = "{$protocol}://{$hostname}:{$port}/json-api/accountsummary?api.version=1&user=" . urlencode($username);
+            $acctResp = broodle_tools_whm_get($acctUrl, $headers, $serverUser, $password);
+            if ($acctResp) {
+                $acct = $acctResp['data']['acct'][0] ?? ($acctResp['acct'][0] ?? []);
+                if (!empty($acct)) {
+                    $domainLimit = $acct['maxaddons'] ?? 0;
+                    if ($domainLimit === 'unlimited' || $domainLimit === '*unlimited*') $domainLimit = -1;
+                    else $domainLimit = (int) $domainLimit;
+                    $emailLimit = $acct['maxpop'] ?? 0;
+                    if ($emailLimit === 'unlimited' || $emailLimit === '*unlimited*') $emailLimit = -1;
+                    else $emailLimit = (int) $emailLimit;
+                    $subdomainLimit = $acct['maxsub'] ?? 0;
+                    if ($subdomainLimit === 'unlimited' || $subdomainLimit === '*unlimited*') $subdomainLimit = -1;
+                    else $subdomainLimit = (int) $subdomainLimit;
+                    $parkedLimit = $acct['maxparked'] ?? 0;
+                    if ($parkedLimit === 'unlimited' || $parkedLimit === '*unlimited*') $parkedLimit = -1;
+                    else $parkedLimit = (int) $parkedLimit;
+                }
+            }
+        }
+    }
+
     $cache = [
         'serviceId' => $serviceId,
         'productName' => $product->name ?? '',
@@ -306,10 +351,14 @@ function broodle_tools_gather_data($vars)
         'serverName' => $serverName,
         'serverIp' => $serverIp,
         'dedicatedIp' => $dedicatedIp,
-        // Counts
+        // Counts & Limits
         'addonDomainCount' => $addonCount,
         'subdomainCount' => $subCount,
         'emailCount' => $emailCount,
+        'totalDomainCount' => $totalDomainCount,
+        'domainLimit' => $domainLimit,
+        'emailLimit' => $emailLimit,
+        'subdomainLimit' => $subdomainLimit,
         // Existing
         'ns' => $nsData,
         'emails' => $emails,

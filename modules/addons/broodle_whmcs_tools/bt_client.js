@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.54");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.55");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -334,7 +334,7 @@ function injectStyles8(){
 '.bt-hero-domain{margin-top:12px;font-size:13px;color:rgba(255,255,255,.85);font-weight:500}',
 /* ── Usage Panel ── */
 '.bt-hero-right{flex:1;min-width:200px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-left:1px solid var(--border-color,#e5e7eb)}',
-'.bt-gauges{display:flex;gap:20px;align-items:center;justify-content:center}',
+'.bt-gauges{display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap}',
 '.bt-gauge{text-align:center}',
 '.bt-gauge-ring{position:relative;width:80px;height:80px}',
 '.bt-gauge-ring svg{transform:rotate(-90deg)}',
@@ -368,7 +368,7 @@ function injectStyles8(){
 /* ── Responsive ── */
 '@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-left{max-width:100%}.bt-hero-right{width:100%;padding:20px;border-left:none;border-top:1px solid var(--border-color,#e5e7eb)}.bt-hero-left{min-height:140px}}',
 '@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}.bt-hero-stats{grid-template-columns:1fr}}',
-'@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:12px}}',
+'@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:10px}.bt-gauge-ring{width:60px;height:60px}.bt-gauge-ring svg{width:60px;height:60px}.bt-gauge-pct{font-size:12px}}',
 /* ── Dark mode ── */
 '[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
 '[data-theme="dark"] .bt-hero-right{background:var(--card-bg,#1e293b)}',
@@ -427,6 +427,20 @@ function init(){
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+diskColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+diskOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+diskPct+'%</div></div><div class="bt-gauge-label">Disk</div><div class="bt-gauge-sub">'+fmtSize(C.diskUsed)+' / '+fmtSize(C.diskLimit)+'</div></div>';
     /* BW gauge */
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
+    /* Domain gauge */
+    var domUsed=C.totalDomainCount||0;var domLimit=C.domainLimit||0;
+    var domPct=domLimit>0?Math.min(100,Math.round(domUsed/domLimit*100)):0;
+    var domOff=circ-(domPct/100*circ);
+    var domColor=domLimit<=0?"#0a5ed3":domPct>90?"#ef4444":domPct>70?"#f59e0b":"#0a5ed3";
+    var domLimitTxt=domLimit<0?"Unlimited":(domLimit>0?domLimit:"0");
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+domColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+(domLimit>0?domOff.toFixed(1):circ.toFixed(1))+'"/></svg><div class="bt-gauge-pct">'+(domLimit>0?domPct+'%':domUsed)+'</div></div><div class="bt-gauge-label">Domains</div><div class="bt-gauge-sub">'+domUsed+' / '+domLimitTxt+'</div></div>';
+    /* Email gauge */
+    var emUsed=C.emailCount||0;var emLimit=C.emailLimit||0;
+    var emPct=emLimit>0?Math.min(100,Math.round(emUsed/emLimit*100)):0;
+    var emOff=circ-(emPct/100*circ);
+    var emColor=emLimit<=0?"#0a5ed3":emPct>90?"#ef4444":emPct>70?"#f59e0b":"#0a5ed3";
+    var emLimitTxt=emLimit<0?"Unlimited":(emLimit>0?emLimit:"0");
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+emColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+(emLimit>0?emOff.toFixed(1):circ.toFixed(1))+'"/></svg><div class="bt-gauge-pct">'+(emLimit>0?emPct+'%':emUsed)+'</div></div><div class="bt-gauge-label">Emails</div><div class="bt-gauge-sub">'+emUsed+' / '+emLimitTxt+'</div></div>';
     heroHtml+='</div>';
     /* Resource usage bars — loaded via AJAX */
     heroHtml+='<div class="bt-hero-stats" id="bt-hero-res"><div class="bt-res-loading"><div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Loading resource usage...</div></div>';
