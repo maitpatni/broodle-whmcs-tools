@@ -110,6 +110,7 @@ if ($action === 'cpanel_resource_stats') {
     if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
 
     $stats = ['cpu' => null, 'mem' => null, 'io' => null, 'nproc' => null, 'ep' => null, 'iops' => null];
+    $debugInfo = [];
 
     // Strategy 1: UAPI ResourceUsage::get_usages (works on most cPanel servers)
     $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
@@ -130,13 +131,16 @@ if ($action === 'cpanel_resource_stats') {
             if (!is_array($u)) continue;
             $id = strtolower($u['id'] ?? '');
             $desc = strtolower($u['description'] ?? '');
-            $used = $u['usage'] ?? ($u['used'] ?? null);
-            $max = $u['maximum'] ?? ($u['limit'] ?? null);
-            if ($max === 'unlimited' || $max === null || $max === 0 || $max === '0') $max = 0;
+            $used = $u['usage'] ?? ($u['used'] ?? ($u['value'] ?? null));
+            $max = $u['maximum'] ?? ($u['limit'] ?? ($u['max'] ?? null));
+            if ($max === 'unlimited' || $max === null || $max === 0 || $max === '0' || $max === '-1') $max = 0;
+            // Ensure numeric
+            if ($used !== null) $used = floatval($used);
+            if ($max !== null && $max !== 0) $max = floatval($max);
             $item = ['used' => $used, 'max' => $max];
 
             if (strpos($id, 'cpu') !== false || strpos($desc, 'cpu') !== false) $stats['cpu'] = $item;
-            elseif ($id === 'physicalmemoryusage' || strpos($id, 'pmem') !== false || strpos($desc, 'physical memory') !== false || strpos($desc, 'memory') !== false) $stats['mem'] = $item;
+            elseif ($id === 'physicalmemoryusage' || strpos($id, 'pmem') !== false || strpos($desc, 'physical memory') !== false || (strpos($desc, 'memory') !== false && strpos($desc, 'virtual') === false)) $stats['mem'] = $item;
             elseif (strpos($id, 'iops') !== false || strpos($desc, 'iops') !== false) $stats['iops'] = $item;
             elseif (strpos($id, 'io') !== false || strpos($desc, 'i/o') !== false) $stats['io'] = $item;
             elseif ($id === 'entryprocesses' || strpos($id, 'ep') !== false || strpos($desc, 'entry process') !== false) $stats['ep'] = $item;
@@ -1959,7 +1963,7 @@ switch ($action) {
             }
         }
 
-        // Strategy 2: cPanel API 2 ErrorLog::fetchlog (older cPanel)
+        // Strategy 2: cPanel API 2 ErrorLog::fetchlog (older cPanel — may not exist)
         if (empty($logContent)) {
             $urlErrLog = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
@@ -1969,20 +1973,25 @@ switch ($action) {
             $rErrLog = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrLog, 30);
             if ($rErrLog['code'] === 200 && $rErrLog['body']) {
                 $json = json_decode($rErrLog['body'], true);
-                $data = $json['cpanelresult']['data'] ?? [];
-                if (is_array($data) && !empty($data)) {
-                    foreach ($data as $entry) {
-                        $line = '';
-                        if (is_array($entry)) {
-                            $line = $entry['log'] ?? ($entry['entry'] ?? ($entry['line'] ?? ''));
-                        } elseif (is_string($entry)) {
-                            $line = $entry;
+                // Check for API error (function not found, module not found, etc.)
+                $apiError = $json['cpanelresult']['error'] ?? '';
+                $eventResult = $json['cpanelresult']['event']['result'] ?? 1;
+                if (empty($apiError) && $eventResult != 0) {
+                    $data = $json['cpanelresult']['data'] ?? [];
+                    if (is_array($data) && !empty($data)) {
+                        foreach ($data as $entry) {
+                            $line = '';
+                            if (is_array($entry)) {
+                                $line = $entry['log'] ?? ($entry['entry'] ?? ($entry['line'] ?? ''));
+                            } elseif (is_string($entry)) {
+                                $line = $entry;
+                            }
+                            if (!empty(trim($line))) $logEntries[] = trim($line);
                         }
-                        if (!empty(trim($line))) $logEntries[] = trim($line);
-                    }
-                    if (!empty($logEntries)) {
-                        $logContent = implode("\n", $logEntries);
-                        $logFile = 'Error Log (API 2)';
+                        if (!empty($logEntries)) {
+                            $logContent = implode("\n", $logEntries);
+                            $logFile = 'Error Log (API 2)';
+                        }
                     }
                 }
             }

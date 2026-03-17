@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.66");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.67");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -636,7 +636,7 @@ function buildSidebarHtml(){
     /* Actions panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Actions</div>';
     /* cPanel login */
-    html+='<a class="bt-sidebar-item" href="#" onclick="btOpenCpanelPage(\'\',this);return false;" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);padding:0"><img src="'+btBasePath+'cpanel-icon.png" width="34" height="34" alt="cPanel" style="border-radius:9px"></div><div class="bt-si-label">Login to cPanel<span>Control Panel</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="#" onclick="btOpenCpanelPage(\'\',this);return false;" id="bt-cpanel-link"><div class="bt-si-icon" style="background:#F36B30;padding:0;display:flex;align-items:center;justify-content:center"><img src="'+btBasePath+'cpanel-icon.png" width="22" height="22" alt="cPanel" style="border-radius:4px"></div><div class="bt-si-label">Login to cPanel<span>Control Panel</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
     html+='<a class="bt-sidebar-item" href="upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
@@ -960,7 +960,7 @@ function buildCpanelPane(){
     var svgLink='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 
     var html='<div class="bt-cpanel-creds">';
-    html+='<div class="bt-cred-header"><div class="bt-cred-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff6c2c" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M12 8v4l3 3"/></svg></div><div><h4 style="margin:0;font-size:18px;font-weight:600;color:var(--text-primary,#1e293b)">cPanel Credentials</h4><p style="margin:2px 0 0;font-size:13px;color:var(--text-muted,#64748b)">Access your hosting control panel</p></div></div>';
+    html+='<div class="bt-cred-header"><div class="bt-cred-icon" style="background:none;padding:0"><img src="'+btBasePath+'cpanel-icon.png" width="48" height="48" alt="cPanel" style="border-radius:12px"></div><div><h4 style="margin:0;font-size:18px;font-weight:600;color:var(--text-primary,#1e293b)">cPanel Credentials</h4><p style="margin:2px 0 0;font-size:13px;color:var(--text-muted,#64748b)">Access your hosting control panel</p></div></div>';
 
     /* Login URL */
     html+='<div class="bt-cred-row">';
