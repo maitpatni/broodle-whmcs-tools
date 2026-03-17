@@ -76,6 +76,27 @@ curl_close(\$ch);
 
 ## Confirmed API Response Formats
 
+### SSO: create_user_session
+Returns `data.url`, `data.session`, `data.cp_security_token`, `data.expires`, `data.service`.
+The `cp_security_token` is the cpsess path (e.g. `/cpsess1234567890`).
+Use `goto_uri` parameter on the login URL to redirect after SSO login.
+Login URL format: `{base}{cpsess}/login/?session={token}&goto_uri={cpsess}/{page_path}`
+
+### Fileman::fileop (API2) — DELETE
+`op=unlink` works reliably. Returns `cpanelresult.data[0].result=1` on success.
+Also check `cpanelresult.event.result=1` as alternative success indicator.
+Note: `UAPI Fileman::trash` does NOT exist on this server.
+
+### Stats::get_site_errors (UAPI) — ERROR LOGS
+Works. Returns `result.data` as array of `{date, entry}` objects.
+Note: `Logd::get_last_errors` does NOT exist. `API2 ErrorLog::fetchlog` does NOT exist.
+
+### Error Log File Locations
+- PHP errors: `~/logs/{domain_underscored}.php.error.log` (e.g. `eggdee_com.php.error.log`)
+- Apache errors: Available via `Stats::get_site_errors` API
+- `~/public_html/error_log` may or may not exist
+- `~/logs/{domain}.error.log` does NOT exist on this server
+
 ### LangPHP::php_get_installed_versions
 Returns `result.data.versions` (array nested under `versions` key):
 ```json

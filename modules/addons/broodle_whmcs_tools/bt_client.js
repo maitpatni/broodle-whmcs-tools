@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.82");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.83");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -445,26 +445,39 @@ function injectStyles8(){
 var savedChangePwPane=null;
 
 /* ─── Open specific cPanel page via SSO ─── */
-var _cpanelSession={base:'',cpsess:'',expires:0};
+var _cpanelSession={base:'',cpsess:'',token:'',expires:0};
 window.btOpenCpanelPage=function(page,el){
     if(el){el.style.opacity='.5';el.style.pointerEvents='none';}
-    /* If we have a cached session that's less than 20 minutes old, reuse it */
+    /* If we have a cached session that's less than 15 minutes old, reuse it */
     var now=Date.now();
-    if(_cpanelSession.base&&_cpanelSession.cpsess&&now<_cpanelSession.expires){
+    if(_cpanelSession.base&&_cpanelSession.cpsess&&_cpanelSession.token&&now<_cpanelSession.expires){
         if(el){el.style.opacity='';el.style.pointerEvents='';}
-        var directUrl=_cpanelSession.base+_cpanelSession.cpsess+'/frontend/jupiter/'+page;
-        window.open(directUrl,'_cpanel');
+        if(!page){
+            /* No page = just open cPanel home */
+            var homeUrl=_cpanelSession.base+_cpanelSession.cpsess+'/login/?session='+encodeURIComponent(_cpanelSession.token);
+            window.open(homeUrl,'_cpanel');
+        } else {
+            /* Build goto_uri — prepend frontend/jupiter/ for partial paths */
+            var fullPage=page;
+            if(page.indexOf('frontend/')!==0&&page.indexOf('3rdparty/')!==0){
+                fullPage='frontend/jupiter/'+page;
+            }
+            var gotoUri=_cpanelSession.cpsess+'/'+fullPage;
+            var directUrl=_cpanelSession.base+_cpanelSession.cpsess+'/login/?session='+encodeURIComponent(_cpanelSession.token)+'&goto_uri='+encodeURIComponent(gotoUri);
+            window.open(directUrl,'_cpanel');
+        }
         return;
     }
-    post({action:'get_cpanel_sso_url',page:page},function(r){
+    post({action:'get_cpanel_sso_url',page:page||''},function(r){
         if(el){el.style.opacity='';el.style.pointerEvents='';}
         if(r.success&&r.url){
             /* Cache the session info for reuse */
-            var m=r.url.match(/(https?:\/\/[^\/]+)(\/cpsess[^\/]+)/);
+            var m=r.url.match(/(https?:\/\/[^\/]+)(\/cpsess[^\/]+)\/login\/\?session=([^&]+)/);
             if(m){
                 _cpanelSession.base=m[1];
-                _cpanelSession.cpsess=m[2];
-                _cpanelSession.expires=Date.now()+20*60*1000; /* 20 min */
+                _cpanelSession.cpsess=r.cp_security_token||m[2];
+                _cpanelSession.token=decodeURIComponent(m[3]);
+                _cpanelSession.expires=Date.now()+15*60*1000; /* 15 min */
             }
             window.open(r.url,'_cpanel');
         }

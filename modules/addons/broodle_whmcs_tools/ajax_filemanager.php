@@ -170,30 +170,20 @@ case 'fm_delete':
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid items']); break; }
     $errors = [];
     foreach ($itemList as $item) {
-        $d = dirname($item); $f = basename($item);
         $ok = false;
-        /* Method 1: API2 Fileman fileop unlink (most reliable) */
+        /* API2 Fileman::fileop op=unlink — confirmed working on live servers */
         $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
               . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
               . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
               . "&op=unlink&sourcefiles=" . urlencode($item);
         $r1 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url1);
         $b1 = json_decode($r1['body'] ?? '', true);
+        /* Check multiple success indicators */
         if (isset($b1['cpanelresult']['data'][0]['result']) && $b1['cpanelresult']['data'][0]['result'] == 1) $ok = true;
         if (!$ok && isset($b1['cpanelresult']['event']['result']) && $b1['cpanelresult']['event']['result'] == 1) $ok = true;
         if (!$ok) {
-            /* Method 2: UAPI Fileman::trash */
-            $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                  . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=trash"
-                  . "&dir=" . urlencode($d) . "&files-0=" . urlencode($f);
-            $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
-            $b2 = json_decode($r2['body'] ?? '', true);
-            if (isset($b2['result']['status']) && $b2['result']['status'] == 1) $ok = true;
-        }
-        if (!$ok) {
             $reason = $b1['cpanelresult']['data'][0]['reason'] ?? ($b1['cpanelresult']['error'] ?? 'Failed to delete');
-            $errors[] = $f . ': ' . $reason;
+            $errors[] = basename($item) . ': ' . $reason;
         }
     }
     echo json_encode(empty($errors) ? ['success' => true, 'message' => count($itemList) . ' item(s) deleted'] : ['success' => false, 'message' => implode('; ', $errors)]);
@@ -359,25 +349,28 @@ case 'fm_download_url':
     $filePath = isset($_POST['file']) ? trim($_POST['file']) : '';
     if (!$filePath) { echo json_encode(['success' => false, 'message' => 'No file']); break; }
     $ssoUrl = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session?api.version=1&user=" . urlencode($cpUsername) . "&service=cpaneld";
-    $hdrs = [];
-    if (!empty($accessHash)) $hdrs[] = "Authorization: whm {$serverUser}:{$accessHash}";
-    $ch = curl_init();
-    curl_setopt_array($ch, [CURLOPT_URL => $ssoUrl, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
-    if (!empty($hdrs)) curl_setopt($ch, CURLOPT_HTTPHEADER, $hdrs);
-    elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-    $resp = curl_exec($ch); curl_close($ch);
-    $json = json_decode($resp, true);
+    $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $ssoUrl, 15);
+    if ($r['code'] !== 200 || !$r['body']) { echo json_encode(['success' => false, 'message' => 'Session failed']); break; }
+    $json = json_decode($r['body'], true);
     $sessionUrl = $json['data']['url'] ?? '';
+    $cpSecurityToken = $json['data']['cp_security_token'] ?? '';
     if (!$sessionUrl) { echo json_encode(['success' => false, 'message' => 'Session failed']); break; }
-    // Extract the cpsess base URL (e.g. https://host:2083/cpsessXXXX)
-    if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
-        $baseSession = $m[1];
-        $downloadUrl = $baseSession . '/download?skipencode=1&file=' . urlencode($filePath);
-    } else {
-        // Fallback: append goto_uri
-        $downloadUrl = $sessionUrl . (strpos($sessionUrl, '?') !== false ? '&' : '?') . 'goto_uri=' . urlencode('/download?skipencode=1&file=' . urlencode($filePath));
+    // Build download URL with SSO login + goto_uri to download endpoint
+    if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
+        $baseUrl = $m[1];
+        $cpsess = $cpSecurityToken ?: $m[2];
+        $parts = parse_url($sessionUrl);
+        parse_str($parts['query'] ?? '', $qs);
+        $sessionToken = $qs['session'] ?? '';
+        if ($sessionToken) {
+            $gotoUri = $cpsess . '/download?skipencode=1&file=' . urlencode($filePath);
+            $downloadUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
+            echo json_encode(['success' => true, 'url' => $downloadUrl]);
+            break;
+        }
     }
-    echo json_encode(['success' => true, 'url' => $downloadUrl]);
+    // Fallback
+    echo json_encode(['success' => false, 'message' => 'Could not build download URL']);
     break;
 
 }

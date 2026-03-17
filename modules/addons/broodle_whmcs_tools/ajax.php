@@ -382,6 +382,9 @@ if ($action === 'cpanel_resource_stats') {
 // Handle cPanel SSO URL generation for shortcuts
 if ($action === 'get_cpanel_sso_url') {
     $gotoPage = isset($_POST['page']) ? trim($_POST['page']) : '';
+    $ssoService = isset($_POST['sso_service']) ? trim($_POST['sso_service']) : 'cpaneld';
+    // Only allow known services
+    if (!in_array($ssoService, ['cpaneld', 'webmaild'])) $ssoService = 'cpaneld';
     $server = Capsule::table('tblservers')->where('id', $service->server)->first();
     if (!$server) { echo json_encode(['success' => false, 'message' => 'Server not found']); exit; }
     $hostname = $server->hostname;
@@ -401,7 +404,7 @@ if ($action === 'get_cpanel_sso_url') {
     $headers = [];
     if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
     // Create user session via WHM API
-    $ssoUrl = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session?api.version=1&user=" . urlencode($cpUsername) . "&service=cpaneld";
+    $ssoUrl = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session?api.version=1&user=" . urlencode($cpUsername) . "&service=" . urlencode($ssoService);
     $ch = curl_init();
     curl_setopt_array($ch, [CURLOPT_URL => $ssoUrl, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
     if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -409,28 +412,57 @@ if ($action === 'get_cpanel_sso_url') {
     $resp = curl_exec($ch); curl_close($ch);
     $json = json_decode($resp, true);
     $sessionUrl = $json['data']['url'] ?? '';
+    $cpSecurityToken = $json['data']['cp_security_token'] ?? '';
     if (empty($sessionUrl)) { echo json_encode(['success' => false, 'message' => 'Could not create cPanel session']); exit; }
-    // Append the goto page path
-    if ($gotoPage) {
-        // The session URL from create_user_session is like:
-        // https://server:2083/cpsessXXXXXXXXXX/login/?session=TOKEN
-        // We need to extract the cpsess token and build a direct URL to the target page
+    // Build the final URL with goto_uri for page redirect
+    if ($gotoPage && $ssoService === 'cpaneld') {
+        // Session URL: https://server:2083/cpsessXXXX/login/?session=TOKEN
+        // cp_security_token: /cpsessXXXX
+        // We append goto_uri to redirect after login
         if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
             $baseUrl = $m[1];
-            $cpsess = $m[2];
-            // Extract session token from query string
+            $cpsess = $cpSecurityToken ?: $m[2];
             $parts = parse_url($sessionUrl);
             parse_str($parts['query'] ?? '', $qs);
             $sessionToken = $qs['session'] ?? '';
             if ($sessionToken) {
-                // First login to establish the session, then redirect to the page
-                // Build URL that logs in and redirects to the target page
-                $gotoPath = '/' . ltrim($gotoPage, '/');
-                $sessionUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($cpsess . '/frontend/jupiter/' . ltrim($gotoPage, '/'));
+                // Detect if gotoPage is a full cPanel path or just a page name
+                $gotoPage = ltrim($gotoPage, '/');
+                // Map common shortcut names to actual cPanel paths
+                $pageMap = [
+                    'filemanager' => 'frontend/jupiter/filemanager/index.html',
+                    'email' => 'frontend/jupiter/mail/pops.html',
+                    'databases' => 'frontend/jupiter/sql/index.html',
+                    'phpmyadmin' => '3rdparty/phpMyAdmin/index.php',
+                    'domains' => 'frontend/jupiter/addon/index.html',
+                    'subdomains' => 'frontend/jupiter/subdomain/index.html',
+                    'ssl' => 'frontend/jupiter/ssl/index.html',
+                    'cron' => 'frontend/jupiter/cron/index.html',
+                    'dns' => 'frontend/jupiter/zone_editor/index.html',
+                    'php' => 'frontend/jupiter/multiphp/index.html',
+                    'errorlog' => 'frontend/jupiter/errors/index.html',
+                    'backup' => 'frontend/jupiter/backup/index.html',
+                    'metrics' => 'frontend/jupiter/visitors/index.html',
+                    'softaculous' => 'frontend/jupiter/softaculous/index.live',
+                    'terminal' => 'frontend/jupiter/terminal/index.html',
+                ];
+                $mappedPage = $pageMap[strtolower($gotoPage)] ?? null;
+                if (!$mappedPage) {
+                    // Not in map — treat as a partial cPanel path (e.g. "mail/pops")
+                    // Prepend frontend/jupiter/ if not already a full path
+                    if (strpos($gotoPage, 'frontend/') === 0 || strpos($gotoPage, '3rdparty/') === 0) {
+                        $mappedPage = $gotoPage;
+                    } else {
+                        $mappedPage = 'frontend/jupiter/' . $gotoPage;
+                    }
+                }
+                // Build goto_uri with cpsess prefix
+                $gotoUri = $cpsess . '/' . $mappedPage;
+                $sessionUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
             }
         }
     }
-    echo json_encode(['success' => true, 'url' => $sessionUrl]);
+    echo json_encode(['success' => true, 'url' => $sessionUrl, 'cp_security_token' => $cpSecurityToken]);
     exit;
 }
 
@@ -617,12 +649,11 @@ switch ($action) {
         $emailFull = isset($_POST['email']) ? trim($_POST['email']) : '';
         if (empty($emailFull)) { echo json_encode(['success' => false, 'message' => 'Missing email']); exit; }
 
-        // Create a cPanel session for the email account owner, then redirect straight to Roundcube inbox
+        // Create a webmail session via WHM API
         $url = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
              . "?api.version=1"
              . "&user=" . urlencode($cpUsername)
-             . "&service=cpaneld"
-             . "&locale=en";
+             . "&service=webmaild";
 
         $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
 
@@ -630,23 +661,28 @@ switch ($action) {
             $json = json_decode($r['body'], true);
             $sessionUrl = $json['data']['url'] ?? '';
             if (!empty($sessionUrl)) {
-                // Parse the session URL to extract the cpsess token and build a Roundcube URL
-                // Session URL looks like: https://host:2083/cpsess1234567890/...
-                if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
-                    $baseSession = $m[1];
-                    $roundcubeUrl = $baseSession . '/3rdparty/roundcube/?_task=mail&_mbox=INBOX&_user=' . urlencode($emailFull);
-                    echo json_encode(['success' => true, 'url' => $roundcubeUrl]);
-                    break;
+                // Webmail SSO URL goes directly to webmail login — append Roundcube path
+                if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
+                    $baseUrl = $m[1];
+                    $cpsess = $json['data']['cp_security_token'] ?? $m[2];
+                    $parts = parse_url($sessionUrl);
+                    parse_str($parts['query'] ?? '', $qs);
+                    $sessionToken = $qs['session'] ?? '';
+                    if ($sessionToken) {
+                        $gotoUri = $cpsess . '/3rdparty/roundcube/?_task=mail&_mbox=INBOX';
+                        $roundcubeUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
+                        echo json_encode(['success' => true, 'url' => $roundcubeUrl]);
+                        break;
+                    }
                 }
-                // If we can't parse, still use the session URL
                 echo json_encode(['success' => true, 'url' => $sessionUrl]);
                 break;
             }
         }
 
-        // Fallback: direct webmail URL with Roundcube path
+        // Fallback: direct webmail URL
         $webmailPort = $secure ? 2096 : 2095;
-        echo json_encode(['success' => true, 'url' => "{$protocol}://{$hostname}:{$webmailPort}/3rdparty/roundcube/?_task=mail&_mbox=INBOX"]);
+        echo json_encode(['success' => true, 'url' => "{$protocol}://{$hostname}:{$webmailPort}/"]);
         break;
 
     case 'get_domains':
@@ -1016,23 +1052,31 @@ switch ($action) {
         break;
 
     case 'get_phpmyadmin_url':
-        // Create a cPanel session and return phpMyAdmin URL
+        // Create a cPanel session and return phpMyAdmin URL with proper SSO login
         $url = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
              . "?api.version=1"
              . "&user=" . urlencode($cpUsername)
-             . "&service=cpaneld"
-             . "&locale=en";
+             . "&service=cpaneld";
 
         $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
 
         if ($r['code'] === 200 && $r['body']) {
             $json = json_decode($r['body'], true);
             $sessionUrl = $json['data']['url'] ?? '';
+            $cpSecurityToken = $json['data']['cp_security_token'] ?? '';
             if (!empty($sessionUrl)) {
-                if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
-                    $pmaUrl = $m[1] . '/3rdparty/phpMyAdmin/index.php';
-                    echo json_encode(['success' => true, 'url' => $pmaUrl]);
-                    break;
+                if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
+                    $baseUrl = $m[1];
+                    $cpsess = $cpSecurityToken ?: $m[2];
+                    $parts = parse_url($sessionUrl);
+                    parse_str($parts['query'] ?? '', $qs);
+                    $sessionToken = $qs['session'] ?? '';
+                    if ($sessionToken) {
+                        $gotoUri = $cpsess . '/3rdparty/phpMyAdmin/index.php';
+                        $pmaUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
+                        echo json_encode(['success' => true, 'url' => $pmaUrl]);
+                        break;
+                    }
                 }
                 echo json_encode(['success' => true, 'url' => $sessionUrl]);
                 break;
@@ -2110,74 +2154,8 @@ switch ($action) {
             }
         }
 
-        // Strategy 1: UAPI Logd::get_last_errors (newer cPanel)
+        // Strategy 1: UAPI Stats::get_site_errors (most reliable, works on tested servers)
         if (!empty($mainDomain)) {
-            $urlLogd = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3"
-                 . "&cpanel_jsonapi_module=Logd"
-                 . "&cpanel_jsonapi_func=get_last_errors"
-                 . "&domain=" . urlencode($mainDomain)
-                 . "&maxlines=" . $lines;
-            $rLogd = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlLogd, 30);
-            if ($rLogd['code'] === 200 && $rLogd['body']) {
-                $json = json_decode($rLogd['body'], true);
-                $status = $json['result']['status'] ?? 0;
-                if ($status == 1) {
-                    $data = $json['result']['data'] ?? [];
-                    if (is_array($data)) {
-                        foreach ($data as $entry) {
-                            if (is_array($entry) && isset($entry['entry'])) {
-                                $logEntries[] = $entry['entry'];
-                            } elseif (is_string($entry) && !empty($entry)) {
-                                $logEntries[] = $entry;
-                            }
-                        }
-                    }
-                    if (!empty($logEntries)) {
-                        $logContent = implode("\n", $logEntries);
-                        $logFile = $mainDomain . ' Error Log';
-                    }
-                }
-            }
-        }
-
-        // Strategy 2: cPanel API 2 ErrorLog::fetchlog (older cPanel — may not exist)
-        if (empty($logContent)) {
-            $urlErrLog = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=2"
-                 . "&cpanel_jsonapi_module=ErrorLog"
-                 . "&cpanel_jsonapi_func=fetchlog";
-            $rErrLog = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlErrLog, 30);
-            if ($rErrLog['code'] === 200 && $rErrLog['body']) {
-                $json = json_decode($rErrLog['body'], true);
-                // Check for API error (function not found, module not found, etc.)
-                $apiError = $json['cpanelresult']['error'] ?? '';
-                $eventResult = $json['cpanelresult']['event']['result'] ?? 1;
-                if (empty($apiError) && $eventResult != 0) {
-                    $data = $json['cpanelresult']['data'] ?? [];
-                    if (is_array($data) && !empty($data)) {
-                        foreach ($data as $entry) {
-                            $line = '';
-                            if (is_array($entry)) {
-                                $line = $entry['log'] ?? ($entry['entry'] ?? ($entry['line'] ?? ''));
-                            } elseif (is_string($entry)) {
-                                $line = $entry;
-                            }
-                            if (!empty(trim($line))) $logEntries[] = trim($line);
-                        }
-                        if (!empty($logEntries)) {
-                            $logContent = implode("\n", $logEntries);
-                            $logFile = 'Error Log (API 2)';
-                        }
-                    }
-                }
-            }
-        }
-
-        // Strategy 3: UAPI Stats::get_site_errors
-        if (empty($logContent) && !empty($mainDomain)) {
             $urlErrors = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                  . "&cpanel_jsonapi_apiversion=3"
@@ -2209,17 +2187,17 @@ switch ($action) {
             }
         }
 
-        // Strategy 4: Read log files directly via Fileman::get_file_content
-        if (empty($logContent)) {
-            $logPaths = [];
-            if (!empty($mainDomain)) {
-                $logPaths[] = $homedir . '/logs/' . $mainDomain . '.error.log';
-                $logPaths[] = $homedir . '/logs/' . $mainDomain . '-error.log';
-            }
-            $logPaths[] = $homedir . '/logs/error.log';
-            $logPaths[] = $homedir . '/public_html/error_log';
-
-            foreach ($logPaths as $path) {
+        // Strategy 2: Read PHP error log directly (logs/{domain_underscored}.php.error.log)
+        if (empty($logContent) && !empty($mainDomain)) {
+            $domainUnderscored = str_replace('.', '_', $mainDomain);
+            $phpLogPaths = [
+                $homedir . '/logs/' . $domainUnderscored . '.php.error.log',
+                $homedir . '/logs/' . $mainDomain . '.error.log',
+                $homedir . '/logs/' . $mainDomain . '-error.log',
+                $homedir . '/logs/error.log',
+                $homedir . '/public_html/error_log',
+            ];
+            foreach ($phpLogPaths as $path) {
                 $urlRead = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                      . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                      . "&cpanel_jsonapi_apiversion=3"
@@ -2235,11 +2213,43 @@ switch ($action) {
                     $fStatus = $json['result']['status'] ?? 0;
                     if ($fStatus == 1) {
                         $content = $json['result']['data']['content'] ?? '';
-                        if (!empty($content)) {
+                        if (!empty(trim($content))) {
                             $logContent = $content;
                             $logFile = basename($path);
                             break;
                         }
+                    }
+                }
+            }
+        }
+
+        // Strategy 3: Try UAPI Logd::get_last_errors (newer cPanel only)
+        if (empty($logContent) && !empty($mainDomain)) {
+            $urlLogd = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=Logd"
+                 . "&cpanel_jsonapi_func=get_last_errors"
+                 . "&domain=" . urlencode($mainDomain)
+                 . "&maxlines=" . $lines;
+            $rLogd = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlLogd, 30);
+            if ($rLogd['code'] === 200 && $rLogd['body']) {
+                $json = json_decode($rLogd['body'], true);
+                $status = $json['result']['status'] ?? 0;
+                if ($status == 1) {
+                    $data = $json['result']['data'] ?? [];
+                    if (is_array($data)) {
+                        foreach ($data as $entry) {
+                            if (is_array($entry) && isset($entry['entry'])) {
+                                $logEntries[] = $entry['entry'];
+                            } elseif (is_string($entry) && !empty($entry)) {
+                                $logEntries[] = $entry;
+                            }
+                        }
+                    }
+                    if (!empty($logEntries)) {
+                        $logContent = implode("\n", $logEntries);
+                        $logFile = $mainDomain . ' Error Log';
                     }
                 }
             }
@@ -2266,7 +2276,7 @@ switch ($action) {
         break;
 
     case 'error_log_clear':
-        /* Clear the error log by writing empty content to it */
+        /* Clear error logs by truncating known log files */
         $homedir = '/home/' . $cpUsername;
         $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
@@ -2278,8 +2288,8 @@ switch ($action) {
             if (!empty($h)) $homedir = $h;
         }
         $cleared = false;
-        $logPaths = [$homedir . '/public_html/error_log', $homedir . '/logs/error.log'];
         /* Get main domain for domain-specific logs */
+        $mainDomain = '';
         $urlDomain = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
              . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=DomainInfo&cpanel_jsonapi_func=list_domains";
@@ -2287,12 +2297,33 @@ switch ($action) {
         if ($rDomain['code'] === 200 && $rDomain['body']) {
             $jsonD = json_decode($rDomain['body'], true);
             $mainDomain = $jsonD['result']['data']['main_domain'] ?? '';
-            if (!empty($mainDomain)) {
-                array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '.error.log');
-                array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '-error.log');
-            }
         }
+        /* Build list of log paths to clear */
+        $logPaths = [$homedir . '/public_html/error_log'];
+        if (!empty($mainDomain)) {
+            $domainUnderscored = str_replace('.', '_', $mainDomain);
+            array_unshift($logPaths, $homedir . '/logs/' . $domainUnderscored . '.php.error.log');
+            array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '.error.log');
+            array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '-error.log');
+        }
+        $logPaths[] = $homedir . '/logs/error.log';
         foreach ($logPaths as $path) {
+            /* First check if file exists by trying to read it */
+            $urlCheck = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=get_file_content"
+                 . "&dir=" . urlencode(dirname($path)) . "&file=" . urlencode(basename($path))
+                 . "&from_charset=utf-8&to_charset=utf-8";
+            $rCheck = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlCheck);
+            if ($rCheck['code'] === 200 && $rCheck['body']) {
+                $jCheck = json_decode($rCheck['body'], true);
+                if (($jCheck['result']['status'] ?? 0) != 1) continue; // File doesn't exist
+                $content = $jCheck['result']['data']['content'] ?? '';
+                if (empty(trim($content))) continue; // Already empty
+            } else {
+                continue;
+            }
+            /* Truncate the file */
             $urlSave = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
                  . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=save_file_content"
@@ -2304,7 +2335,7 @@ switch ($action) {
                 if (($json['result']['status'] ?? 0) == 1) $cleared = true;
             }
         }
-        echo json_encode(['success' => $cleared, 'message' => $cleared ? 'Error log cleared' : 'Could not clear error log']);
+        echo json_encode(['success' => $cleared, 'message' => $cleared ? 'Error log cleared' : 'No error logs found to clear']);
         break;
 
     /* ═══ FILE MANAGER ═══ */
