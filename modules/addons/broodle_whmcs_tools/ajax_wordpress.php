@@ -252,6 +252,11 @@ switch ($action) {
                 'themeUpdates'    => $inst['features']['updates']['amountOfThemesWithUpdates'] ?? 0,
                 'availableUpdate' => $inst['features']['updates']['availableVersion'] ?? null,
                 'displayTitle'    => $inst['displayTitle'] ?? $url,
+                'maintenance'     => $inst['features']['maintenance']['status'] ?? false,
+                'debug'           => $inst['features']['debug']['status'] ?? false,
+                'securityStatus'  => $inst['features']['security']['status'] ?? null,
+                'vulnerability'   => $inst['features']['vulnerability']['status'] ?? null,
+                'hotlinkProtection' => $inst['features']['hotlinkProtection']['status'] ?? false,
             ];
         }
 
@@ -409,49 +414,10 @@ switch ($action) {
             }
         }
 
-        // Try multiple endpoint formats
-        $result = null;
-        $updateSuccess = false;
-        $errMsg = 'Update failed';
-
-        // Format 1: POST /v1/updater with array of tasks
+        // POST /v1/updater with array of task objects (confirmed working format)
         $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', [$task], 300);
-        if ($result['success']) {
-            $updateSuccess = true;
-        }
-
-        // Format 2: POST /v1/updater with single task object
-        if (!$updateSuccess) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password, '/v1/updater', 'POST', $task, 300);
-            if ($result['success']) {
-                $updateSuccess = true;
-            }
-        }
-
-        // Format 3: Try per-item update endpoint for plugins/themes
-        if (!$updateSuccess && $type === 'plugins' && !empty($slug)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/plugins/{$slug}/update", 'POST', null, 300);
-            if ($result['success']) {
-                $updateSuccess = true;
-            }
-        }
-        if (!$updateSuccess && $type === 'themes' && !empty($slug)) {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/themes/{$slug}/update", 'POST', null, 300);
-            if ($result['success']) {
-                $updateSuccess = true;
-            }
-        }
-
-        // Format 4: PATCH on the installation for core updates
-        if (!$updateSuccess && $type === 'core') {
-            $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-                "/v1/installations/{$instId}/update", 'POST', null, 300);
-            if ($result['success']) {
-                $updateSuccess = true;
-            }
-        }
+        $updateSuccess = $result['success'];
+        $errMsg = 'Update failed';
 
         if (!$updateSuccess && is_array($result['data'] ?? null)) {
             $errMsg = $result['data']['meta']['message'] ?? $result['data']['message'] ?? $result['data']['error'] ?? 'Update failed';
@@ -762,103 +728,149 @@ switch ($action) {
         }
         break;
 
-    // ─── Security Debug: Test all security endpoints and return raw responses ──
-    case 'wp_security_debug':
+    // ─── Get Debug Settings ─────────────────────────────────────────────────
+    case 'wp_get_debug_settings':
         $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
         if ($instId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
             exit;
         }
 
-        $tests = [];
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/features/debug/settings");
 
-        // Test 1: POST /v1/security-measures/checker with installationsIds (plural, array)
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            '/v1/security-measures/checker', 'POST', ['installationsIds' => [$instId]]);
-        $tests[] = [
-            'endpoint' => 'POST /v1/security-measures/checker',
-            'body'     => ['installationsIds' => [$instId]],
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 2: GET with installationId query param
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            "/v1/security-measures/checker?installationId={$instId}");
-        $tests[] = [
-            'endpoint' => "GET /v1/security-measures/checker?installationId={$instId}",
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 3: GET per-installation security
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            "/v1/installations/{$instId}/security");
-        $tests[] = [
-            'endpoint' => "GET /v1/installations/{$instId}/security",
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 4: GET per-installation security-measures
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            "/v1/installations/{$instId}/security-measures");
-        $tests[] = [
-            'endpoint' => "GET /v1/installations/{$instId}/security-measures",
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 5: GET with installationsIds[] query param
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            "/v1/security-measures/checker?installationsIds[]={$instId}");
-        $tests[] = [
-            'endpoint' => "GET /v1/security-measures/checker?installationsIds[]={$instId}",
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 6: POST with installationId (singular)
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            '/v1/security-measures/checker', 'POST', ['installationId' => $instId]);
-        $tests[] = [
-            'endpoint' => 'POST /v1/security-measures/checker',
-            'body'     => ['installationId' => $instId],
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => $r['data'] ?? null,
-            'raw'      => $r['raw'] ?? null,
-        ];
-
-        // Test 7: GET the OpenAPI spec paths (to discover available endpoints)
-        $r = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
-            '/v1/specification/public');
-        $specPaths = [];
-        if ($r['success'] && is_array($r['data']) && isset($r['data']['paths'])) {
-            foreach ($r['data']['paths'] as $path => $methods) {
-                if (stripos($path, 'security') !== false) {
-                    $specPaths[$path] = array_keys($methods);
-                }
-            }
+        if ($result['success'] && is_array($result['data'])) {
+            echo json_encode(['success' => true, 'settings' => $result['data']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Failed to get debug settings']);
         }
-        $tests[] = [
-            'endpoint' => 'GET /v1/specification/public (security paths only)',
-            'http'     => $r['status'] ?? null,
-            'success'  => $r['success'],
-            'data'     => !empty($specPaths) ? $specPaths : 'No security paths found in spec',
-        ];
+        break;
 
-        echo json_encode(['success' => true, 'tests' => $tests], JSON_PRETTY_PRINT);
+    // ─── Get Maintenance Settings ────────────────────────────────────────────
+    case 'wp_get_maintenance_settings':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/features/maintenance/settings");
+
+        if ($result['success'] && is_array($result['data'])) {
+            echo json_encode(['success' => true, 'settings' => $result['data']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Failed to get maintenance settings']);
+        }
+        break;
+
+    // ─── Get Account Info ────────────────────────────────────────────────────
+    case 'wp_get_account':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/account");
+
+        if ($result['success'] && is_array($result['data'])) {
+            echo json_encode(['success' => true, 'account' => $result['data']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Failed to get account info']);
+        }
+        break;
+
+    // ─── Get Vulnerabilities ─────────────────────────────────────────────────
+    case 'wp_get_vulnerabilities':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/vulnerabilities-checker?installationsIds[]={$instId}");
+
+        if ($result['success'] && is_array($result['data'])) {
+            echo json_encode(['success' => true, 'vulnerabilities' => $result['data']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Failed to check vulnerabilities']);
+        }
+        break;
+
+    // ─── Toggle Hotlink Protection ───────────────────────────────────────────
+    case 'wp_toggle_hotlink':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        $enable = isset($_POST['enable']) ? ($_POST['enable'] === '1' || $_POST['enable'] === 'true') : false;
+
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/features/hotlink-protection/status", 'PUT', ['status' => $enable]);
+
+        echo json_encode([
+            'success' => $result['success'],
+            'message' => $result['success'] ? ('Hotlink protection ' . ($enable ? 'enabled' : 'disabled')) : 'Failed to toggle hotlink protection',
+        ]);
+        break;
+
+    // ─── Toggle Indexing ─────────────────────────────────────────────────────
+    case 'wp_toggle_indexing':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        $enable = isset($_POST['enable']) ? ($_POST['enable'] === '1' || $_POST['enable'] === 'true') : false;
+
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/features/indexing/status", 'PUT', ['status' => $enable]);
+
+        echo json_encode([
+            'success' => $result['success'],
+            'message' => $result['success'] ? ('Search engine indexing ' . ($enable ? 'enabled' : 'disabled')) : 'Failed to toggle indexing',
+        ]);
+        break;
+
+    // ─── Get Auto-Update Settings ────────────────────────────────────────────
+    case 'wp_get_autoupdate_settings':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/features/updates/settings");
+
+        if ($result['success'] && is_array($result['data'])) {
+            echo json_encode(['success' => true, 'settings' => $result['data']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Failed to get auto-update settings']);
+        }
+        break;
+
+    // ─── Trigger Update Check ────────────────────────────────────────────────
+    case 'wp_check_for_updates':
+        $instId = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        if ($instId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Missing installation ID']);
+            exit;
+        }
+
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            '/v1/updates-checker', 'POST', ['installationsIds' => [$instId]]);
+
+        echo json_encode([
+            'success' => $result['success'],
+            'message' => $result['success'] ? 'Update check initiated' : 'Failed to trigger update check',
+        ]);
         break;
 
     default:

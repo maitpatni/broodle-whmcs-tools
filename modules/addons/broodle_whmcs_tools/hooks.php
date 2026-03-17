@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.74');
+    define('BROODLE_TOOLS_VERSION', '3.10.75');
 }
 
 if (!defined('WHMCS')) {
