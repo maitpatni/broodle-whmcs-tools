@@ -88,26 +88,69 @@ case 'fm_save':
 case 'fm_create_file':
     $dir = isset($_POST['dir']) ? trim($_POST['dir']) : '';
     $name = isset($_POST['name']) ? trim($_POST['name']) : '';
-    if (!$dir || !$name) { echo json_encode(['success' => false, 'message' => 'Missing parameters']); break; }
+    if (!$name) { echo json_encode(['success' => false, 'message' => 'Missing file name']); break; }
+    if (!$dir || $dir === '/') {
+        // Get home directory to use as base
+        $urlH = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=getdir";
+        $rH = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlH);
+        if ($rH['code'] === 200 && $rH['body']) {
+            $jh = json_decode($rH['body'], true);
+            $hd = $jh['cpanelresult']['data'][0]['homedir'] ?? ($jh['cpanelresult']['data'][0]['dir'] ?? '');
+            if ($hd) $dir = $hd;
+        }
+    }
+    // Try UAPI first (apiversion=3)
     $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
          . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-         . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=mkfile"
-         . "&dir=" . urlencode($dir) . "&name=" . urlencode($name);
+         . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=save_file_content"
+         . "&dir=" . urlencode($dir) . "&file=" . urlencode($name)
+         . "&from_charset=utf-8&to_charset=utf-8&content=";
     $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
     $p = broodle_ajax_parse_result($r);
+    if (!$p['ok']) {
+        // Fallback to API2 mkfile
+        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=mkfile"
+             . "&dir=" . urlencode($dir) . "&name=" . urlencode($name);
+        $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
+        $p = broodle_ajax_parse_result($r2);
+    }
     echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'File created' : ($p['error'] ?? 'Failed')]);
     break;
 
 case 'fm_create_folder':
     $dir = isset($_POST['dir']) ? trim($_POST['dir']) : '';
     $name = isset($_POST['name']) ? trim($_POST['name']) : '';
-    if (!$dir || !$name) { echo json_encode(['success' => false, 'message' => 'Missing parameters']); break; }
+    if (!$name) { echo json_encode(['success' => false, 'message' => 'Missing folder name']); break; }
+    if (!$dir || $dir === '/') {
+        $urlH = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=getdir";
+        $rH = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlH);
+        if ($rH['code'] === 200 && $rH['body']) {
+            $jh = json_decode($rH['body'], true);
+            $hd = $jh['cpanelresult']['data'][0]['homedir'] ?? ($jh['cpanelresult']['data'][0]['dir'] ?? '');
+            if ($hd) $dir = $hd;
+        }
+    }
     $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
          . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-         . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=mkdir"
+         . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=mkdir"
          . "&dir=" . urlencode($dir) . "&name=" . urlencode($name);
     $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
     $p = broodle_ajax_parse_result($r);
+    if (!$p['ok']) {
+        // Fallback to API2
+        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=mkdir"
+             . "&dir=" . urlencode($dir) . "&name=" . urlencode($name);
+        $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
+        $p = broodle_ajax_parse_result($r2);
+    }
     echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Folder created' : ($p['error'] ?? 'Failed')]);
     break;
 
@@ -212,14 +255,29 @@ case 'fm_compress':
     $dest = isset($_POST['dest']) ? trim($_POST['dest']) : '';
     if (!$items || !$dest) { echo json_encode(['success' => false, 'message' => 'Missing parameters']); break; }
     $itemList = json_decode($items, true);
-    if (!is_array($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid']); break; }
+    if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid']); break; }
+    // Use UAPI Fileman::save_file_content won't work for compress — use API2 fileop
+    // API2 fileop compress: sourcefiles is comma-separated list, destfiles is the archive name
+    // Each source file needs to be the full path
+    $sourceStr = implode(',', $itemList);
     $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
          . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
          . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
-         . "&op=compress&sourcefiles=" . urlencode(implode(',', $itemList)) . "&destfiles=" . urlencode($dest);
+         . "&op=compress&sourcefiles=" . urlencode($sourceStr) . "&destfiles=" . urlencode($dest);
     $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, 120);
-    $p = broodle_ajax_parse_result($r);
-    echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Compressed' : ($p['error'] ?? 'Failed')]);
+    if ($r['code'] === 200 && $r['body']) {
+        $json = json_decode($r['body'], true);
+        $cpResult = $json['cpanelresult']['data'][0] ?? [];
+        $ok = !empty($cpResult['result']) || (isset($cpResult['status']) && $cpResult['status']);
+        if (!$ok) {
+            // Check if there's a different success indicator
+            $ok = (isset($json['cpanelresult']['event']['result']) && $json['cpanelresult']['event']['result'] == 1);
+        }
+        $err = $cpResult['reason'] ?? ($cpResult['error'] ?? 'Compress failed');
+        echo json_encode($ok ? ['success' => true, 'message' => 'Compressed successfully'] : ['success' => false, 'message' => $err]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to connect']);
+    }
     break;
 
 case 'fm_extract':
@@ -232,8 +290,18 @@ case 'fm_extract':
          . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
          . "&op=extract&sourcefiles=" . urlencode($filePath) . "&destfiles=" . urlencode($dest);
     $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url, 120);
-    $p = broodle_ajax_parse_result($r);
-    echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'Extracted' : ($p['error'] ?? 'Failed')]);
+    if ($r['code'] === 200 && $r['body']) {
+        $json = json_decode($r['body'], true);
+        $cpResult = $json['cpanelresult']['data'][0] ?? [];
+        $ok = !empty($cpResult['result']) || (isset($cpResult['status']) && $cpResult['status']);
+        if (!$ok) {
+            $ok = (isset($json['cpanelresult']['event']['result']) && $json['cpanelresult']['event']['result'] == 1);
+        }
+        $err = $cpResult['reason'] ?? ($cpResult['error'] ?? 'Extract failed');
+        echo json_encode($ok ? ['success' => true, 'message' => 'Extracted successfully'] : ['success' => false, 'message' => $err]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to connect']);
+    }
     break;
 
 case 'fm_search':
@@ -270,8 +338,15 @@ case 'fm_download_url':
     $json = json_decode($resp, true);
     $sessionUrl = $json['data']['url'] ?? '';
     if (!$sessionUrl) { echo json_encode(['success' => false, 'message' => 'Session failed']); break; }
-    $sessionUrl .= (strpos($sessionUrl, '?') !== false ? '&' : '?') . 'goto_uri=' . urlencode('/download?skipencode=1&file=' . urlencode($filePath));
-    echo json_encode(['success' => true, 'url' => $sessionUrl]);
+    // Extract the cpsess base URL (e.g. https://host:2083/cpsessXXXX)
+    if (preg_match('#(https?://[^/]+/cpsess[^/]+)#', $sessionUrl, $m)) {
+        $baseSession = $m[1];
+        $downloadUrl = $baseSession . '/download?skipencode=1&file=' . urlencode($filePath);
+    } else {
+        // Fallback: append goto_uri
+        $downloadUrl = $sessionUrl . (strpos($sessionUrl, '?') !== false ? '&' : '?') . 'goto_uri=' . urlencode('/download?skipencode=1&file=' . urlencode($filePath));
+    }
+    echo json_encode(['success' => true, 'url' => $downloadUrl]);
     break;
 
 }

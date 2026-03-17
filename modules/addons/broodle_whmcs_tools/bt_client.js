@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.61");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.62");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -1503,13 +1503,8 @@ function injectStyles9(){
 '.fm-table .fm-perms{font-family:"SFMono-Regular",Consolas,monospace;font-size:12px;color:var(--text-muted,#6b7280)}',
 '.fm-table .fm-date{color:var(--text-muted,#6b7280);font-size:12px}',
 '.fm-table .fm-check{width:16px;height:16px;accent-color:#0a5ed3;cursor:pointer}',
-/* Editor panel */
-'.fm-editor-wrap{display:none;flex-direction:column;height:100%;min-height:500px}',
-'.fm-editor-head{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);border-radius:12px 12px 0 0}',
-'.fm-editor-head .fm-editor-title{flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-'.fm-editor-body{flex:1;display:flex;flex-direction:column;overflow:hidden}',
-'.fm-editor-body textarea{flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 16px;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;line-height:1.6;color:var(--heading-color,#111827);background:var(--card-bg,#fff);tab-size:4;-moz-tab-size:4}',
-'.fm-editor-status{padding:6px 16px;font-size:11px;color:var(--text-muted,#9ca3af);border-top:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f9fafb);border-radius:0 0 12px 12px;display:flex;align-items:center;gap:12px}',
+/* Editor panel — now a popup modal, minimal CSS needed */
+'.fm-editor-wrap{display:none}',
 /* Context menu */
 '.fm-ctx{position:fixed;z-index:100001;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:4px;min-width:180px;animation:btFadeIn .12s}',
 '.fm-ctx-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;font-weight:500;color:var(--heading-color,#374151);cursor:pointer;border-radius:6px;transition:background .1s}',
@@ -1577,13 +1572,6 @@ function buildFileManagerPageInto(container){
 
     container.appendChild(card);
 
-    /* Editor panel (hidden) */
-    var edWrap=document.createElement("div");edWrap.className="bt-card fm-editor-wrap";edWrap.id="fm-editor-wrap";
-    edWrap.innerHTML='<div class="fm-editor-head"><button class="fm-toolbar-btn" id="fm-editor-back" title="Back to files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg><span>Back</span></button><div class="fm-editor-title" id="fm-editor-title"></div><button class="fm-toolbar-btn" id="fm-editor-save" style="background:#0a5ed3;color:#fff;border-color:#0a5ed3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Save</span></button><button class="fm-toolbar-btn" id="fm-editor-download" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>'
-    +'<div class="fm-editor-body"><textarea id="fm-editor-textarea" spellcheck="false"></textarea></div>'
-    +'<div class="fm-editor-status"><span id="fm-editor-fpath"></span><span id="fm-editor-fsize"></span><span id="fm-editor-msg"></span></div>';
-    container.appendChild(edWrap);
-
     /* Hidden file input for upload */
     var fileInput=document.createElement("input");fileInput.type="file";fileInput.id="fm-file-input";fileInput.multiple=true;fileInput.style.display="none";
     container.appendChild(fileInput);
@@ -1591,7 +1579,6 @@ function buildFileManagerPageInto(container){
     /* Bind events */
     fmBindToolbar();
     fmBindDragDrop();
-    fmBindEditor();
     fmLoadDir("/");
 }
 
@@ -1806,76 +1793,121 @@ function fmBindDragDrop(){
     });
 }
 
-/* ─── FM: Editor Binding ─── */
-function fmBindEditor(){
-    var backBtn=$("fm-editor-back");
-    if(backBtn) backBtn.addEventListener("click",function(){fmCloseEditor();});
-    var saveBtn=$("fm-editor-save");
-    if(saveBtn) saveBtn.addEventListener("click",function(){fmSaveFile();});
-    var dlBtn=$("fm-editor-download");
-    if(dlBtn) dlBtn.addEventListener("click",function(){
-        var fp=$("fm-editor-fpath");if(fp&&fp.dataset.path) fmDownload(fp.dataset.path);
-    });
-    /* Ctrl+S save */
-    var ta=$("fm-editor-textarea");
-    if(ta) ta.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key==="s"){e.preventDefault();fmSaveFile();}});
-}
+/* ─── FM: Editor is now a popup — see fmOpenFile ─── */
 
-/* ─── FM: Open File in Editor ─── */
+/* ─── FM: Open File in Editor (popup modal) ─── */
 function fmOpenFile(filePath){
-    var card=document.querySelector(".bt-card");
-    var edWrap=$("fm-editor-wrap");
-    if(!card||!edWrap) return;
-    card.style.display="none";
-    edWrap.style.display="flex";
-    var title=$("fm-editor-title");if(title) title.textContent=filePath.split("/").pop();
-    var fpath=$("fm-editor-fpath");if(fpath){fpath.textContent=filePath;fpath.dataset.path=filePath;}
-    var ta=$("fm-editor-textarea");if(ta){ta.value="Loading...";ta.readOnly=true;}
-    var msg=$("fm-editor-msg");if(msg) msg.textContent="";
+    /* Remove any existing editor modal */
+    var old=$("fm-editor-overlay");if(old&&old.parentNode) old.parentNode.removeChild(old);
+
+    var overlay=document.createElement("div");overlay.className="bt-overlay";overlay.id="fm-editor-overlay";
+    overlay.style.zIndex="100002";overlay.style.padding="20px";
+
+    var modal=document.createElement("div");
+    modal.style.cssText="background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:900px;height:85vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:btSlideUp .25s;overflow:hidden";
+
+    /* Header */
+    var head=document.createElement("div");
+    head.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-shrink:0";
+    head.innerHTML='<button class="fm-toolbar-btn" id="fm-ed-close" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
+    +'<div style="flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="fm-ed-title"></div>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-save" style="background:#0a5ed3;color:#fff;border-color:#0a5ed3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Save</span></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-dl" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>';
+    modal.appendChild(head);
+
+    /* Body — textarea */
+    var body=document.createElement("div");
+    body.style.cssText="flex:1;display:flex;flex-direction:column;overflow:hidden";
+    var ta=document.createElement("textarea");
+    ta.id="fm-ed-textarea";ta.spellcheck=false;
+    ta.style.cssText="flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 16px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--heading-color,#111827);background:var(--card-bg,#fff);tab-size:4;-moz-tab-size:4;box-sizing:border-box";
+    ta.value="Loading...";ta.readOnly=true;
+    body.appendChild(ta);
+    modal.appendChild(body);
+
+    /* Footer status */
+    var foot=document.createElement("div");
+    foot.style.cssText="padding:6px 16px;font-size:11px;color:var(--text-muted,#9ca3af);border-top:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f9fafb);display:flex;align-items:center;gap:12px;flex-shrink:0";
+    foot.innerHTML='<span id="fm-ed-fpath"></span><span id="fm-ed-fsize"></span><span id="fm-ed-msg"></span>';
+    modal.appendChild(foot);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    /* Set title and path */
+    var titleEl=overlay.querySelector("#fm-ed-title");if(titleEl) titleEl.textContent=filePath.split("/").pop();
+    var fpathEl=overlay.querySelector("#fm-ed-fpath");if(fpathEl){fpathEl.textContent=filePath;fpathEl.dataset.path=filePath;}
+
+    /* Track if file was modified */
+    var fmEditorDirty=false;
+
+    /* Close handler */
+    function closeEditor(){
+        if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if(fmEditorDirty) fmLoadDir(fmState.dir);
+    }
+    overlay.querySelector("#fm-ed-close").addEventListener("click",closeEditor);
+    overlay.addEventListener("click",function(e){if(e.target===overlay) closeEditor();});
+
+    /* Save handler */
+    overlay.querySelector("#fm-ed-save").addEventListener("click",function(){
+        var msgEl=overlay.querySelector("#fm-ed-msg");
+        var saveBtn=overlay.querySelector("#fm-ed-save");
+        btnLoad(saveBtn,"Saving...");
+        if(msgEl){msgEl.textContent="Saving...";msgEl.style.color="";}
+        post({action:"fm_save",file:filePath,content:ta.value},function(r){
+            btnDone(saveBtn);
+            if(msgEl){msgEl.textContent=r.success?"Saved successfully":(r.message||"Failed");msgEl.style.color=r.success?"#059669":"#ef4444";}
+            if(r.success){fmEditorDirty=true;if(msgEl) setTimeout(function(){msgEl.textContent="";},3000);}
+        });
+    });
+
+    /* Download handler */
+    overlay.querySelector("#fm-ed-dl").addEventListener("click",function(){fmDownload(filePath);});
+
+    /* Ctrl+S */
+    ta.addEventListener("keydown",function(e){
+        if((e.ctrlKey||e.metaKey)&&e.key==="s"){
+            e.preventDefault();
+            overlay.querySelector("#fm-ed-save").click();
+        }
+        /* Tab key inserts tab */
+        if(e.key==="Tab"){
+            e.preventDefault();
+            var start=ta.selectionStart;var end=ta.selectionEnd;
+            ta.value=ta.value.substring(0,start)+"\t"+ta.value.substring(end);
+            ta.selectionStart=ta.selectionEnd=start+1;
+        }
+    });
+
+    /* Escape to close */
+    function escHandler(e){if(e.key==="Escape"){closeEditor();document.removeEventListener("keydown",escHandler);}}
+    document.addEventListener("keydown",escHandler);
+
+    /* Load file content */
     post({action:"fm_read",file:filePath},function(r){
-        if(!r.success){if(ta){ta.value="Error: "+(r.message||"Failed to read file");} return;}
-        if(ta){ta.value=r.content||"";ta.readOnly=false;}
-        var fsize=$("fm-editor-fsize");
-        if(fsize) fsize.textContent=fmFormatSize((r.content||"").length);
+        if(!r.success){ta.value="Error: "+(r.message||"Failed to read file");return;}
+        ta.value=r.content||"";ta.readOnly=false;
+        var fsizeEl=overlay.querySelector("#fm-ed-fsize");
+        if(fsizeEl) fsizeEl.textContent=fmFormatSize((r.content||"").length);
     });
 }
 
-/* ─── FM: Save File ─── */
-function fmSaveFile(){
-    var fpath=$("fm-editor-fpath");var ta=$("fm-editor-textarea");var msg=$("fm-editor-msg");
-    if(!fpath||!fpath.dataset.path||!ta) return;
-    var saveBtn=$("fm-editor-save");
-    btnLoad(saveBtn,"Saving...");
-    if(msg) msg.textContent="Saving...";
-    post({action:"fm_save",file:fpath.dataset.path,content:ta.value},function(r){
-        btnDone(saveBtn);
-        if(msg) msg.textContent=r.success?"Saved successfully":(r.message||"Failed");
-        if(msg) msg.style.color=r.success?"#059669":"#ef4444";
-        if(r.success&&msg) setTimeout(function(){msg.textContent="";},3000);
-    });
-}
-
-/* ─── FM: Close Editor ─── */
-function fmCloseEditor(){
-    var card=document.querySelector("#bt-fm-page .bt-card");
-    var edWrap=$("fm-editor-wrap");
-    if(card) card.style.display="flex";
-    if(edWrap) edWrap.style.display="none";
-}
+/* (fmSaveFile and fmCloseEditor removed — editor is now a popup modal in fmOpenFile) */
 
 /* ─── FM: Create File ─── */
 function fmCreateFile(name){
     post({action:"fm_create_file",dir:fmState.dir,name:name},function(r){
-        if(r.success) fmLoadDir(fmState.dir);
-        else alert(r.message||"Failed to create file");
+        fmLoadDir(fmState.dir);
+        if(!r.success) fmToast(r.message||"Failed to create file",false);
     });
 }
 
 /* ─── FM: Create Folder ─── */
 function fmCreateFolder(name){
     post({action:"fm_create_folder",dir:fmState.dir,name:name},function(r){
-        if(r.success) fmLoadDir(fmState.dir);
-        else alert(r.message||"Failed to create folder");
+        fmLoadDir(fmState.dir);
+        if(!r.success) fmToast(r.message||"Failed to create folder",false);
     });
 }
 
@@ -1885,8 +1917,8 @@ function fmConfirmDelete(){
     var names=items.map(function(p){return p.split("/").pop();}).join(", ");
     fmConfirm("Delete","Delete "+items.length+" item(s)?\n\n"+names,function(){
         post({action:"fm_delete",items:JSON.stringify(items)},function(r){
-            if(r.success) fmLoadDir(fmState.dir);
-            else alert(r.message||"Failed to delete");
+            fmLoadDir(fmState.dir);
+            if(!r.success) fmToast(r.message||"Failed to delete",false);
         });
     });
 }
@@ -1894,8 +1926,8 @@ function fmConfirmDelete(){
 /* ─── FM: Rename ─── */
 function fmRename(oldPath,newName){
     post({action:"fm_rename",old:oldPath,new_name:newName},function(r){
-        if(r.success) fmLoadDir(fmState.dir);
-        else alert(r.message||"Failed to rename");
+        fmLoadDir(fmState.dir);
+        if(!r.success) fmToast(r.message||"Failed to rename",false);
     });
 }
 
@@ -1908,7 +1940,7 @@ function fmCopyMove(action,items,dest){
             done++;
             if(!r.success) errors.push(r.message||"Failed");
             if(done===items.length){
-                if(errors.length) alert(errors.join("\n"));
+                if(errors.length) fmToast(errors.join("; "),false);
                 fmLoadDir(fmState.dir);
             }
         });
@@ -1923,7 +1955,7 @@ function fmUploadFiles(fileList){
     function uploadNext(idx){
         if(idx>=total){
             if(bar) setTimeout(function(){bar.classList.remove("active");},1500);
-            if(errors.length) alert("Upload errors:\n"+errors.join("\n"));
+            if(errors.length) fmToast("Upload errors: "+errors.join("; "),false);
             fmLoadDir(fmState.dir);
             return;
         }
@@ -1961,24 +1993,28 @@ function fmUploadFiles(fileList){
 function fmDownload(filePath){
     post({action:"fm_download_url",file:filePath},function(r){
         if(r.success&&r.url) window.open(r.url,"_blank");
-        else alert(r.message||"Failed to get download URL");
+        else fmToast(r.message||"Failed to get download URL",false);
     });
 }
 
 /* ─── FM: Compress ─── */
 function fmCompress(archiveName){
     var dest=fmState.dir.replace(/\/+$/,"")+"/"+archiveName;
+    fmToast("Compressing...",true);
     post({action:"fm_compress",items:JSON.stringify(fmState.selected),dest:dest},function(r){
-        if(r.success) fmLoadDir(fmState.dir);
-        else alert(r.message||"Failed to compress");
+        fmLoadDir(fmState.dir);
+        if(!r.success) fmToast(r.message||"Failed to compress",false);
+        else fmToast("Compressed successfully",true);
     });
 }
 
 /* ─── FM: Extract ─── */
 function fmExtract(filePath,dest){
+    fmToast("Extracting...",true);
     post({action:"fm_extract",file:filePath,dest:dest},function(r){
-        if(r.success) fmLoadDir(fmState.dir);
-        else alert(r.message||"Failed to extract");
+        fmLoadDir(fmState.dir);
+        if(!r.success) fmToast(r.message||"Failed to extract",false);
+        else fmToast("Extracted successfully",true);
     });
 }
 
@@ -2046,8 +2082,8 @@ function fmPromptPerms(){
     fmPrompt("Change Permissions","Enter permissions (e.g. 0755):",currentPerms,function(perms){
         if(!perms) return;
         post({action:"fm_permissions",file:filePath,perms:perms},function(r){
-            if(r.success) fmLoadDir(fmState.dir);
-            else alert(r.message||"Failed to change permissions");
+            fmLoadDir(fmState.dir);
+            if(!r.success) fmToast(r.message||"Failed to change permissions",false);
         });
     });
 }
@@ -2100,6 +2136,16 @@ function fmHideContextMenu(){
     var m=$("fm-ctx-menu");if(m&&m.parentNode) m.parentNode.removeChild(m);
     document.removeEventListener("click",fmHideContextMenu);
     document.removeEventListener("contextmenu",fmHideContextMenu);
+}
+
+/* ─── FM: Toast notification ─── */
+function fmToast(msg,ok){
+    var existing=document.querySelectorAll(".fm-toast");existing.forEach(function(t){if(t.parentNode) t.parentNode.removeChild(t);});
+    var toast=document.createElement("div");toast.className="fm-toast";
+    toast.style.cssText="position:fixed;bottom:24px;right:24px;z-index:100003;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:btSlideUp .2s;max-width:400px;word-break:break-word;"+(ok?"background:#059669":"background:#ef4444");
+    toast.textContent=msg;
+    document.body.appendChild(toast);
+    setTimeout(function(){if(toast.parentNode){toast.style.opacity="0";toast.style.transition="opacity .3s";setTimeout(function(){if(toast.parentNode) toast.parentNode.removeChild(toast);},300);}},3500);
 }
 
 /* ─── Boot ─── */
