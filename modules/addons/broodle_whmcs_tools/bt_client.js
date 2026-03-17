@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.65");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.66");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -432,11 +432,29 @@ function injectStyles8(){
 var savedChangePwPane=null;
 
 /* ─── Open specific cPanel page via SSO ─── */
+var _cpanelSession={base:'',cpsess:'',expires:0};
 window.btOpenCpanelPage=function(page,el){
     if(el){el.style.opacity='.5';el.style.pointerEvents='none';}
+    /* If we have a cached session that's less than 20 minutes old, reuse it */
+    var now=Date.now();
+    if(_cpanelSession.base&&_cpanelSession.cpsess&&now<_cpanelSession.expires){
+        if(el){el.style.opacity='';el.style.pointerEvents='';}
+        var directUrl=_cpanelSession.base+_cpanelSession.cpsess+'/frontend/jupiter/'+page;
+        window.open(directUrl,'_cpanel');
+        return;
+    }
     post({action:'get_cpanel_sso_url',page:page},function(r){
         if(el){el.style.opacity='';el.style.pointerEvents='';}
-        if(r.success&&r.url) window.open(r.url,'_blank');
+        if(r.success&&r.url){
+            /* Cache the session info for reuse */
+            var m=r.url.match(/(https?:\/\/[^\/]+)(\/cpsess[^\/]+)/);
+            if(m){
+                _cpanelSession.base=m[1];
+                _cpanelSession.cpsess=m[2];
+                _cpanelSession.expires=Date.now()+20*60*1000; /* 20 min */
+            }
+            window.open(r.url,'_cpanel');
+        }
         else window.open('clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1','_blank');
     });
 };
@@ -618,7 +636,7 @@ function buildSidebarHtml(){
     /* Actions panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Actions</div>';
     /* cPanel login */
-    html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1" target="_blank" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);padding:0"><img src="'+btBasePath+'cpanel-icon.png" width="34" height="34" alt="cPanel" style="border-radius:9px"></div><div class="bt-si-label">Login to cPanel<span>Control Panel</span></div></a>';
+    html+='<a class="bt-sidebar-item" href="#" onclick="btOpenCpanelPage(\'\',this);return false;" id="bt-cpanel-link"><div class="bt-si-icon" style="background:rgba(255,106,19,.08);padding:0"><img src="'+btBasePath+'cpanel-icon.png" width="34" height="34" alt="cPanel" style="border-radius:9px"></div><div class="bt-si-label">Login to cPanel<span>Control Panel</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=productdetails&id='+C.serviceId+'#tabChangepw" target="_blank"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="bt-si-label">Change Password<span>Update Credentials</span></div></a>';
     html+='<a class="bt-sidebar-item" href="upgrade.php?type=package&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="bt-si-label">Upgrade/Downgrade<span>Change Plan</span></div></a>';
     html+='<a class="bt-sidebar-item" href="clientarea.php?action=cancel&id='+C.serviceId+'"><div class="bt-si-icon" style="background:rgba(239,68,68,.08);color:#ef4444"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="bt-si-label">Cancel Service<span>Request Cancellation</span></div></a>';
@@ -1971,8 +1989,8 @@ function fmOpenFile(filePath){
         var cmStyle=document.createElement("style");cmStyle.id="bt-cm-overrides";
         cmStyle.textContent=[
             '#fm-ed-cm-wrap .CodeMirror{height:100%;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:13px;line-height:1.55;border:none}',
-            '#fm-ed-cm-wrap .CodeMirror-gutters{background:var(--input-bg,#f8fafc);border-right:1px solid var(--border-color,#e5e7eb)}',
-            '#fm-ed-cm-wrap .CodeMirror-linenumber{color:var(--text-muted,#b0b8c4);padding:0 8px 0 4px;min-width:32px}',
+            '#fm-ed-cm-wrap .CodeMirror-gutters{background:var(--input-bg,#f8fafc);border-right:1px solid var(--border-color,#e5e7eb);padding-right:2px}',
+            '#fm-ed-cm-wrap .CodeMirror-linenumber{color:var(--text-muted,#b0b8c4);padding:0 6px 0 4px;min-width:28px;font-size:12px}',
             '#fm-ed-cm-wrap .CodeMirror-activeline-background{background:rgba(10,94,211,.04)}',
             '#fm-ed-cm-wrap .CodeMirror-matchingbracket{color:#0a5ed3 !important;font-weight:700;text-decoration:underline}',
             '#fm-ed-cm-wrap .CodeMirror-cursor{border-left:2px solid #0a5ed3}',
@@ -1981,9 +1999,9 @@ function fmOpenFile(filePath){
             '#fm-ed-cm-wrap .CodeMirror-dialog{background:var(--input-bg,#f9fafb);border-bottom:1px solid var(--border-color,#e5e7eb);padding:6px 12px;font-size:13px}',
             '#fm-ed-cm-wrap .CodeMirror-dialog input{border:1px solid var(--border-color,#d1d5db);border-radius:5px;padding:4px 8px;font-size:12px;outline:none;background:var(--card-bg,#fff);color:var(--heading-color,#111827)}',
             '#fm-ed-cm-wrap .CodeMirror-dialog input:focus{border-color:#0a5ed3;box-shadow:0 0 0 2px rgba(10,94,211,.1)}',
-            '#fm-ed-cm-wrap .CodeMirror-foldgutter{width:14px}',
-            '#fm-ed-cm-wrap .CodeMirror-foldgutter-open:after{content:"\\25BE";color:var(--text-muted,#b0b8c4)}',
-            '#fm-ed-cm-wrap .CodeMirror-foldgutter-folded:after{content:"\\25B8";color:#0a5ed3}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter{width:12px}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter-open:after{content:"\\25BE";color:var(--text-muted,#c0c4cc);font-size:10px}',
+            '#fm-ed-cm-wrap .CodeMirror-foldgutter-folded:after{content:"\\25B8";color:#0a5ed3;font-size:10px}',
             '#fm-ed-cm-wrap .cm-searching{background:rgba(255,200,0,.4);border-radius:2px}',
             /* Syntax colors */
             '#fm-ed-cm-wrap .cm-keyword{color:#8959a8}',
@@ -2245,6 +2263,7 @@ function fmDoSearch(){
 /* ─── FM: Prompt Modal ─── */
 function fmPrompt(title,label,defaultVal,callback){
     var overlay=document.createElement("div");overlay.className="bt-overlay";
+    overlay.style.zIndex="100005";
     overlay.innerHTML='<div class="bt-modal"><div class="bt-modal-head"><h5>'+esc(title)+'</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>'+esc(label)+'</label><input type="text" id="fm-prompt-input" value="'+esc(defaultVal||"")+'" autocomplete="off"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="fm-prompt-ok">OK</button></div></div>';
     document.body.appendChild(overlay);
     var inp=overlay.querySelector("#fm-prompt-input");
@@ -2264,6 +2283,7 @@ function fmPromptDest(title,label,defaultVal,callback){
 /* ─── FM: Confirm Dialog ─── */
 function fmConfirm(title,message,callback){
     var overlay=document.createElement("div");overlay.className="bt-overlay";
+    overlay.style.zIndex="100005";
     overlay.innerHTML='<div class="bt-modal bt-modal-sm"><div class="bt-modal-head"><h5>'+esc(title)+'</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body" style="text-align:center"><div style="margin:8px 0 16px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="margin:0 auto;display:block"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><p style="margin:0;font-size:14px;white-space:pre-wrap">'+esc(message)+'</p></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-danger" id="fm-confirm-ok">Confirm</button></div></div>';
     document.body.appendChild(overlay);
     function close(){if(overlay.parentNode) overlay.parentNode.removeChild(overlay);}

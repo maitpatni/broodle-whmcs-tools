@@ -162,25 +162,29 @@ case 'fm_delete':
     $errors = [];
     foreach ($itemList as $item) {
         $d = dirname($item); $f = basename($item);
-        /* Try UAPI Fileman::trash first */
-        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-             . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=trash"
-             . "&dir=" . urlencode($d) . "&files-0=" . urlencode($f);
-        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
-        $p = broodle_ajax_parse_result($r);
-        if (!$p['ok']) {
-            /* Fallback: API2 Fileman fileop unlink */
+        $ok = false;
+        /* Method 1: API2 Fileman fileop unlink (most reliable) */
+        $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+              . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
+              . "&op=unlink&sourcefiles=" . urlencode($item);
+        $r1 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url1);
+        $b1 = json_decode($r1['body'] ?? '', true);
+        if (isset($b1['cpanelresult']['data'][0]['result']) && $b1['cpanelresult']['data'][0]['result'] == 1) $ok = true;
+        if (!$ok && isset($b1['cpanelresult']['event']['result']) && $b1['cpanelresult']['event']['result'] == 1) $ok = true;
+        if (!$ok) {
+            /* Method 2: UAPI Fileman::trash */
             $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                   . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                  . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
-                  . "&op=unlink&sourcefiles=" . urlencode($item);
+                  . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=trash"
+                  . "&dir=" . urlencode($d) . "&files-0=" . urlencode($f);
             $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
-            $body2 = json_decode($r2['body'] ?? '', true);
-            $ok2 = false;
-            if (isset($body2['cpanelresult']['data'][0]['result']) && $body2['cpanelresult']['data'][0]['result'] == 1) $ok2 = true;
-            if (isset($body2['cpanelresult']['event']['result']) && $body2['cpanelresult']['event']['result'] == 1) $ok2 = true;
-            if (!$ok2) $errors[] = $f . ': ' . ($body2['cpanelresult']['data'][0]['reason'] ?? $p['error'] ?? 'Failed');
+            $b2 = json_decode($r2['body'] ?? '', true);
+            if (isset($b2['result']['status']) && $b2['result']['status'] == 1) $ok = true;
+        }
+        if (!$ok) {
+            $reason = $b1['cpanelresult']['data'][0]['reason'] ?? ($b1['cpanelresult']['error'] ?? 'Failed to delete');
+            $errors[] = $f . ': ' . $reason;
         }
     }
     echo json_encode(empty($errors) ? ['success' => true, 'message' => count($itemList) . ' item(s) deleted'] : ['success' => false, 'message' => implode('; ', $errors)]);

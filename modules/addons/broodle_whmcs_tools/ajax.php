@@ -253,9 +253,23 @@ if ($action === 'get_cpanel_sso_url') {
     if (empty($sessionUrl)) { echo json_encode(['success' => false, 'message' => 'Could not create cPanel session']); exit; }
     // Append the goto page path
     if ($gotoPage) {
-        // The session URL is like https://server:2083/cpsess.../frontend/jupiter/...
-        // We need to redirect to a specific page after login
-        $sessionUrl .= (strpos($sessionUrl, '?') !== false ? '&' : '?') . 'goto_uri=' . urlencode('/' . ltrim($gotoPage, '/'));
+        // The session URL from create_user_session is like:
+        // https://server:2083/cpsessXXXXXXXXXX/login/?session=TOKEN
+        // We need to extract the cpsess token and build a direct URL to the target page
+        if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
+            $baseUrl = $m[1];
+            $cpsess = $m[2];
+            // Extract session token from query string
+            $parts = parse_url($sessionUrl);
+            parse_str($parts['query'] ?? '', $qs);
+            $sessionToken = $qs['session'] ?? '';
+            if ($sessionToken) {
+                // First login to establish the session, then redirect to the page
+                // Build URL that logs in and redirects to the target page
+                $gotoPath = '/' . ltrim($gotoPage, '/');
+                $sessionUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($cpsess . '/frontend/jupiter/' . ltrim($gotoPage, '/'));
+            }
+        }
     }
     echo json_encode(['success' => true, 'url' => $sessionUrl]);
     exit;
