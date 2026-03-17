@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.63");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.64");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -1800,27 +1800,54 @@ function fmOpenFile(filePath){
     /* Remove any existing editor modal */
     var old=$("fm-editor-overlay");if(old&&old.parentNode) old.parentNode.removeChild(old);
 
+    /* Detect language from extension */
+    var ext=(filePath||"").split(".").pop().toLowerCase();
+    var langMap={js:"javascript",jsx:"javascript",ts:"typescript",tsx:"typescript",php:"php",py:"python",rb:"ruby",css:"css",scss:"css",less:"css",html:"html",htm:"html",xml:"xml",svg:"xml",json:"json",yml:"yaml",yaml:"yaml",sh:"bash",bash:"bash",sql:"sql",md:"markdown",txt:"text",conf:"text",ini:"text",log:"text",htaccess:"text",env:"text"};
+    var lang=langMap[ext]||"text";
+    var fileName=filePath.split("/").pop();
+
     var overlay=document.createElement("div");overlay.className="bt-overlay";overlay.id="fm-editor-overlay";
     overlay.style.zIndex="100002";overlay.style.padding="20px";
 
     var modal=document.createElement("div");
-    modal.style.cssText="background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:900px;height:85vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:btSlideUp .25s;overflow:hidden";
+    modal.style.cssText="background:var(--card-bg,#fff);border-radius:14px;width:100%;max-width:1100px;height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:btSlideUp .25s;overflow:hidden";
 
     /* Header */
     var head=document.createElement("div");
-    head.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-shrink:0";
-    head.innerHTML='<button class="fm-toolbar-btn" id="fm-ed-close" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
-    +'<div style="flex:1;font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="fm-ed-title"></div>'
+    head.style.cssText="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-shrink:0;background:var(--input-bg,#f9fafb)";
+    head.innerHTML='<button class="fm-toolbar-btn" id="fm-ed-close" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0;color:var(--text-muted,#6b7280)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+    +'<div style="flex:1;font-size:13px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="fm-ed-title"></div>'
+    +'<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(10,94,211,.08);color:#0a5ed3;font-weight:600;text-transform:uppercase" id="fm-ed-lang"></span>'
+    +'<div class="fm-toolbar-sep"></div>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-find" title="Find (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Find</span></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-copy" title="Copy All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span></button>'
     +'<button class="fm-toolbar-btn" id="fm-ed-save" style="background:#0a5ed3;color:#fff;border-color:#0a5ed3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Save</span></button>'
     +'<button class="fm-toolbar-btn" id="fm-ed-dl" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>';
     modal.appendChild(head);
 
-    /* Body — textarea */
+    /* Find bar (hidden by default) */
+    var findBar=document.createElement("div");findBar.id="fm-ed-findbar";
+    findBar.style.cssText="display:none;align-items:center;gap:8px;padding:6px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);background:var(--input-bg,#fefce8);flex-shrink:0";
+    findBar.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" width="14" height="14" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    +'<input type="text" id="fm-ed-find-input" placeholder="Find..." style="flex:1;padding:4px 8px;border:1px solid var(--border-color,#d1d5db);border-radius:5px;font-size:12px;outline:none;background:var(--card-bg,#fff);color:var(--heading-color,#111827);min-width:0">'
+    +'<span id="fm-ed-find-count" style="font-size:11px;color:var(--text-muted,#6b7280);white-space:nowrap">0 results</span>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-find-prev" title="Previous" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-find-next" title="Next" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg></button>'
+    +'<button class="fm-toolbar-btn" id="fm-ed-find-close" title="Close" style="padding:4px 6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+    modal.appendChild(findBar);
+
+    /* Editor body with line numbers */
     var body=document.createElement("div");
-    body.style.cssText="flex:1;display:flex;flex-direction:column;overflow:hidden";
+    body.style.cssText="flex:1;display:flex;overflow:hidden;position:relative";
+
+    var gutter=document.createElement("div");gutter.id="fm-ed-gutter";
+    gutter.style.cssText="width:50px;flex-shrink:0;background:var(--input-bg,#f8fafc);border-right:1px solid var(--border-color,#e5e7eb);overflow:hidden;text-align:right;padding:12px 8px 12px 4px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--text-muted,#c0c4cc);user-select:none";
+    body.appendChild(gutter);
+
     var ta=document.createElement("textarea");
-    ta.id="fm-ed-textarea";ta.spellcheck=false;
-    ta.style.cssText="flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 16px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--heading-color,#111827);background:var(--card-bg,#fff);tab-size:4;-moz-tab-size:4;box-sizing:border-box";
+    ta.id="fm-ed-textarea";ta.spellcheck=false;ta.autocomplete="off";ta.autocapitalize="off";
+    ta.style.cssText="flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 16px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.6;color:var(--heading-color,#111827);background:var(--card-bg,#fff);tab-size:4;-moz-tab-size:4;box-sizing:border-box;white-space:pre;overflow-wrap:normal;overflow-x:auto";
     ta.value="Loading...";ta.readOnly=true;
     body.appendChild(ta);
     modal.appendChild(body);
@@ -1828,22 +1855,53 @@ function fmOpenFile(filePath){
     /* Footer status */
     var foot=document.createElement("div");
     foot.style.cssText="padding:6px 16px;font-size:11px;color:var(--text-muted,#9ca3af);border-top:1px solid var(--border-color,#f3f4f6);background:var(--input-bg,#f9fafb);display:flex;align-items:center;gap:12px;flex-shrink:0";
-    foot.innerHTML='<span id="fm-ed-fpath"></span><span id="fm-ed-fsize"></span><span id="fm-ed-msg"></span>';
+    foot.innerHTML='<span id="fm-ed-fpath" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>'
+    +'<span style="flex:1"></span>'
+    +'<span id="fm-ed-cursor" style="font-family:SFMono-Regular,Consolas,monospace">Ln 1, Col 1</span>'
+    +'<span id="fm-ed-fsize"></span>'
+    +'<span id="fm-ed-msg"></span>';
     modal.appendChild(foot);
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    /* Set title and path */
-    var titleEl=overlay.querySelector("#fm-ed-title");if(titleEl) titleEl.textContent=filePath.split("/").pop();
+    /* Set title, lang, path */
+    var titleEl=overlay.querySelector("#fm-ed-title");if(titleEl) titleEl.textContent=fileName;
+    var langEl=overlay.querySelector("#fm-ed-lang");if(langEl) langEl.textContent=lang;
     var fpathEl=overlay.querySelector("#fm-ed-fpath");if(fpathEl){fpathEl.textContent=filePath;fpathEl.dataset.path=filePath;}
 
     /* Track if file was modified */
     var fmEditorDirty=false;
 
+    /* Line numbers */
+    function updateLineNumbers(){
+        var lines=ta.value.split("\n").length;
+        var html="";for(var i=1;i<=lines;i++) html+=i+"\n";
+        gutter.textContent=html;
+    }
+
+    /* Sync scroll between gutter and textarea */
+    ta.addEventListener("scroll",function(){gutter.scrollTop=ta.scrollTop;});
+
+    /* Update line numbers on input */
+    ta.addEventListener("input",updateLineNumbers);
+
+    /* Cursor position */
+    function updateCursor(){
+        var cursorEl=overlay.querySelector("#fm-ed-cursor");if(!cursorEl) return;
+        var val=ta.value.substring(0,ta.selectionStart);
+        var ln=val.split("\n").length;
+        var col=val.length-val.lastIndexOf("\n");
+        cursorEl.textContent="Ln "+ln+", Col "+col;
+    }
+    ta.addEventListener("click",updateCursor);
+    ta.addEventListener("keyup",updateCursor);
+    ta.addEventListener("select",updateCursor);
+
     /* Close handler */
     function closeEditor(){
         if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        document.removeEventListener("keydown",escHandler);
         if(fmEditorDirty) fmLoadDir(fmState.dir);
     }
     overlay.querySelector("#fm-ed-close").addEventListener("click",closeEditor);
@@ -1857,7 +1915,7 @@ function fmOpenFile(filePath){
         if(msgEl){msgEl.textContent="Saving...";msgEl.style.color="";}
         post({action:"fm_save",file:filePath,content:ta.value},function(r){
             btnDone(saveBtn);
-            if(msgEl){msgEl.textContent=r.success?"Saved successfully":(r.message||"Failed");msgEl.style.color=r.success?"#059669":"#ef4444";}
+            if(msgEl){msgEl.textContent=r.success?"Saved":(r.message||"Failed");msgEl.style.color=r.success?"#059669":"#ef4444";}
             if(r.success){fmEditorDirty=true;if(msgEl) setTimeout(function(){msgEl.textContent="";},3000);}
         });
     });
@@ -1865,31 +1923,135 @@ function fmOpenFile(filePath){
     /* Download handler */
     overlay.querySelector("#fm-ed-dl").addEventListener("click",function(){fmDownload(filePath);});
 
-    /* Ctrl+S */
+    /* Copy all */
+    overlay.querySelector("#fm-ed-copy").addEventListener("click",function(){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+            navigator.clipboard.writeText(ta.value).then(function(){fmToast("Copied to clipboard",true);});
+        }else{
+            ta.select();document.execCommand("copy");fmToast("Copied to clipboard",true);
+        }
+    });
+
+    /* ── Find functionality ── */
+    var findMatches=[];var findIdx=-1;
+    var findInput=overlay.querySelector("#fm-ed-find-input");
+    var findCount=overlay.querySelector("#fm-ed-find-count");
+
+    function doFind(){
+        var q=findInput.value;findMatches=[];findIdx=-1;
+        if(!q){findCount.textContent="0 results";return;}
+        var text=ta.value.toLowerCase();var ql=q.toLowerCase();var pos=0;
+        while((pos=text.indexOf(ql,pos))!==-1){findMatches.push(pos);pos+=ql.length;}
+        findCount.textContent=findMatches.length+" result"+(findMatches.length!==1?"s":"");
+        if(findMatches.length>0){findIdx=0;selectMatch();}
+    }
+    function selectMatch(){
+        if(findIdx<0||findIdx>=findMatches.length) return;
+        var pos=findMatches[findIdx];var q=findInput.value;
+        ta.focus();ta.setSelectionRange(pos,pos+q.length);
+        findCount.textContent=(findIdx+1)+"/"+findMatches.length;
+        /* Scroll textarea to selection */
+        var linesBefore=ta.value.substring(0,pos).split("\n").length;
+        var lineH=parseFloat(getComputedStyle(ta).lineHeight)||20.8;
+        ta.scrollTop=Math.max(0,(linesBefore-5)*lineH);
+    }
+    function findNext(){if(findMatches.length===0) return;findIdx=(findIdx+1)%findMatches.length;selectMatch();}
+    function findPrev(){if(findMatches.length===0) return;findIdx=(findIdx-1+findMatches.length)%findMatches.length;selectMatch();}
+
+    overlay.querySelector("#fm-ed-find").addEventListener("click",function(){
+        var fb=overlay.querySelector("#fm-ed-findbar");
+        if(fb.style.display==="none"||!fb.style.display){fb.style.display="flex";findInput.focus();findInput.select();}
+        else{fb.style.display="none";}
+    });
+    overlay.querySelector("#fm-ed-find-close").addEventListener("click",function(){overlay.querySelector("#fm-ed-findbar").style.display="none";ta.focus();});
+    overlay.querySelector("#fm-ed-find-next").addEventListener("click",findNext);
+    overlay.querySelector("#fm-ed-find-prev").addEventListener("click",findPrev);
+    findInput.addEventListener("input",doFind);
+    findInput.addEventListener("keydown",function(e){
+        if(e.key==="Enter"){e.preventDefault();if(e.shiftKey) findPrev();else findNext();}
+        if(e.key==="Escape"){overlay.querySelector("#fm-ed-findbar").style.display="none";ta.focus();}
+    });
+
+    /* Keyboard shortcuts */
     ta.addEventListener("keydown",function(e){
+        /* Ctrl+S save */
         if((e.ctrlKey||e.metaKey)&&e.key==="s"){
             e.preventDefault();
             overlay.querySelector("#fm-ed-save").click();
+        }
+        /* Ctrl+F find */
+        if((e.ctrlKey||e.metaKey)&&e.key==="f"){
+            e.preventDefault();
+            var fb=overlay.querySelector("#fm-ed-findbar");
+            fb.style.display="flex";findInput.focus();
+            var sel=ta.value.substring(ta.selectionStart,ta.selectionEnd);
+            if(sel){findInput.value=sel;doFind();}else{findInput.select();}
         }
         /* Tab key inserts tab */
         if(e.key==="Tab"){
             e.preventDefault();
             var start=ta.selectionStart;var end=ta.selectionEnd;
-            ta.value=ta.value.substring(0,start)+"\t"+ta.value.substring(end);
-            ta.selectionStart=ta.selectionEnd=start+1;
+            if(start===end){
+                ta.value=ta.value.substring(0,start)+"\t"+ta.value.substring(end);
+                ta.selectionStart=ta.selectionEnd=start+1;
+            }else{
+                /* Indent/unindent selection */
+                var val=ta.value;var lineStart=val.lastIndexOf("\n",start-1)+1;
+                var block=val.substring(lineStart,end);
+                if(e.shiftKey){
+                    block=block.replace(/^(\t| {1,4})/gm,"");
+                }else{
+                    block=block.replace(/^/gm,"\t");
+                }
+                ta.value=val.substring(0,lineStart)+block+val.substring(end);
+                ta.selectionStart=lineStart;ta.selectionEnd=lineStart+block.length;
+            }
+            updateLineNumbers();
+        }
+        /* Enter auto-indent */
+        if(e.key==="Enter"){
+            e.preventDefault();
+            var val=ta.value;var pos=ta.selectionStart;
+            var lineStart=val.lastIndexOf("\n",pos-1)+1;
+            var line=val.substring(lineStart,pos);
+            var indent=line.match(/^[\t ]*/)[0];
+            var lastChar=val.charAt(pos-1);
+            if(lastChar==="{"||lastChar==="("||lastChar==="[") indent+="\t";
+            ta.value=val.substring(0,pos)+"\n"+indent+val.substring(ta.selectionEnd);
+            ta.selectionStart=ta.selectionEnd=pos+1+indent.length;
+            updateLineNumbers();
+        }
+        /* Ctrl+D duplicate line */
+        if((e.ctrlKey||e.metaKey)&&e.key==="d"){
+            e.preventDefault();
+            var val=ta.value;var pos=ta.selectionStart;
+            var lineStart=val.lastIndexOf("\n",pos-1)+1;
+            var lineEnd=val.indexOf("\n",pos);if(lineEnd===-1) lineEnd=val.length;
+            var line=val.substring(lineStart,lineEnd);
+            ta.value=val.substring(0,lineEnd)+"\n"+line+val.substring(lineEnd);
+            ta.selectionStart=ta.selectionEnd=pos+line.length+1;
+            updateLineNumbers();
         }
     });
 
-    /* Escape to close */
-    function escHandler(e){if(e.key==="Escape"){closeEditor();document.removeEventListener("keydown",escHandler);}}
+    /* Escape to close (only if find bar is not open) */
+    function escHandler(e){
+        if(e.key==="Escape"){
+            var fb=overlay.querySelector("#fm-ed-findbar");
+            if(fb&&fb.style.display==="flex"){fb.style.display="none";ta.focus();return;}
+            closeEditor();
+        }
+    }
     document.addEventListener("keydown",escHandler);
 
     /* Load file content */
     post({action:"fm_read",file:filePath},function(r){
-        if(!r.success){ta.value="Error: "+(r.message||"Failed to read file");return;}
+        if(!r.success){ta.value="Error: "+(r.message||"Failed to read file");updateLineNumbers();return;}
         ta.value=r.content||"";ta.readOnly=false;
+        updateLineNumbers();updateCursor();
         var fsizeEl=overlay.querySelector("#fm-ed-fsize");
         if(fsizeEl) fsizeEl.textContent=fmFormatSize((r.content||"").length);
+        ta.focus();
     });
 }
 
