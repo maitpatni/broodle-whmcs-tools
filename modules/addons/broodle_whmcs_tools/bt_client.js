@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.50");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.51");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -54,7 +54,7 @@ function injectStyles(){
 '.bt-btn-spin{display:inline-block;vertical-align:middle;animation:btSpin .7s linear infinite}@keyframes btSpin{to{transform:rotate(360deg)}}',
 '.bt-row-btn:disabled,.bt-btn-add:disabled,.bt-btn-primary:disabled,.bt-btn-danger:disabled,.bt-btn-outline:disabled{opacity:.6;cursor:not-allowed;pointer-events:none}',
 /* Page takeover layout */
-'.bt-page-wrap{display:flex;gap:0;min-height:400px}',
+'.bt-page-wrap,#bt-page-wrap{display:flex;gap:0;min-height:400px}',
 '.bt-sidebar{width:240px;flex-shrink:0;padding:0 12px 0 0}',
 '.bt-sidebar-panel{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;margin-bottom:16px;overflow:hidden}',
 '.bt-sidebar-title{padding:14px 16px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af)}',
@@ -66,7 +66,7 @@ function injectStyles(){
 '.bt-sidebar-item .bt-si-label span{display:block;font-size:11px;font-weight:400;color:var(--text-muted,#9ca3af);margin-top:1px}',
 '.bt-main-area{flex:1;min-width:0;overflow:hidden}',
 '.bt-preserved-content{margin-bottom:20px}',
-'@media(max-width:991px){.bt-page-wrap{flex-direction:column}.bt-sidebar{width:100%;padding:0 0 16px 0}}',
+'@media(max-width:991px){.bt-page-wrap,#bt-page-wrap{flex-direction:column}.bt-sidebar{width:100%;padding:0 0 16px 0}}',
 /* Tabs */
 '.bt-wrap{margin-bottom:24px;font-family:inherit}.bt-wrap *{font-family:inherit}',
 '.bt-tabs-nav{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:2px solid var(--border-color,#e5e7eb);padding:0;margin:0}.bt-tabs-nav::-webkit-scrollbar{display:none}',
@@ -379,6 +379,7 @@ function init(){
     /* ── Standalone page mode: #bt-page-wrap already exists in managev2.php ── */
     var pageWrap=$("bt-page-wrap");
     if(!pageWrap) return;
+    pageWrap.className="bt-page-wrap";
 
     /* ── Build hero card with circular gauges ── */
     var statusLc=(C.status||"active").toLowerCase();
