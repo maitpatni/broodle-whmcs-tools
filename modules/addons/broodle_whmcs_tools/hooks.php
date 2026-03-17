@@ -8,7 +8,7 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.78');
+    define('BROODLE_TOOLS_VERSION', '3.10.79');
 }
 
 if (!defined('WHMCS')) {
@@ -424,7 +424,26 @@ add_hook('ClientAreaProductDetailsOutput', 1, function ($vars) {
         <div class="bt-v2-banner-arrow">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-    </a>';
+    </a>
+    <script>
+    (function(){
+        function moveBanner(){
+            var banner=document.querySelector(".bt-v2-banner");
+            if(!banner) return;
+            // Lagom2 main content selectors (try multiple for compatibility)
+            var target=document.querySelector(".main-content .container-fluid")
+                ||document.querySelector(".main-content .container")
+                ||document.querySelector(".main-content")
+                ||document.querySelector("#main-body .container")
+                ||document.querySelector("#main-body");
+            if(target && target!==banner.parentNode){
+                target.insertBefore(banner,target.firstChild);
+            }
+        }
+        if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",moveBanner);}
+        else{moveBanner();}
+    })();
+    </script>';
 });
 
 /* ─── Remove Webmail sidebar button ───────────────────────── */
@@ -497,42 +516,39 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
 
     return '
 <style>
-.bt-v2-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#0a5ed3!important;text-decoration:none!important;transition:background .12s}
-.bt-v2-dropdown-item:hover{background:rgba(10,94,211,.06);color:#0950b3!important;text-decoration:none!important}
-.bt-v2-dropdown-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
-.bt-v2-dropdown-divider{height:1px;margin:4px 12px;background:#e5e7eb}
-[data-theme="dark"] .bt-v2-dropdown-item{color:#5b9cf6!important}
-[data-theme="dark"] .bt-v2-dropdown-item:hover{background:rgba(91,156,246,.08);color:#7db4fa!important}
-[data-theme="dark"] .bt-v2-dropdown-divider{background:#374151}
+.bt-v2-dropdown-item a{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#0a5ed3!important;text-decoration:none!important;transition:background .12s;cursor:pointer}
+.bt-v2-dropdown-item a:hover{background:rgba(10,94,211,.06);color:#0950b3!important;text-decoration:none!important}
+.bt-v2-dropdown-item a svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
+.bt-v2-dropdown-divider{border-top:1px solid #e5e7eb;margin:4px 0}
+[data-theme="dark"] .bt-v2-dropdown-item a{color:#5b9cf6!important}
+[data-theme="dark"] .bt-v2-dropdown-item a:hover{background:rgba(91,156,246,.08);color:#7db4fa!important}
+[data-theme="dark"] .bt-v2-dropdown-divider{border-color:#374151}
 </style>
 <script>
 document.addEventListener("DOMContentLoaded",function(){
     var cpanelIds=' . $idsJson . ';
-    // Find all dropdown menus in service listings
-    var dropdowns=document.querySelectorAll(".dropdown-menu");
+    // Find all Lagom2 service dropdown menus with data-service-id
+    var dropdowns=document.querySelectorAll("ul.dropdown-menu[data-service-id]");
     dropdowns.forEach(function(menu){
-        // Find the service ID from existing links in this dropdown
-        var links=menu.querySelectorAll("a[href]");
-        var serviceId=null;
-        for(var i=0;i<links.length;i++){
-            var href=links[i].getAttribute("href")||""; 
-            var m=href.match(/[?&]id=(\d+)/);
-            if(m){serviceId=parseInt(m[1]);break;}
-        }
+        var serviceId=parseInt(menu.getAttribute("data-service-id"));
         if(!serviceId) return;
         // Only add for cPanel services
         if(cpanelIds.indexOf(serviceId)===-1) return;
         // Don\'t add twice
         if(menu.querySelector(".bt-v2-dropdown-item")) return;
-        // Add divider + Manage V2 link
-        var divider=document.createElement("div");
+        // Create divider li
+        var divider=document.createElement("li");
         divider.className="bt-v2-dropdown-divider";
+        divider.setAttribute("role","separator");
+        // Create Manage V2 li with inner link
+        var li=document.createElement("li");
+        li.className="dropdown-item bt-v2-dropdown-item";
         var link=document.createElement("a");
-        link.className="dropdown-item bt-v2-dropdown-item";
         link.href="index.php?m=broodle_whmcs_tools&id="+serviceId;
         link.innerHTML=\'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Manage V2\';
+        li.appendChild(link);
         menu.appendChild(divider);
-        menu.appendChild(link);
+        menu.appendChild(li);
     });
 });
 </script>';
