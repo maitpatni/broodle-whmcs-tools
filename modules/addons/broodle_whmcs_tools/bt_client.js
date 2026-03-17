@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.49");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.50");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -55,7 +55,7 @@ function injectStyles(){
 '.bt-row-btn:disabled,.bt-btn-add:disabled,.bt-btn-primary:disabled,.bt-btn-danger:disabled,.bt-btn-outline:disabled{opacity:.6;cursor:not-allowed;pointer-events:none}',
 /* Page takeover layout */
 '.bt-page-wrap{display:flex;gap:0;min-height:400px}',
-'.bt-sidebar{width:260px;flex-shrink:0;padding:0 15px 0 0}',
+'.bt-sidebar{width:240px;flex-shrink:0;padding:0 12px 0 0}',
 '.bt-sidebar-panel{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;margin-bottom:16px;overflow:hidden}',
 '.bt-sidebar-title{padding:14px 16px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af)}',
 '.bt-sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .12s,color .12s;color:var(--heading-color,#374151);text-decoration:none;border-left:3px solid transparent;font-size:14px;font-weight:500}',
@@ -64,7 +64,7 @@ function injectStyles(){
 '.bt-sidebar-item .bt-si-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
 '.bt-sidebar-item .bt-si-label{flex:1;min-width:0}',
 '.bt-sidebar-item .bt-si-label span{display:block;font-size:11px;font-weight:400;color:var(--text-muted,#9ca3af);margin-top:1px}',
-'.bt-main-area{flex:1;min-width:0}',
+'.bt-main-area{flex:1;min-width:0;overflow:hidden}',
 '.bt-preserved-content{margin-bottom:20px}',
 '@media(max-width:991px){.bt-page-wrap{flex-direction:column}.bt-sidebar{width:100%;padding:0 0 16px 0}}',
 /* Tabs */
@@ -321,40 +321,40 @@ function injectStyles8(){
     var s=document.createElement("style");s.id="bt-injected-styles8";
     s.textContent=[
 /* ── Hero Card ── */
-'.bt-hero{display:flex;gap:0;margin-bottom:24px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff)}',
-'.bt-hero-left{flex:1;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:32px 36px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:200px;position:relative;overflow:hidden}',
+'.bt-hero{display:flex;gap:0;margin-bottom:24px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);box-sizing:border-box;max-width:100%}',
+'.bt-hero-left{flex:1;min-width:0;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px;position:relative;overflow:hidden}',
 '.bt-hero-left::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}',
 '.bt-hero-left::after{content:"";position:absolute;bottom:-30px;left:-30px;width:90px;height:90px;background:rgba(255,255,255,.04);border-radius:50%}',
 '.bt-hero-icon{width:64px;height:64px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;backdrop-filter:blur(4px)}',
-'.bt-hero-plan{margin:0;font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.3px}',
-'.bt-hero-status{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px)}',
+'.bt-hero-plan{margin:0;font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.3px;color:#fff}',
+'.bt-hero-status{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(4px)}',
 '.bt-hero-status .dot{width:7px;height:7px;border-radius:50%;background:#4ade80}',
 '.bt-hero-status.suspended .dot{background:#fbbf24}',
 '.bt-hero-status.terminated .dot,.bt-hero-status.cancelled .dot{background:#f87171}',
-'.bt-hero-domain{margin-top:12px;font-size:13px;opacity:.85;font-weight:500}',
+'.bt-hero-domain{margin-top:12px;font-size:13px;color:rgba(255,255,255,.85);font-weight:500}',
 /* ── Usage Panel ── */
-'.bt-hero-right{width:320px;flex-shrink:0;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}',
-'.bt-gauges{display:flex;gap:28px;align-items:center;justify-content:center}',
+'.bt-hero-right{width:240px;flex-shrink:0;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}',
+'.bt-gauges{display:flex;gap:20px;align-items:center;justify-content:center}',
 '.bt-gauge{text-align:center}',
-'.bt-gauge-ring{position:relative;width:90px;height:90px}',
+'.bt-gauge-ring{position:relative;width:80px;height:80px}',
 '.bt-gauge-ring svg{transform:rotate(-90deg)}',
 '.bt-gauge-ring circle{fill:none;stroke-width:7;stroke-linecap:round}',
 '.bt-gauge-ring .bg{stroke:var(--border-color,#e5e7eb)}',
 '.bt-gauge-ring .fill{transition:stroke-dashoffset .8s ease}',
-'.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--heading-color,#111827)}',
-'.bt-gauge-label{margin-top:8px;font-size:13px;font-weight:600;color:var(--heading-color,#111827)}',
-'.bt-gauge-sub{font-size:11px;color:var(--text-muted,#6b7280);margin-top:2px}',
-'.bt-hero-updated{font-size:11px;color:var(--text-muted,#9ca3af);margin-top:8px}',
+'.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--heading-color,#111827)}',
+'.bt-gauge-label{margin-top:6px;font-size:11px;font-weight:600;color:var(--heading-color,#111827)}',
+'.bt-gauge-sub{font-size:10px;color:var(--text-muted,#6b7280);margin-top:1px}',
 /* ── Quick Shortcuts ── */
 '.bt-shortcuts{margin-bottom:24px}',
 '.bt-shortcuts-title{font-size:16px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 14px}',
-'.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:18px 20px}',
-'.bt-sc-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
+'.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:14px 16px}',
+'.bt-sc-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;font-size:12px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
 '.bt-sc-item:hover{background:rgba(10,94,211,.06);text-decoration:none;color:#0a5ed3}',
 '.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
 /* ── Responsive ── */
-'@media(max-width:768px){.bt-hero{flex-direction:column}.bt-hero-right{width:100%;padding:20px}.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}}',
-'@media(max-width:480px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:16px}}',
+'@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-right{width:100%;padding:20px}.bt-hero-left{min-height:140px}}',
+'@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}}',
+'@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:12px}}',
 /* ── Dark mode ── */
 '[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
 '[data-theme="dark"] .bt-hero-right{background:var(--card-bg,#1e293b)}',
@@ -384,7 +384,7 @@ function init(){
     var statusLc=(C.status||"active").toLowerCase();
     var diskPct=C.diskLimit>0?Math.min(100,Math.round(C.diskUsed/C.diskLimit*100)):0;
     var bwPct=C.bwLimit>0?Math.min(100,Math.round(C.bwUsed/C.bwLimit*100)):0;
-    var circ=2*Math.PI*38;/* radius 38, circumference ~238.76 */
+    var circ=2*Math.PI*35;/* radius 35, circumference ~219.91 */
     var diskOff=circ-(diskPct/100*circ);
     var bwOff=circ-(bwPct/100*circ);
     var diskColor=diskPct>90?"#ef4444":diskPct>70?"#f59e0b":"#0a5ed3";
@@ -399,26 +399,26 @@ function init(){
     heroHtml+='</div>';
     heroHtml+='<div class="bt-hero-right"><div class="bt-gauges">';
     /* Disk gauge */
-    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="90" height="90" viewBox="0 0 90 90"><circle class="bg" cx="45" cy="45" r="38"/><circle class="fill" cx="45" cy="45" r="38" stroke="'+diskColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+diskOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+diskPct+'%</div></div><div class="bt-gauge-label">Disk Usage</div><div class="bt-gauge-sub">'+fmtSize(C.diskUsed)+' / '+fmtSize(C.diskLimit)+'</div></div>';
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+diskColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+diskOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+diskPct+'%</div></div><div class="bt-gauge-label">Disk</div><div class="bt-gauge-sub">'+fmtSize(C.diskUsed)+' / '+fmtSize(C.diskLimit)+'</div></div>';
     /* BW gauge */
-    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="90" height="90" viewBox="0 0 90 90"><circle class="bg" cx="45" cy="45" r="38"/><circle class="fill" cx="45" cy="45" r="38" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
+    heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
     heroHtml+='</div></div></div>';
 
-    /* ── Quick Shortcuts ── */
-    var cpanelBase='clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1';
+    /* ── Quick Shortcuts — open cPanel features in new tab ── */
+    var cpBase='clientarea.php?action=productdetails&id='+C.serviceId+'&dosinglesignon=1';
     heroHtml+='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Shortcuts</h3><div class="bt-shortcuts-grid">';
     var shortcuts=[
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',tab:'email'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',tab:'domains'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',tab:'cronjobs'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'Databases',tab:'databases'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:'SSL',tab:'ssl'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',label:'DNS Manager',tab:'dns'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:'PHP Version',tab:'phpversion'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',label:'Error Logs',tab:'errorlogs'}
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',cpanel:'EMAIL_ACCOUNTS'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/><path d="M22 6l-10 7L2 6"/></svg>',label:'Forwarders',cpanel:'EMAIL_FWD'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',label:'Backup',cpanel:'BACKUP'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',label:'File Manager',cpanel:'FILE_MANAGER'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',cpanel:'ADDON_DOMAINS'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',cpanel:'CRON_JOBS'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'MySQL Databases',cpanel:'DATABASES'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',label:'Awstats',cpanel:'AWSTATS'}
     ];
     shortcuts.forEach(function(sc){
-        heroHtml+='<a class="bt-sc-item" data-sc-tab="'+sc.tab+'">'+sc.icon+' '+esc(sc.label)+'</a>';
+        heroHtml+='<a class="bt-sc-item" href="'+cpBase+'&goto='+sc.cpanel+'" target="_blank">'+sc.icon+' '+esc(sc.label)+'</a>';
     });
     heroHtml+='</div></div>';
 
@@ -471,16 +471,6 @@ function init(){
     buildTabs();
     bindModals();
     bindSidebarActions();
-
-    /* ── Quick Shortcut click handlers ── */
-    document.querySelectorAll("[data-sc-tab]").forEach(function(a){
-        a.addEventListener("click",function(e){
-            e.preventDefault();
-            var tabId=this.getAttribute("data-sc-tab");
-            var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+tabId+'"]');
-            if(tabBtn) tabBtn.click();
-        });
-    });
 
     /* ── Deep link from hash ── */
     activateTabFromHash();
