@@ -4,3 +4,4 @@ Thumbs.db
 *.tmp
 /release/
 _temp_broodle_app/
+modules/addons/broodle_whmcs_tools/cache/

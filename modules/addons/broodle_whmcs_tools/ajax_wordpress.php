@@ -873,6 +873,147 @@ switch ($action) {
         ]);
         break;
 
+    // ─── Site Screenshot Proxy (cached) ─────────────────────────────────────
+    case 'wp_site_screenshot':
+        $url = isset($_POST['url']) ? trim($_POST['url']) : '';
+        if (empty($url)) {
+            echo json_encode(['success' => false, 'message' => 'Missing URL']);
+            exit;
+        }
+
+        // Cache directory
+        $cacheDir = __DIR__ . '/cache/screenshots';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+
+        $cacheKey = md5($url);
+        $cachePath = $cacheDir . '/' . $cacheKey . '.jpg';
+        $cacheMaxAge = 86400; // 24 hours
+
+        // Return cached if fresh
+        if (file_exists($cachePath) && (time() - filemtime($cachePath)) < $cacheMaxAge) {
+            $base64 = base64_encode(file_get_contents($cachePath));
+            echo json_encode(['success' => true, 'image' => 'data:image/jpeg;base64,' . $base64]);
+            break;
+        }
+
+        // Try multiple screenshot services
+        $screenshotUrl = '';
+        $imageData = false;
+
+        // Service 1: Google PageSpeed Insights screenshot (works through Cloudflare)
+        $googleUrl = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=' . urlencode($url) . '&category=PERFORMANCE&strategy=DESKTOP&fields=lighthouseResult.audits.final-screenshot';
+        $ch = curl_init($googleUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        ]);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $resp) {
+            $data = json_decode($resp, true);
+            $b64 = $data['lighthouseResult']['audits']['final-screenshot']['details']['data'] ?? '';
+            if (!empty($b64)) {
+                // It's a data URI like "data:image/jpeg;base64,..."
+                $parts = explode(',', $b64, 2);
+                if (count($parts) === 2) {
+                    $imageData = base64_decode($parts[1]);
+                }
+            }
+        }
+
+        // Service 2: Fallback to microlink
+        if ($imageData === false) {
+            $mlUrl = 'https://api.microlink.io/?url=' . urlencode($url) . '&screenshot=true&meta=false&embed=screenshot.url';
+            $ch = curl_init($mlUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_FOLLOWLOCATION => true,
+            ]);
+            $resp = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $resp) {
+                // microlink embed returns the image directly
+                $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '';
+                if (strpos($resp, "\x89PNG") === 0 || strpos($resp, "\xFF\xD8") === 0) {
+                    $imageData = $resp;
+                } else {
+                    $data = json_decode($resp, true);
+                    $ssUrl = $data['data']['screenshot']['url'] ?? '';
+                    if (!empty($ssUrl)) {
+                        $ch2 = curl_init($ssUrl);
+                        curl_setopt_array($ch2, [
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_TIMEOUT        => 15,
+                            CURLOPT_SSL_VERIFYPEER => false,
+                            CURLOPT_FOLLOWLOCATION => true,
+                        ]);
+                        $imageData = curl_exec($ch2);
+                        curl_close($ch2);
+                    }
+                }
+            }
+        }
+
+        if ($imageData && strlen($imageData) > 1000) {
+            @file_put_contents($cachePath, $imageData);
+            $base64 = base64_encode($imageData);
+            echo json_encode(['success' => true, 'image' => 'data:image/jpeg;base64,' . $base64]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Could not capture screenshot']);
+        }
+        break;
+
+    // ─── Change WP Admin Password ────────────────────────────────────────────
+    case 'wp_change_password':
+        $instId   = isset($_POST['instance_id']) ? (int) $_POST['instance_id'] : 0;
+        $login    = isset($_POST['login']) ? trim($_POST['login']) : '';
+        $newPass  = isset($_POST['new_password']) ? $_POST['new_password'] : '';
+
+        if ($instId <= 0 || empty($login) || empty($newPass)) {
+            echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+            exit;
+        }
+
+        if (strlen($newPass) < 8) {
+            echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters']);
+            exit;
+        }
+
+        // WP Toolkit doesn't have a direct password change API.
+        // We use the WP-CLI approach via cPanel's UAPI Terminal or exec.
+        // Alternative: use the installation's SSO to change it.
+        // For now, we'll try PATCH /v1/installations/{id}/account
+        $result = broodle_wpt_call($hostname, $serverUser, $accessHash, $password,
+            "/v1/installations/{$instId}/account", 'PATCH', [
+                'currentLogin' => $login,
+                'newPassword'  => $newPass,
+            ]);
+
+        if ($result['success']) {
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
+        } else {
+            // Fallback message — PATCH may not be supported
+            $errMsg = 'Password change not supported via API. Use WP Admin to change passwords.';
+            if (is_array($result['data'] ?? null)) {
+                $errMsg = $result['data']['message'] ?? $result['data']['error'] ?? $errMsg;
+            }
+            echo json_encode(['success' => false, 'message' => $errMsg]);
+        }
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
 }
