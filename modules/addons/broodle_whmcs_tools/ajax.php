@@ -87,6 +87,138 @@ if ($action === 'get_addon_description') {
     exit;
 }
 
+// Handle cPanel resource stats (CPU, Memory, I/O, Processes)
+if ($action === 'cpanel_resource_stats') {
+    $server = Capsule::table('tblservers')->where('id', $service->server)->first();
+    if (!$server) { echo json_encode(['success' => false, 'message' => 'Server not found']); exit; }
+    $hostname = $server->hostname;
+    $port = !empty($server->port) ? (int) $server->port : 2087;
+    $serverUser = $server->username;
+    $secure = !empty($server->secure) && ($server->secure === 'on' || $server->secure === '1' || $server->secure === 1);
+    $protocol = $secure ? 'https' : 'http';
+    $cpUsername = $service->username;
+    $accessHash = ''; $password = '';
+    if (!empty($server->accesshash)) {
+        $raw = trim($server->accesshash);
+        if (preg_match('/^[A-Za-z0-9]{10,64}$/', $raw)) $accessHash = $raw;
+        else { $accessHash = trim(decrypt($raw)); if (empty($accessHash) || !preg_match('/^[A-Za-z0-9]{10,64}$/', $accessHash)) $accessHash = ''; }
+    }
+    if (empty($accessHash) && !empty($server->password)) $password = trim(decrypt($server->password));
+    if (empty($accessHash) && empty($password)) { echo json_encode(['success' => false, 'message' => 'Server credentials unavailable']); exit; }
+    $headers = [];
+    if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
+
+    $stats = ['cpu' => null, 'mem' => null, 'io' => null, 'nproc' => null, 'ep' => null, 'iops' => null];
+
+    // Strategy 1: UAPI ResourceUsage::get_usages (works on most cPanel servers)
+    $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+          . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+          . "&cpanel_jsonapi_apiversion=3"
+          . "&cpanel_jsonapi_module=ResourceUsage"
+          . "&cpanel_jsonapi_func=get_usages";
+    $ch = curl_init();
+    curl_setopt_array($ch, [CURLOPT_URL => $url1, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
+    if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+    $resp1 = curl_exec($ch); curl_close($ch);
+    $json1 = json_decode($resp1, true);
+    $usages = $json1['result']['data'] ?? [];
+
+    if (is_array($usages) && !empty($usages)) {
+        foreach ($usages as $u) {
+            if (!is_array($u)) continue;
+            $id = strtolower($u['id'] ?? '');
+            $desc = strtolower($u['description'] ?? '');
+            $used = $u['usage'] ?? ($u['used'] ?? null);
+            $max = $u['maximum'] ?? ($u['limit'] ?? null);
+            if ($max === 'unlimited' || $max === null || $max === 0 || $max === '0') $max = 0;
+            $item = ['used' => $used, 'max' => $max];
+
+            if (strpos($id, 'cpu') !== false || strpos($desc, 'cpu') !== false) $stats['cpu'] = $item;
+            elseif ($id === 'physicalmemoryusage' || strpos($id, 'pmem') !== false || strpos($desc, 'physical memory') !== false || strpos($desc, 'memory') !== false) $stats['mem'] = $item;
+            elseif (strpos($id, 'iops') !== false || strpos($desc, 'iops') !== false) $stats['iops'] = $item;
+            elseif (strpos($id, 'io') !== false || strpos($desc, 'i/o') !== false) $stats['io'] = $item;
+            elseif ($id === 'entryprocesses' || strpos($id, 'ep') !== false || strpos($desc, 'entry process') !== false) $stats['ep'] = $item;
+            elseif (strpos($id, 'nproc') !== false || strpos($id, 'process') !== false || strpos($desc, 'process') !== false) $stats['nproc'] = $item;
+        }
+    }
+
+    // Strategy 2: CloudLinux LVEInfo::getUsage (if ResourceUsage didn't return CPU/mem)
+    if ($stats['cpu'] === null || $stats['mem'] === null) {
+        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+              . "&cpanel_jsonapi_apiversion=3"
+              . "&cpanel_jsonapi_module=LVEInfo"
+              . "&cpanel_jsonapi_func=getUsage";
+        $ch = curl_init();
+        curl_setopt_array($ch, [CURLOPT_URL => $url2, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
+        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        $resp2 = curl_exec($ch); curl_close($ch);
+        $json2 = json_decode($resp2, true);
+        $lveData = $json2['result']['data'] ?? ($json2['cpanelresult']['data'] ?? []);
+
+        if (is_array($lveData) && !empty($lveData)) {
+            // LVEInfo returns a single object or array with usage fields
+            $lve = isset($lveData[0]) ? $lveData[0] : $lveData;
+            if (isset($lve['cpu']) && $stats['cpu'] === null) {
+                $stats['cpu'] = ['used' => $lve['cpu']['used'] ?? $lve['cpu'], 'max' => $lve['cpu']['limit'] ?? ($lve['lcpu'] ?? 100)];
+            }
+            if (isset($lve['pmem']) && $stats['mem'] === null) {
+                $stats['mem'] = ['used' => $lve['pmem']['used'] ?? $lve['pmem'], 'max' => $lve['pmem']['limit'] ?? ($lve['lpmem'] ?? 0)];
+            }
+            if (isset($lve['io']) && $stats['io'] === null) {
+                $stats['io'] = ['used' => $lve['io']['used'] ?? $lve['io'], 'max' => $lve['io']['limit'] ?? ($lve['lio'] ?? 0)];
+            }
+            if (isset($lve['nproc']) && $stats['nproc'] === null) {
+                $stats['nproc'] = ['used' => $lve['nproc']['used'] ?? $lve['nproc'], 'max' => $lve['nproc']['limit'] ?? ($lve['lnproc'] ?? 0)];
+            }
+            if (isset($lve['ep']) && $stats['ep'] === null) {
+                $stats['ep'] = ['used' => $lve['ep']['used'] ?? $lve['ep'], 'max' => $lve['ep']['limit'] ?? ($lve['lep'] ?? 0)];
+            }
+            if (isset($lve['iops']) && $stats['iops'] === null) {
+                $stats['iops'] = ['used' => $lve['iops']['used'] ?? $lve['iops'], 'max' => $lve['iops']['limit'] ?? ($lve['liops'] ?? 0)];
+            }
+        }
+    }
+
+    // Strategy 3: StatsBar::stat as last resort for CPU/memory
+    if ($stats['cpu'] === null) {
+        $url3 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+              . "&cpanel_jsonapi_apiversion=3"
+              . "&cpanel_jsonapi_module=StatsBar"
+              . "&cpanel_jsonapi_func=stat"
+              . "&display=cpuusage|physicalmemoryusage|entryprocesses|numprocesses";
+        $ch = curl_init();
+        curl_setopt_array($ch, [CURLOPT_URL => $url3, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
+        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        $resp3 = curl_exec($ch); curl_close($ch);
+        $json3 = json_decode($resp3, true);
+        $sbData = $json3['result']['data'] ?? [];
+
+        if (is_array($sbData)) {
+            foreach ($sbData as $sb) {
+                if (!is_array($sb)) continue;
+                $name = strtolower($sb['name'] ?? '');
+                $used = $sb['value'] ?? ($sb['count'] ?? null);
+                $max = $sb['max'] ?? ($sb['limit'] ?? null);
+                if ($max === 'unlimited' || $max === null) $max = 0;
+                $item = ['used' => $used, 'max' => $max];
+
+                if (strpos($name, 'cpu') !== false && $stats['cpu'] === null) $stats['cpu'] = $item;
+                elseif (strpos($name, 'memory') !== false && $stats['mem'] === null) $stats['mem'] = $item;
+                elseif (strpos($name, 'entry') !== false && $stats['ep'] === null) $stats['ep'] = $item;
+                elseif (strpos($name, 'process') !== false && $stats['nproc'] === null) $stats['nproc'] = $item;
+            }
+        }
+    }
+
+    echo json_encode(['success' => true, 'stats' => $stats]);
+    exit;
+}
+
 // Handle cPanel SSO URL generation for shortcuts
 if ($action === 'get_cpanel_sso_url') {
     $gotoPage = isset($_POST['page']) ? trim($_POST['page']) : '';

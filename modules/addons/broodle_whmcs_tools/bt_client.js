@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.53");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.54");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -344,11 +344,20 @@ function injectStyles8(){
 '.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--heading-color,#111827)}',
 '.bt-gauge-label{margin-top:6px;font-size:11px;font-weight:600;color:var(--heading-color,#111827)}',
 '.bt-gauge-sub{font-size:10px;color:var(--text-muted,#6b7280);margin-top:1px}',
-/* ── Hero Mini Stats ── */
-'.bt-hero-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border-color,#f3f4f6);width:100%;margin-top:4px}',
-'.bt-hero-stat{text-align:center}',
-'.bt-hero-stat-num{display:block;font-size:16px;font-weight:700;color:var(--heading-color,#111827)}',
-'.bt-hero-stat-lbl{font-size:10px;color:var(--text-muted,#9ca3af);font-weight:500}',
+/* ── Hero Resource Bars ── */
+'.bt-hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding-top:10px;border-top:1px solid var(--border-color,#f3f4f6);width:100%;margin-top:4px}',
+'.bt-res-bar{display:flex;flex-direction:column;gap:3px}',
+'.bt-res-bar-head{display:flex;justify-content:space-between;align-items:center}',
+'.bt-res-bar-label{font-size:10px;font-weight:600;color:var(--heading-color,#111827);display:flex;align-items:center;gap:4px}',
+'.bt-res-bar-label svg{width:12px;height:12px;opacity:.6}',
+'.bt-res-bar-val{font-size:10px;color:var(--text-muted,#6b7280)}',
+'.bt-res-bar-track{height:6px;background:var(--border-color,#e5e7eb);border-radius:3px;overflow:hidden}',
+'.bt-res-bar-fill{height:100%;border-radius:3px;transition:width .8s ease;min-width:2px}',
+'.bt-res-bar-fill.green{background:linear-gradient(90deg,#10b981,#34d399)}',
+'.bt-res-bar-fill.yellow{background:linear-gradient(90deg,#f59e0b,#fbbf24)}',
+'.bt-res-bar-fill.red{background:linear-gradient(90deg,#ef4444,#f87171)}',
+'.bt-res-bar-fill.blue{background:linear-gradient(90deg,#0a5ed3,#3b82f6)}',
+'.bt-hero-stats .bt-res-loading{grid-column:1/-1;text-align:center;font-size:11px;color:var(--text-muted,#9ca3af);padding:6px 0}',
 /* ── Quick Shortcuts ── */
 '.bt-shortcuts{margin-bottom:24px}',
 '.bt-shortcuts-title{font-size:16px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 14px}',
@@ -358,7 +367,7 @@ function injectStyles8(){
 '.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
 /* ── Responsive ── */
 '@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-left{max-width:100%}.bt-hero-right{width:100%;padding:20px;border-left:none;border-top:1px solid var(--border-color,#e5e7eb)}.bt-hero-left{min-height:140px}}',
-'@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}}',
+'@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}.bt-hero-stats{grid-template-columns:1fr}}',
 '@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:12px}}',
 /* ── Dark mode ── */
 '[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
@@ -419,12 +428,8 @@ function init(){
     /* BW gauge */
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+bwColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+bwOff.toFixed(1)+'"/></svg><div class="bt-gauge-pct">'+bwPct+'%</div></div><div class="bt-gauge-label">Bandwidth</div><div class="bt-gauge-sub">'+fmtSize(C.bwUsed)+' / '+(C.bwLimit>0?fmtSize(C.bwLimit):'Unlimited')+'</div></div>';
     heroHtml+='</div>';
-    /* Mini stats row */
-    heroHtml+='<div class="bt-hero-stats">';
-    if(typeof C.emailCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.emailCount+'</span><span class="bt-hero-stat-lbl">Emails</span></div>';
-    if(typeof C.addonDomainCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.addonDomainCount+'</span><span class="bt-hero-stat-lbl">Addon Domains</span></div>';
-    if(typeof C.subdomainCount==="number") heroHtml+='<div class="bt-hero-stat"><span class="bt-hero-stat-num">'+C.subdomainCount+'</span><span class="bt-hero-stat-lbl">Subdomains</span></div>';
-    heroHtml+='</div>';
+    /* Resource usage bars — loaded via AJAX */
+    heroHtml+='<div class="bt-hero-stats" id="bt-hero-res"><div class="bt-res-loading"><div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Loading resource usage...</div></div>';
     heroHtml+='</div></div>';
 
     /* ── Quick Shortcuts — open cPanel features in new tab via SSO ── */
@@ -1139,6 +1144,35 @@ function bindModals(){
     bindEmailModalSubmits();
     bindDomainModalSubmits();
     bindWpDetailPanel();
+    loadResourceStats();
+}
+
+/* ─── Resource Stats (CPU, Memory, I/O, Processes) ─── */
+function loadResourceStats(){
+    var container=$("bt-hero-res");if(!container) return;
+    post({action:"cpanel_resource_stats"},function(r){
+        if(!r.success||!r.stats){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">Resource stats unavailable</div>';return;}
+        var s=r.stats;var bars=[];
+        if(s.cpu) bars.push({label:"CPU",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',used:s.cpu.used,max:s.cpu.max,unit:"%"});
+        if(s.mem){var memU=parseFloat(s.mem.used)||0;var memM=parseFloat(s.mem.max)||0;var memUnit="MB";if(memM>1024||memU>1024){memU=(memU/1024);memM=memM>0?(memM/1024):0;memUnit="GB";}bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:memU,max:memM,unit:memUnit,decimals:memUnit==="GB"?1:0});}
+        if(s.io){var ioU=parseFloat(s.io.used)||0;var ioM=parseFloat(s.io.max)||0;var ioUnit="KB/s";if(ioM>=1024||ioU>=1024){ioU=ioU/1024;ioM=ioM>0?ioM/1024:0;ioUnit="MB/s";}bars.push({label:"I/O",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',used:ioU,max:ioM,unit:ioUnit,decimals:ioUnit==="MB/s"?1:0});}
+        if(s.nproc) bars.push({label:"Processes",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',used:s.nproc.used,max:s.nproc.max,unit:""});
+        if(s.ep) bars.push({label:"Entry Proc",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',used:s.ep.used,max:s.ep.max,unit:""});
+        if(s.iops) bars.push({label:"IOPS",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',used:s.iops.used,max:s.iops.max,unit:""});
+        if(!bars.length){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">No resource data available</div>';return;}
+        var html="";
+        bars.forEach(function(b){
+            var used=parseFloat(b.used)||0;var max=parseFloat(b.max)||0;
+            var pct=max>0?Math.min(100,Math.round(used/max*100)):0;
+            var dec=b.decimals||0;
+            var usedStr=dec>0?used.toFixed(dec):Math.round(used);
+            var maxStr=max>0?(dec>0?max.toFixed(dec):Math.round(max)):"∞";
+            var valTxt=usedStr+(b.unit?" "+b.unit:"")+" / "+(max>0?maxStr+(b.unit?" "+b.unit:""):"Unlimited");
+            var colorClass=pct>90?"red":pct>70?"yellow":pct>40?"blue":"green";
+            html+='<div class="bt-res-bar"><div class="bt-res-bar-head"><span class="bt-res-bar-label">'+b.icon+' '+esc(b.label)+'</span><span class="bt-res-bar-val">'+esc(valTxt)+'</span></div><div class="bt-res-bar-track"><div class="bt-res-bar-fill '+colorClass+'" style="width:'+pct+'%"></div></div></div>';
+        });
+        container.innerHTML=html;
+    });
 }
 
 /* ─── Boot ─── */
