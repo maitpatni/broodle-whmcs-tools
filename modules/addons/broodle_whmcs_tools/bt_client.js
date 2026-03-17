@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.55");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.56");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -446,23 +446,6 @@ function init(){
     heroHtml+='<div class="bt-hero-stats" id="bt-hero-res"><div class="bt-res-loading"><div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Loading resource usage...</div></div>';
     heroHtml+='</div></div>';
 
-    /* ── Quick Shortcuts — open cPanel features in new tab via SSO ── */
-    heroHtml+='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Shortcuts</h3><div class="bt-shortcuts-grid">';
-    var shortcuts=[
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:'Email Accounts',page:'mail/pops'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',label:'Forwarders',page:'mail/fwds'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',label:'Backup',page:'backup/wizard-backup.html'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',label:'File Manager',page:'filemanager/index.html'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Domains',page:'addon/index.html'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:'Cron Jobs',page:'cron/index.html'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'MySQL Databases',page:'sql/index.html'},
-        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',label:'Awstats',page:'awstats/index.html'}
-    ];
-    shortcuts.forEach(function(sc){
-        heroHtml+='<a class="bt-sc-item" href="#" data-cpanel-page="'+esc(sc.page)+'" onclick="btOpenCpanelPage(\''+esc(sc.page)+'\',this);return false;">'+sc.icon+' '+esc(sc.label)+'</a>';
-    });
-    heroHtml+='</div></div>';
-
     /* ── Build sidebar ── */
     var sidebar=document.createElement("div");
     sidebar.className="bt-sidebar";
@@ -492,6 +475,24 @@ function init(){
     wpPage.id="bt-wp-page";
     wpPage.style.display="none";
     mainArea.appendChild(wpPage);
+
+    /* ── Domains page (hidden by default) ── */
+    var domainsPage=document.createElement("div");
+    domainsPage.id="bt-domains-page";
+    domainsPage.style.display="none";
+    mainArea.appendChild(domainsPage);
+
+    /* ── Databases page (hidden by default) ── */
+    var databasesPage=document.createElement("div");
+    databasesPage.id="bt-databases-page";
+    databasesPage.style.display="none";
+    mainArea.appendChild(databasesPage);
+
+    /* ── SSL page (hidden by default) ── */
+    var sslPage=document.createElement("div");
+    sslPage.id="bt-ssl-page";
+    sslPage.style.display="none";
+    mainArea.appendChild(sslPage);
 
     /* ── Change Password page (hidden by default) ── */
     var changePwPage=document.createElement("div");
@@ -526,6 +527,22 @@ function buildSidebarHtml(){
     var html='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Overview</div>';
     html+='<a class="bt-sidebar-item active" data-page="tabs" data-tab="overview"><div class="bt-si-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="bt-si-label">Information<span>Service Details</span></div></a>';
     html+='<a class="bt-sidebar-item" data-page="tabs" data-tab="overview" data-scroll="addons"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="bt-si-label">Addons<span>Extra Services</span></div></a>';
+    html+='</div>';
+
+    /* Management panel */
+    html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Management</div>';
+    if(C.domainEnabled){
+        html+='<a class="bt-sidebar-item" data-page="domains"><div class="bt-si-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div class="bt-si-label">Domains<span>Domain Management</span></div></a>';
+    }
+    if(C.dbEnabled){
+        html+='<a class="bt-sidebar-item" data-page="databases"><div class="bt-si-icon" style="background:rgba(124,58,237,.08);color:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div class="bt-si-label">Databases<span>MySQL Management</span></div></a>';
+    }
+    if(C.sslEnabled){
+        html+='<a class="bt-sidebar-item" data-page="ssl"><div class="bt-si-icon" style="background:rgba(5,150,105,.08);color:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="bt-si-label">SSL<span>Certificate Management</span></div></a>';
+    }
+    if(C.emailEnabled){
+        html+='<a class="bt-sidebar-item" data-page="tabs" data-tab="email"><div class="bt-si-icon" style="background:rgba(217,119,6,.08);color:#d97706"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div class="bt-si-label">Email<span>Email Accounts</span></div></a>';
+    }
     if(C.wpEnabled){
         html+='<a class="bt-sidebar-item" data-page="wordpress"><div class="bt-si-icon" style="background:rgba(33,117,208,.08);color:#2175d0"><svg viewBox="0 0 16 16" fill="#2175d0" width="18" height="18"><path d="M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8"/><path d="M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z"/><path fill-rule="evenodd" d="M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8"/></svg></div><div class="bt-si-label">WordPress<span>Site Management</span></div></a>';
     }
@@ -558,10 +575,16 @@ function bindSidebarActions(){
             var wrap=$("bt-wrap");
             var wpPage=$("bt-wp-page");
             var changePwPage=$("bt-changepw-page");
+            var domainsPage=$("bt-domains-page");
+            var databasesPage=$("bt-databases-page");
+            var sslPage=$("bt-ssl-page");
             var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
             if(changePwPage) changePwPage.style.display="none";
+            if(domainsPage) domainsPage.style.display="none";
+            if(databasesPage) databasesPage.style.display="none";
+            if(sslPage) sslPage.style.display="none";
 
             if(page==="tabs"){
                 if(heroSection) heroSection.style.display="";
@@ -588,6 +611,36 @@ function bindSidebarActions(){
                     }
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabWordpress");
+            }else if(page==="domains"){
+                if(heroSection) heroSection.style.display="none";
+                if(domainsPage){
+                    domainsPage.style.display="";
+                    if(!domainsPage.dataset.loaded){
+                        domainsPage.dataset.loaded="1";
+                        buildDomainPageInto(domainsPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabDomains");
+            }else if(page==="databases"){
+                if(heroSection) heroSection.style.display="none";
+                if(databasesPage){
+                    databasesPage.style.display="";
+                    if(!databasesPage.dataset.loaded){
+                        databasesPage.dataset.loaded="1";
+                        buildDatabasePageInto(databasesPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabDatabases");
+            }else if(page==="ssl"){
+                if(heroSection) heroSection.style.display="none";
+                if(sslPage){
+                    sslPage.style.display="";
+                    if(!sslPage.dataset.loaded){
+                        sslPage.dataset.loaded="1";
+                        buildSSLPageInto(sslPage);
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabSsl");
             }else if(page==="changepw"){
                 if(heroSection) heroSection.style.display="none";
                 if(changePwPage) changePwPage.style.display="";
@@ -603,10 +656,7 @@ function buildTabs(){
 
     var tabs=[
         {id:"overview",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',label:"Overview"},
-        {id:"domains",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:"Domains",check:"domainEnabled"},
-        {id:"ssl",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:"SSL",check:"sslEnabled"},
         {id:"email",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',label:"Email Accounts",check:"emailEnabled"},
-        {id:"databases",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:"Databases",check:"dbEnabled"},
         {id:"dns",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',label:"DNS Manager",check:"dnsEnabled"},
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
@@ -639,12 +689,13 @@ function buildTabs(){
             /* Show tabs, hide other pages */
             var wpPage=$("bt-wp-page");if(wpPage) wpPage.style.display="none";
             var changePwPage=$("bt-changepw-page");if(changePwPage) changePwPage.style.display="none";
+            var domainsPage=$("bt-domains-page");if(domainsPage) domainsPage.style.display="none";
+            var databasesPage=$("bt-databases-page");if(databasesPage) databasesPage.style.display="none";
+            var sslPage=$("bt-ssl-page");if(sslPage) sslPage.style.display="none";
             var heroSection=$("bt-hero-section");if(heroSection) heroSection.style.display="";
             wrap.style.display="";
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
             if(history.replaceState) history.replaceState(null,null,"#"+hashName);
-            if(t.id==="databases"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDatabases();}
-            if(t.id==="ssl"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadSSLStatus();}
             if(t.id==="dns"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadDnsDomains();}
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
             if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
@@ -661,10 +712,7 @@ function buildTabs(){
     wrap.appendChild(nav);wrap.appendChild(panes);
 
     buildOverviewPane();
-    if(C.domainEnabled) buildDomainsPane();
     if(C.emailEnabled) buildEmailPane();
-    if(C.dbEnabled) buildDatabasesPane();
-    if(C.sslEnabled) buildSSLPane();
     if(C.dnsEnabled) buildDnsPane();
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
@@ -698,6 +746,18 @@ function activateTabFromHash(){
         var cpItem=document.querySelector('.bt-sidebar-item[data-page="changepw"]');
         if(cpItem) cpItem.click();
         return;
+    }
+    if(targetId==="domains"){
+        var domItem=document.querySelector('.bt-sidebar-item[data-page="domains"]');
+        if(domItem){domItem.click();return;}
+    }
+    if(targetId==="databases"){
+        var dbItem=document.querySelector('.bt-sidebar-item[data-page="databases"]');
+        if(dbItem){dbItem.click();return;}
+    }
+    if(targetId==="ssl"){
+        var sslItem=document.querySelector('.bt-sidebar-item[data-page="ssl"]');
+        if(sslItem){sslItem.click();return;}
     }
     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
     if(tabBtn) tabBtn.click();
@@ -777,6 +837,58 @@ function buildOverviewPane(){
 
     pane.innerHTML=html;
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
+}
+
+/* ─── Quick Access builder helper ─── */
+function buildQuickAccess(items){
+    var html='<div class="bt-shortcuts" style="margin-bottom:20px"><h3 class="bt-shortcuts-title" style="font-size:14px;margin:0 0 10px">Quick Access</h3><div class="bt-shortcuts-grid">';
+    items.forEach(function(sc){
+        html+='<a class="bt-sc-item" href="#" onclick="btOpenCpanelPage(\''+esc(sc.page)+'\',this);return false;">'+sc.icon+' '+esc(sc.label)+'</a>';
+    });
+    html+='</div></div>';
+    return html;
+}
+
+/* ─── Domains Page (separate page with Quick Access) ─── */
+function buildDomainPageInto(container){
+    if(!container) return;
+    var qa=buildQuickAccess([
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>',label:'Addon Domains',page:'addon/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>',label:'Subdomains',page:'subdomain/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',label:'DNS Zone Editor',page:'zone_editor/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',label:'Redirects',page:'mime/redirect.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:'SSL/TLS Status',page:'ssl/index.html'}
+    ]);
+    container.innerHTML=qa+'<div id="bt-pane-domains"></div>';
+    buildDomainsPane();
+}
+
+/* ─── Databases Page (separate page with Quick Access) ─── */
+function buildDatabasePageInto(container){
+    if(!container) return;
+    var qa=buildQuickAccess([
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',label:'MySQL Databases',page:'sql/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',label:'phpMyAdmin',page:'3rdparty/phpMyAdmin/index.php'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',label:'MySQL Users',page:'sql/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',label:'Remote MySQL',page:'sql/remotemysql.html'}
+    ]);
+    container.innerHTML=qa+'<div id="bt-pane-databases"></div>';
+    buildDatabasesPane();
+    loadDatabases();
+}
+
+/* ─── SSL Page (separate page with Quick Access) ─── */
+function buildSSLPageInto(container){
+    if(!container) return;
+    var qa=buildQuickAccess([
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',label:'SSL/TLS Status',page:'ssl/index.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',label:'SSL/TLS Manager',page:'ssl/manage.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',label:'AutoSSL',page:'ssl/autossl.html'},
+        {icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',label:'Install SSL',page:'ssl/install.html'}
+    ]);
+    container.innerHTML=qa+'<div id="bt-pane-ssl"></div>';
+    buildSSLPane();
+    loadSSLStatus();
 }
 
 /* ─── Domains Pane ─── */
