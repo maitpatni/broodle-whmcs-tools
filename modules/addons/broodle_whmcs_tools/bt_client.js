@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.51");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.52");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -54,7 +54,7 @@ function injectStyles(){
 '.bt-btn-spin{display:inline-block;vertical-align:middle;animation:btSpin .7s linear infinite}@keyframes btSpin{to{transform:rotate(360deg)}}',
 '.bt-row-btn:disabled,.bt-btn-add:disabled,.bt-btn-primary:disabled,.bt-btn-danger:disabled,.bt-btn-outline:disabled{opacity:.6;cursor:not-allowed;pointer-events:none}',
 /* Page takeover layout */
-'.bt-page-wrap,#bt-page-wrap{display:flex;gap:0;min-height:400px}',
+'.bt-page-wrap,#bt-page-wrap{display:flex;gap:24px;min-height:400px}',
 '.bt-sidebar{width:240px;flex-shrink:0;padding:0 12px 0 0}',
 '.bt-sidebar-panel{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;margin-bottom:16px;overflow:hidden}',
 '.bt-sidebar-title{padding:14px 16px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#9ca3af)}',
@@ -322,7 +322,7 @@ function injectStyles8(){
     s.textContent=[
 /* ── Hero Card ── */
 '.bt-hero{display:flex;gap:0;margin-bottom:24px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);box-sizing:border-box;max-width:100%}',
-'.bt-hero-left{flex:1;min-width:0;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px;position:relative;overflow:hidden}',
+'.bt-hero-left{flex:0 1 auto;min-width:0;max-width:380px;width:100%;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px;position:relative;overflow:hidden}',
 '.bt-hero-left::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}',
 '.bt-hero-left::after{content:"";position:absolute;bottom:-30px;left:-30px;width:90px;height:90px;background:rgba(255,255,255,.04);border-radius:50%}',
 '.bt-hero-icon{width:64px;height:64px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;backdrop-filter:blur(4px)}',
@@ -333,7 +333,7 @@ function injectStyles8(){
 '.bt-hero-status.terminated .dot,.bt-hero-status.cancelled .dot{background:#f87171}',
 '.bt-hero-domain{margin-top:12px;font-size:13px;color:rgba(255,255,255,.85);font-weight:500}',
 /* ── Usage Panel ── */
-'.bt-hero-right{width:240px;flex-shrink:0;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}',
+'.bt-hero-right{flex:1;min-width:200px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-left:1px solid var(--border-color,#e5e7eb)}',
 '.bt-gauges{display:flex;gap:20px;align-items:center;justify-content:center}',
 '.bt-gauge{text-align:center}',
 '.bt-gauge-ring{position:relative;width:80px;height:80px}',
@@ -352,7 +352,7 @@ function injectStyles8(){
 '.bt-sc-item:hover{background:rgba(10,94,211,.06);text-decoration:none;color:#0a5ed3}',
 '.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
 /* ── Responsive ── */
-'@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-right{width:100%;padding:20px}.bt-hero-left{min-height:140px}}',
+'@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-left{max-width:100%}.bt-hero-right{width:100%;padding:20px;border-left:none;border-top:1px solid var(--border-color,#e5e7eb)}.bt-hero-left{min-height:140px}}',
 '@media(max-width:640px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}}',
 '@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:12px}}',
 /* ── Dark mode ── */
@@ -435,9 +435,12 @@ function init(){
     mainArea.id="bt-main-area";
 
     /* ── Service header + shortcuts ── */
+    var heroSection=document.createElement("div");
+    heroSection.id="bt-hero-section";
     var headerDiv=document.createElement("div");
     headerDiv.innerHTML=heroHtml;
-    while(headerDiv.firstChild) mainArea.appendChild(headerDiv.firstChild);
+    while(headerDiv.firstChild) heroSection.appendChild(headerDiv.firstChild);
+    mainArea.appendChild(heroSection);
 
     /* ── Tabs container ── */
     var tabsWrap=document.createElement("div");
@@ -515,11 +518,13 @@ function bindSidebarActions(){
             var wrap=$("bt-wrap");
             var wpPage=$("bt-wp-page");
             var changePwPage=$("bt-changepw-page");
+            var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
             if(changePwPage) changePwPage.style.display="none";
 
             if(page==="tabs"){
+                if(heroSection) heroSection.style.display="";
                 if(wrap) wrap.style.display="";
                 if(tab){
                     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+tab+'"]');
@@ -533,6 +538,7 @@ function bindSidebarActions(){
                 var hashName="tab"+(tab?tab.charAt(0).toUpperCase()+tab.slice(1):"Overview");
                 if(history.replaceState) history.replaceState(null,null,"#"+hashName);
             }else if(page==="wordpress"){
+                if(heroSection) heroSection.style.display="none";
                 if(wpPage){
                     wpPage.style.display="";
                     if(!wpPage.dataset.loaded){
@@ -543,6 +549,7 @@ function bindSidebarActions(){
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabWordpress");
             }else if(page==="changepw"){
+                if(heroSection) heroSection.style.display="none";
                 if(changePwPage) changePwPage.style.display="";
                 if(history.replaceState) history.replaceState(null,null,"#tabChangepw");
             }
@@ -592,6 +599,7 @@ function buildTabs(){
             /* Show tabs, hide other pages */
             var wpPage=$("bt-wp-page");if(wpPage) wpPage.style.display="none";
             var changePwPage=$("bt-changepw-page");if(changePwPage) changePwPage.style.display="none";
+            var heroSection=$("bt-hero-section");if(heroSection) heroSection.style.display="";
             wrap.style.display="";
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
             if(history.replaceState) history.replaceState(null,null,"#"+hashName);
