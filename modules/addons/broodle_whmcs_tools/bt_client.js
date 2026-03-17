@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.62");
+console.log("[BT] bt_client.js loaded successfully, version 3.10.63");
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";
@@ -595,6 +595,9 @@ function buildSidebarHtml(){
 
     /* Management panel */
     html+='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Management</div>';
+    if(C.fmEnabled){
+        html+='<a class="bt-sidebar-item" data-page="filemanager"><div class="bt-si-icon" style="background:rgba(234,88,12,.08);color:#ea580c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div class="bt-si-label">File Manager<span>Files &amp; Folders</span></div></a>';
+    }
     if(C.domainEnabled){
         html+='<a class="bt-sidebar-item" data-page="domains"><div class="bt-si-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div class="bt-si-label">Domains<span>Domain Management</span></div></a>';
     }
@@ -609,9 +612,6 @@ function buildSidebarHtml(){
     }
     if(C.wpEnabled){
         html+='<a class="bt-sidebar-item" data-page="wordpress"><div class="bt-si-icon" style="background:rgba(33,117,208,.08);color:#2175d0"><svg viewBox="0 0 16 16" fill="#2175d0" width="18" height="18"><path d="M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8"/><path d="M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z"/><path fill-rule="evenodd" d="M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8"/></svg></div><div class="bt-si-label">WordPress<span>Site Management</span></div></a>';
-    }
-    if(C.fmEnabled){
-        html+='<a class="bt-sidebar-item" data-page="filemanager"><div class="bt-si-icon" style="background:rgba(234,88,12,.08);color:#ea580c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div class="bt-si-label">File Manager<span>Files &amp; Folders</span></div></a>';
     }
     html+='</div>';
 
@@ -1579,7 +1579,7 @@ function buildFileManagerPageInto(container){
     /* Bind events */
     fmBindToolbar();
     fmBindDragDrop();
-    fmLoadDir("/");
+    fmLoadDir("/public_html");
 }
 
 /* ─── FM: Load Directory ─── */
@@ -1603,7 +1603,7 @@ function fmLoadDir(dir){
 function fmRenderBreadcrumb(){
     var bc=$("fm-breadcrumb");if(!bc) return;
     var parts=fmState.dir.replace(/\/+$/,"").split("/").filter(Boolean);
-    var html='<a data-fmdir="/" title="Root">\u{1F3E0}</a>';
+    var html='<a data-fmdir="/" title="Root"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>';
     var path="";
     for(var i=0;i<parts.length;i++){
         path+="/"+parts[i];
@@ -2030,7 +2030,9 @@ function fmDoSearch(){
         if(!results.length){if(listWrap) listWrap.innerHTML='<div class="bt-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No results for "'+esc(query)+'"</div>';return;}
         var html='<table class="fm-table"><thead><tr><th>Name</th><th>Path</th></tr></thead><tbody>';
         results.forEach(function(item){
-            html+='<tr><td><div class="fm-name-cell" data-fmsearchpath="'+esc(item.path)+'"><div class="fm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="fm-fname">'+esc(item.file||"")+'</div></div></td><td style="font-size:12px;color:var(--text-muted,#6b7280)">'+esc(item.dir||"")+'</td></tr>';
+            var fullPath=item.path||((item.dir||"")+"/"+item.file);
+            var itemType=item.type||(item.file&&item.file.indexOf(".")===-1?"dir":"file");
+            html+='<tr data-fmpath="'+esc(fullPath)+'" data-fmtype="'+esc(itemType)+'"><td><div class="fm-name-cell" data-fmsearchpath="'+esc(item.path)+'"><div class="fm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="fm-fname">'+esc(item.file||"")+'</div></div></td><td style="font-size:12px;color:var(--text-muted,#6b7280)">'+esc(item.dir||"")+'</td></tr>';
         });
         html+='</tbody></table>';
         if(listWrap) listWrap.innerHTML=html;
@@ -2038,6 +2040,15 @@ function fmDoSearch(){
             el.addEventListener("click",function(){
                 var p=this.getAttribute("data-fmsearchpath");
                 fmOpenFile(p);
+            });
+        });
+        /* Context menu on search result rows */
+        listWrap.querySelectorAll("tr[data-fmpath]").forEach(function(tr){
+            tr.addEventListener("contextmenu",function(e){
+                e.preventDefault();e.stopPropagation();
+                var p=this.getAttribute("data-fmpath");
+                var t=this.getAttribute("data-fmtype");
+                fmShowContextMenu(e.clientX,e.clientY,p,t);
             });
         });
     });
