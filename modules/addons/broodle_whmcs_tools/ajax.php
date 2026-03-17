@@ -415,10 +415,12 @@ if ($action === 'get_cpanel_sso_url') {
     $cpSecurityToken = $json['data']['cp_security_token'] ?? '';
     if (empty($sessionUrl)) { echo json_encode(['success' => false, 'message' => 'Could not create cPanel session']); exit; }
     // Build the final URL with goto_uri for page redirect
+    // cPanel SSO flow: create_user_session returns a login URL like:
+    //   https://server:2083/cpsessXXXX/login/?session=TOKEN
+    // To redirect after login, append goto_uri parameter.
+    // The goto_uri must be a URL-encoded path WITHOUT the cpsess prefix.
+    // cPanel automatically prepends the session prefix to the goto_uri.
     if ($gotoPage && $ssoService === 'cpaneld') {
-        // Session URL: https://server:2083/cpsessXXXX/login/?session=TOKEN
-        // cp_security_token: /cpsessXXXX
-        // We append goto_uri to redirect after login
         if (preg_match('#(https?://[^/]+)(/cpsess[^/]+)#', $sessionUrl, $m)) {
             $baseUrl = $m[1];
             $cpsess = $cpSecurityToken ?: $m[2];
@@ -426,7 +428,6 @@ if ($action === 'get_cpanel_sso_url') {
             parse_str($parts['query'] ?? '', $qs);
             $sessionToken = $qs['session'] ?? '';
             if ($sessionToken) {
-                // Detect if gotoPage is a full cPanel path or just a page name
                 $gotoPage = ltrim($gotoPage, '/');
                 // Map common shortcut names to actual cPanel paths
                 $pageMap = [
@@ -448,15 +449,14 @@ if ($action === 'get_cpanel_sso_url') {
                 ];
                 $mappedPage = $pageMap[strtolower($gotoPage)] ?? null;
                 if (!$mappedPage) {
-                    // Not in map — treat as a partial cPanel path (e.g. "mail/pops")
-                    // Prepend frontend/jupiter/ if not already a full path
                     if (strpos($gotoPage, 'frontend/') === 0 || strpos($gotoPage, '3rdparty/') === 0) {
                         $mappedPage = $gotoPage;
                     } else {
                         $mappedPage = 'frontend/jupiter/' . $gotoPage;
                     }
                 }
-                // Build goto_uri with cpsess prefix
+                // goto_uri should be the path relative to the cpsess prefix
+                // cPanel expects: /cpsessXXXX/login/?session=TOKEN&goto_uri=/cpsessXXXX/PAGE
                 $gotoUri = $cpsess . '/' . $mappedPage;
                 $sessionUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
             }
@@ -2276,7 +2276,7 @@ switch ($action) {
         break;
 
     case 'error_log_clear':
-        /* Clear error logs by truncating known log files */
+        /* Clear error logs by truncating known log files via POST */
         $homedir = '/home/' . $cpUsername;
         $urlHomedir = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
@@ -2307,6 +2307,9 @@ switch ($action) {
             array_unshift($logPaths, $homedir . '/logs/' . $mainDomain . '-error.log');
         }
         $logPaths[] = $homedir . '/logs/error.log';
+        /* Auth headers for direct curl calls */
+        $clearHeaders = [];
+        if (!empty($accessHash)) $clearHeaders[] = "Authorization: whm {$serverUser}:{$accessHash}";
         foreach ($logPaths as $path) {
             /* First check if file exists by trying to read it */
             $urlCheck = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
@@ -2323,15 +2326,33 @@ switch ($action) {
             } else {
                 continue;
             }
-            /* Truncate the file */
+            /* Truncate the file via POST — GET with empty &content= drops the parameter */
             $urlSave = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-                 . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=save_file_content"
-                 . "&dir=" . urlencode(dirname($path)) . "&file=" . urlencode(basename($path))
-                 . "&from_charset=utf-8&to_charset=utf-8&content=";
-            $rSave = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlSave);
-            if ($rSave['code'] === 200 && $rSave['body']) {
-                $json = json_decode($rSave['body'], true);
+                 . "&cpanel_jsonapi_apiversion=3&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=save_file_content";
+            $postData = http_build_query([
+                'dir' => dirname($path),
+                'file' => basename($path),
+                'from_charset' => 'utf-8',
+                'to_charset' => 'utf-8',
+                'content' => '',
+            ]);
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $urlSave,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postData,
+            ]);
+            if (!empty($clearHeaders)) curl_setopt($ch, CURLOPT_HTTPHEADER, $clearHeaders);
+            elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+            $rSave = curl_exec($ch);
+            curl_close($ch);
+            if ($rSave) {
+                $json = json_decode($rSave, true);
                 if (($json['result']['status'] ?? 0) == 1) $cleared = true;
             }
         }

@@ -5,3 +5,5 @@ Thumbs.db
 /release/
 _temp_broodle_app/
 modules/addons/broodle_whmcs_tools/cache/
+.kiro/steering/server-credentials.md
+_test_*.php

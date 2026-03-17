@@ -48,7 +48,7 @@ if (!$service) {
 
 /* ── Gather data ── */
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.83');
+    define('BROODLE_TOOLS_VERSION', '3.10.84');
 }
 
 $hooksFile = $whmcsRoot . '/modules/addons/broodle_whmcs_tools/hooks.php';

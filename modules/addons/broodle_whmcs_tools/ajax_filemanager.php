@@ -161,26 +161,73 @@ case 'fm_delete':
     if (is_array($items)) {
         $itemList = $items;
     } else {
-        $itemList = json_decode(stripslashes($items), true);
+        /* Try parsing as JSON — handle both raw and stripslashed */
+        $itemList = json_decode($items, true);
         if (!is_array($itemList)) {
-            /* Try without stripslashes */
-            $itemList = json_decode($items, true);
+            $itemList = json_decode(stripslashes($items), true);
         }
     }
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid items']); break; }
     $errors = [];
     foreach ($itemList as $item) {
+        $item = trim($item);
+        if (empty($item)) continue;
         $ok = false;
-        /* API2 Fileman::fileop op=unlink — confirmed working on live servers */
+        /* Strategy 1: API2 Fileman::fileop op=unlink via POST (most reliable) */
         $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
               . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-              . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=fileop"
-              . "&op=unlink&sourcefiles=" . urlencode($item);
-        $r1 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url1);
-        $b1 = json_decode($r1['body'] ?? '', true);
+              . "&cpanel_jsonapi_apiversion=2"
+              . "&cpanel_jsonapi_module=Fileman"
+              . "&cpanel_jsonapi_func=fileop";
+        $postData = http_build_query(['op' => 'unlink', 'sourcefiles' => $item]);
+        $headers = [];
+        if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url1,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $postData,
+        ]);
+        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        $resp1 = curl_exec($ch);
+        curl_close($ch);
+        $b1 = json_decode($resp1 ?? '', true);
         /* Check multiple success indicators */
         if (isset($b1['cpanelresult']['data'][0]['result']) && $b1['cpanelresult']['data'][0]['result'] == 1) $ok = true;
         if (!$ok && isset($b1['cpanelresult']['event']['result']) && $b1['cpanelresult']['event']['result'] == 1) $ok = true;
+        /* Strategy 2: If full path failed, try relative path (strip homedir) */
+        if (!$ok && !empty($cpUsername)) {
+            $homedir = '/home/' . $cpUsername;
+            $relPath = $item;
+            if (strpos($item, $homedir . '/') === 0) {
+                $relPath = substr($item, strlen($homedir) + 1);
+            }
+            if ($relPath !== $item) {
+                $postData2 = http_build_query(['op' => 'unlink', 'sourcefiles' => $relPath]);
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $url1,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 20,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $postData2,
+                ]);
+                if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge($headers, ['Content-Type: application/x-www-form-urlencoded']));
+                elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+                $resp2 = curl_exec($ch);
+                curl_close($ch);
+                $b2 = json_decode($resp2 ?? '', true);
+                if (isset($b2['cpanelresult']['data'][0]['result']) && $b2['cpanelresult']['data'][0]['result'] == 1) $ok = true;
+                if (!$ok && isset($b2['cpanelresult']['event']['result']) && $b2['cpanelresult']['event']['result'] == 1) $ok = true;
+            }
+        }
         if (!$ok) {
             $reason = $b1['cpanelresult']['data'][0]['reason'] ?? ($b1['cpanelresult']['error'] ?? 'Failed to delete');
             $errors[] = basename($item) . ': ' . $reason;
