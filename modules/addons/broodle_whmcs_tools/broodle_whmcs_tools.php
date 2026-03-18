@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.87');
+define('BROODLE_TOOLS_VERSION', '3.10.88');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -617,22 +617,40 @@ function broodle_tools_apply_update()
         $destDir = BROODLE_TOOLS_MODULE_DIR;
 
         // Copy files recursively
-        broodle_tools_copy_directory($moduleSrc, $destDir);
+        $copied = broodle_tools_copy_directory($moduleSrc, $destDir);
 
         // Cleanup
         broodle_tools_delete_directory($extractDir);
 
-        return ['success' => true, 'message' => 'Updated to version ' . $updateInfo['latest_version'] . ' successfully. Please refresh the page.'];
+        if ($copied === 0) {
+            return ['success' => false, 'message' => 'Update failed: no files were copied. Check directory permissions on ' . $destDir];
+        }
+
+        // Verify the version actually changed by reading the new file
+        $newContent = @file_get_contents($destDir . '/broodle_whmcs_tools.php');
+        $actuallyUpdated = false;
+        if ($newContent && preg_match("/define\(\s*'BROODLE_TOOLS_VERSION'\s*,\s*'([^']+)'\s*\)/", $newContent, $vm)) {
+            if (version_compare($vm[1], BROODLE_TOOLS_VERSION, '>')) {
+                $actuallyUpdated = true;
+            }
+        }
+
+        if (!$actuallyUpdated) {
+            return ['success' => false, 'message' => 'Update copied ' . $copied . ' files but version did not change. The server may be caching the old file or permissions prevented overwrite. Try manually uploading the zip.'];
+        }
+
+        return ['success' => true, 'message' => 'Updated to version ' . $updateInfo['latest_version'] . ' successfully (' . $copied . ' files). Please refresh the page.'];
     } catch (\Exception $e) {
         return ['success' => false, 'message' => 'Update failed: ' . $e->getMessage()];
     }
 }
 
 /**
- * Recursively copy a directory.
+ * Recursively copy a directory. Returns number of files copied.
  */
 function broodle_tools_copy_directory($src, $dst)
 {
+    $count = 0;
     if (!is_dir($dst)) {
         mkdir($dst, 0755, true);
     }
@@ -645,12 +663,15 @@ function broodle_tools_copy_directory($src, $dst)
         $srcPath = $src . '/' . $file;
         $dstPath = $dst . '/' . $file;
         if (is_dir($srcPath)) {
-            broodle_tools_copy_directory($srcPath, $dstPath);
+            $count += broodle_tools_copy_directory($srcPath, $dstPath);
         } else {
-            copy($srcPath, $dstPath);
+            if (@copy($srcPath, $dstPath)) {
+                $count++;
+            }
         }
     }
     closedir($dir);
+    return $count;
 }
 
 /**
