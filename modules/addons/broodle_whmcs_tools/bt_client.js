@@ -1826,15 +1826,25 @@ function injectStyles9(){
     s.textContent=[
 /* File Manager Layout */
 '.fm-wrap{display:flex;flex-direction:column;height:100%;min-height:500px}',
-'.fm-toolbar{display:flex;align-items:center;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:wrap;background:var(--card-bg,#fff);border-radius:12px 12px 0 0}',
-'.fm-toolbar-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .12s;white-space:nowrap}',
+'.fm-toolbar{display:flex;align-items:center;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:nowrap;background:var(--card-bg,#fff);border-radius:12px 12px 0 0;overflow:hidden}',
+'.fm-toolbar-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .12s;white-space:nowrap;flex-shrink:0}',
 '.fm-toolbar-btn:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}',
 '.fm-toolbar-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}',
 '.fm-toolbar-btn svg{width:14px;height:14px;flex-shrink:0}',
-'.fm-toolbar-sep{width:1px;height:24px;background:var(--border-color,#e5e7eb);margin:0 2px;flex-shrink:0}',
-'.fm-toolbar-search{display:flex;align-items:center;gap:6px;margin-left:auto}',
-'.fm-toolbar-search input{padding:6px 10px;border:1px solid var(--border-color,#d1d5db);border-radius:7px;font-size:12px;width:160px;outline:none;background:var(--input-bg,#fff);color:var(--heading-color,#111827);transition:border-color .15s}',
+'.fm-toolbar-sep{width:1px;height:22px;background:var(--border-color,#e5e7eb);margin:0 1px;flex-shrink:0}',
+'.fm-toolbar-search{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0}',
+'.fm-toolbar-search input{padding:5px 10px;border:1px solid var(--border-color,#d1d5db);border-radius:7px;font-size:12px;width:140px;outline:none;background:var(--input-bg,#fff);color:var(--heading-color,#111827);transition:border-color .15s}',
 '.fm-toolbar-search input:focus{border-color:#0a5ed3;box-shadow:0 0 0 2px rgba(10,94,211,.1)}',
+/* Toolbar overflow menu */
+'.fm-toolbar-more{position:relative;flex-shrink:0}',
+'.fm-toolbar-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 6px;border-radius:7px;font-size:12px;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .12s}',
+'.fm-toolbar-more-btn:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}',
+'.fm-toolbar-dropdown{position:absolute;top:100%;right:0;margin-top:4px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:4px;min-width:160px;z-index:100001;display:none}',
+'.fm-toolbar-dropdown.open{display:block}',
+'.fm-toolbar-dd-item{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:12px;font-weight:500;color:var(--heading-color,#374151);cursor:pointer;border-radius:6px;transition:background .1s;white-space:nowrap}',
+'.fm-toolbar-dd-item:hover{background:var(--input-bg,#f3f4f6)}',
+'.fm-toolbar-dd-item.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}',
+'.fm-toolbar-dd-item svg{width:14px;height:14px;flex-shrink:0}',
 /* Breadcrumb */
 '.fm-breadcrumb{display:flex;align-items:center;gap:4px;padding:8px 16px;font-size:13px;color:var(--text-muted,#6b7280);border-bottom:1px solid var(--border-color,#f3f4f6);flex-wrap:wrap;background:var(--input-bg,#f9fafb)}',
 '.fm-breadcrumb a{color:#0a5ed3;text-decoration:none;cursor:pointer;font-weight:500;padding:2px 4px;border-radius:4px;transition:background .12s}',
@@ -1847,9 +1857,10 @@ function injectStyles9(){
 '.fm-table th{position:sticky;top:0;background:var(--input-bg,#f8fafc);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted,#9ca3af);border-bottom:1px solid var(--border-color,#e5e7eb);cursor:pointer;user-select:none;white-space:nowrap;z-index:2}',
 '.fm-table th:hover{color:var(--heading-color,#374151)}',
 '.fm-table th .fm-sort{display:inline-block;margin-left:3px;opacity:.3;font-size:10px}.fm-table th.sorted .fm-sort{opacity:1;color:#0a5ed3}',
-'.fm-table td{padding:6px 12px;border-bottom:1px solid var(--border-color,#f3f4f6);color:var(--heading-color,#374151);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}',
-'.fm-table tr{transition:background .08s}.fm-table tr:hover{background:rgba(10,94,211,.02)}',
-'.fm-table tr.selected{background:rgba(10,94,211,.06)}',
+'.fm-table td{padding:7px 12px;border-bottom:1px solid var(--border-color,#f3f4f6);color:var(--heading-color,#374151);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}',
+'.fm-table tr{transition:background .08s}.fm-table tr:hover{background:rgba(10,94,211,.03)}',
+'.fm-table tr.selected{background:rgba(10,94,211,.07)}',
+'.fm-table tr.selected:hover{background:rgba(10,94,211,.1)}',
 '.fm-table .fm-name-cell{display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0}',
 '.fm-table .fm-name-cell .fm-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}',
 '.fm-table .fm-name-cell .fm-fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}',
@@ -1875,8 +1886,9 @@ function injectStyles9(){
 '.fm-upload-progress{flex:1;height:4px;background:var(--border-color,#e5e7eb);border-radius:2px;overflow:hidden}',
 '.fm-upload-progress-fill{height:100%;background:#0a5ed3;border-radius:2px;transition:width .2s}',
 /* Responsive */
-'@media(max-width:768px){.fm-toolbar{gap:4px;padding:8px 10px}.fm-toolbar-btn span{display:none}.fm-toolbar-search input{width:100px}.fm-table .fm-perms,.fm-table .fm-date,.fm-table th:nth-child(4),.fm-table th:nth-child(5){display:none}}',
-'@media(max-width:480px){.fm-table .fm-size,.fm-table th:nth-child(3){display:none}}',
+'@media(max-width:900px){.fm-toolbar-btn span{display:none}.fm-toolbar-search input{width:100px}}',
+'@media(max-width:768px){.fm-table .fm-perms,.fm-table .fm-date,.fm-table th:nth-child(4),.fm-table th:nth-child(5){display:none}}',
+'@media(max-width:480px){.fm-table .fm-size,.fm-table th:nth-child(3){display:none}.fm-toolbar-search input{width:80px}}',
     ].join('\n');
     document.head.appendChild(s);
 }
@@ -2200,18 +2212,21 @@ function buildFileManagerPageInto(container){
     tb.innerHTML='<button class="fm-toolbar-btn" data-fm="newfile" title="New File"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg><span>New File</span></button>'
     +'<button class="fm-toolbar-btn" data-fm="newfolder" title="New Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>New Folder</span></button>'
     +'<button class="fm-toolbar-btn" data-fm="upload" title="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload</span></button>'
-    +'<div class="fm-toolbar-sep"></div>'
-    +'<button class="fm-toolbar-btn" data-fm="rename" title="Rename" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg><span>Rename</span></button>'
-    +'<button class="fm-toolbar-btn" data-fm="copy" title="Copy" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span></button>'
-    +'<button class="fm-toolbar-btn" data-fm="move" title="Move" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg><span>Move</span></button>'
     +'<button class="fm-toolbar-btn" data-fm="delete" title="Delete" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>'
     +'<div class="fm-toolbar-sep"></div>'
-    +'<button class="fm-toolbar-btn" data-fm="compress" title="Compress" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Compress</span></button>'
-    +'<button class="fm-toolbar-btn" data-fm="extract" title="Extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Extract</span></button>'
-    +'<button class="fm-toolbar-btn" data-fm="perms" title="Permissions" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Permissions</span></button>'
+    +'<div class="fm-toolbar-more" id="fm-toolbar-more">'
+    +'<button class="fm-toolbar-more-btn" id="fm-more-btn" title="More actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>'
+    +'<div class="fm-toolbar-dropdown" id="fm-more-dropdown">'
+    +'<div class="fm-toolbar-dd-item" data-fm="rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Rename</div>'
+    +'<div class="fm-toolbar-dd-item" data-fm="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</div>'
+    +'<div class="fm-toolbar-dd-item" data-fm="move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>Move</div>'
+    +'<div class="fm-toolbar-dd-item" data-fm="compress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Compress</div>'
+    +'<div class="fm-toolbar-dd-item" data-fm="extract"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Extract</div>'
+    +'<div class="fm-toolbar-dd-item" data-fm="perms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Permissions</div>'
+    +'</div></div>'
     +'<div class="fm-toolbar-sep"></div>'
     +'<button class="fm-toolbar-btn" data-fm="refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>'
-    +'<div class="fm-toolbar-search"><input type="text" id="fm-search-input" placeholder="Search files..."><button class="fm-toolbar-btn" data-fm="search" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></div>';
+    +'<div class="fm-toolbar-search"><input type="text" id="fm-search-input" placeholder="Search..."><button class="fm-toolbar-btn" data-fm="search" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></div>';
     card.appendChild(tb);
 
     /* Upload progress bar */
@@ -2397,38 +2412,67 @@ function fmFileIcon(f){
 function fmUpdateToolbarState(){
     var sel=fmState.selected.length;
     var tb=$("fm-toolbar");if(!tb) return;
-    tb.querySelector('[data-fm="rename"]').disabled=sel!==1;
-    tb.querySelector('[data-fm="copy"]').disabled=sel<1;
-    tb.querySelector('[data-fm="move"]').disabled=sel<1;
     tb.querySelector('[data-fm="delete"]').disabled=sel<1;
-    tb.querySelector('[data-fm="compress"]').disabled=sel<1;
-    tb.querySelector('[data-fm="perms"]').disabled=sel!==1;
+    /* Update dropdown items */
+    var dd=$("fm-more-dropdown");if(!dd) return;
+    var renameItem=dd.querySelector('[data-fm="rename"]');
+    var copyItem=dd.querySelector('[data-fm="copy"]');
+    var moveItem=dd.querySelector('[data-fm="move"]');
+    var compressItem=dd.querySelector('[data-fm="compress"]');
+    var extractItem=dd.querySelector('[data-fm="extract"]');
+    var permsItem=dd.querySelector('[data-fm="perms"]');
+    if(renameItem) renameItem.classList.toggle("disabled",sel!==1);
+    if(copyItem) copyItem.classList.toggle("disabled",sel<1);
+    if(moveItem) moveItem.classList.toggle("disabled",sel<1);
+    if(compressItem) compressItem.classList.toggle("disabled",sel<1);
+    if(permsItem) permsItem.classList.toggle("disabled",sel!==1);
     /* Extract: only if single archive selected */
     var canExtract=false;
     if(sel===1){var ext=(fmState.selected[0]||"").split(".").pop().toLowerCase();canExtract=["zip","tar","gz","bz2","tgz","rar","7z"].indexOf(ext)!==-1;}
-    tb.querySelector('[data-fm="extract"]').disabled=!canExtract;
+    if(extractItem) extractItem.classList.toggle("disabled",!canExtract);
 }
 
 /* ─── FM: Toolbar Binding ─── */
 function fmBindToolbar(){
     var tb=$("fm-toolbar");if(!tb) return;
+    /* Primary toolbar buttons */
     tb.querySelectorAll(".fm-toolbar-btn[data-fm]").forEach(function(btn){
         btn.addEventListener("click",function(){
             var act=this.getAttribute("data-fm");
             if(act==="newfile") fmPrompt("New File","Enter file name:","",function(name){if(name) fmCreateFile(name);});
             else if(act==="newfolder") fmPrompt("New Folder","Enter folder name:","",function(name){if(name) fmCreateFolder(name);});
             else if(act==="upload"){var fi=$("fm-file-input");if(fi){fi.value="";fi.click();}}
-            else if(act==="rename"&&fmState.selected.length===1){var old=fmState.selected[0].split("/").pop();fmPrompt("Rename","Enter new name:",old,function(name){if(name&&name!==old) fmRename(fmState.selected[0],name);});}
-            else if(act==="copy"&&fmState.selected.length>0) fmPromptDest("Copy","Copy to directory:",fmState.dir,function(dest){if(dest) fmCopyMove("fm_copy",fmState.selected,dest);});
-            else if(act==="move"&&fmState.selected.length>0) fmPromptDest("Move","Move to directory:",fmState.dir,function(dest){if(dest) fmCopyMove("fm_move",fmState.selected,dest);});
             else if(act==="delete"&&fmState.selected.length>0) fmConfirmDelete();
-            else if(act==="compress"&&fmState.selected.length>0) fmPrompt("Compress","Archive name (e.g. archive.zip):","archive.zip",function(name){if(name) fmCompress(name);});
-            else if(act==="extract"&&fmState.selected.length===1) fmPromptDest("Extract","Extract to directory:",fmState.dir,function(dest){if(dest) fmExtract(fmState.selected[0],dest);});
-            else if(act==="perms"&&fmState.selected.length===1) fmPromptPerms();
             else if(act==="refresh") fmLoadDir(fmState.dir);
             else if(act==="search") fmDoSearch();
         });
     });
+    /* Three-dot more menu toggle */
+    var moreBtn=$("fm-more-btn");
+    var moreDd=$("fm-more-dropdown");
+    if(moreBtn&&moreDd){
+        moreBtn.addEventListener("click",function(e){
+            e.stopPropagation();
+            moreDd.classList.toggle("open");
+        });
+        /* Close dropdown on outside click */
+        document.addEventListener("click",function(){moreDd.classList.remove("open");});
+        moreDd.addEventListener("click",function(e){e.stopPropagation();});
+        /* Dropdown items */
+        moreDd.querySelectorAll(".fm-toolbar-dd-item[data-fm]").forEach(function(item){
+            item.addEventListener("click",function(){
+                if(this.classList.contains("disabled")) return;
+                var act=this.getAttribute("data-fm");
+                moreDd.classList.remove("open");
+                if(act==="rename"&&fmState.selected.length===1){var old=fmState.selected[0].split("/").pop();fmPrompt("Rename","Enter new name:",old,function(name){if(name&&name!==old) fmRename(fmState.selected[0],name);});}
+                else if(act==="copy"&&fmState.selected.length>0) fmPromptDest("Copy","Copy to directory:",fmState.dir,function(dest){if(dest) fmCopyMove("fm_copy",fmState.selected,dest);});
+                else if(act==="move"&&fmState.selected.length>0) fmPromptDest("Move","Move to directory:",fmState.dir,function(dest){if(dest) fmCopyMove("fm_move",fmState.selected,dest);});
+                else if(act==="compress"&&fmState.selected.length>0) fmPrompt("Compress","Archive name (e.g. archive.zip):","archive.zip",function(name){if(name) fmCompress(name);});
+                else if(act==="extract"&&fmState.selected.length===1) fmPromptDest("Extract","Extract to directory:",fmState.dir,function(dest){if(dest) fmExtract(fmState.selected[0],dest);});
+                else if(act==="perms"&&fmState.selected.length===1) fmPromptPerms();
+            });
+        });
+    }
     /* Upload file input */
     var fi=$("fm-file-input");
     if(fi) fi.addEventListener("change",function(){if(this.files&&this.files.length) fmUploadFiles(this.files);});
