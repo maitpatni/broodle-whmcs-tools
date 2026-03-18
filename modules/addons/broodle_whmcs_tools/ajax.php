@@ -51,7 +51,7 @@ $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_e
 $cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
 $phpActions = ['php_get_versions', 'php_set_version'];
 $logActions = ['error_log_read', 'error_log_clear'];
-$analyticsActions = ['analytics_bandwidth', 'analytics_visitors', 'analytics_log_archives'];
+$analyticsActions = ['analytics_bandwidth', 'analytics_visitors', 'analytics_log_archives', 'analytics_bandwidth_detailed'];
 $fileActions = ['fm_list', 'fm_read', 'fm_save', 'fm_create_file', 'fm_create_folder', 'fm_delete', 'fm_rename', 'fm_copy', 'fm_move', 'fm_upload', 'fm_permissions', 'fm_compress', 'fm_extract', 'fm_search', 'fm_download_url'];
 
 // Handle addon description lookup (no cPanel needed)
@@ -247,7 +247,7 @@ if ($action === 'get_addons') {
     exit;
 }
 
-// Handle cPanel resource stats (CPU, Memory, I/O, Processes)
+// Handle cPanel resource stats (CPU, Memory, I/O, Processes) — per-user only
 if ($action === 'cpanel_resource_stats') {
     $server = Capsule::table('tblservers')->where('id', $service->server)->first();
     if (!$server) { echo json_encode(['success' => false, 'message' => 'Server not found']); exit; }
@@ -269,22 +269,46 @@ if ($action === 'cpanel_resource_stats') {
     if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
 
     $stats = ['cpu' => null, 'mem' => null, 'io' => null, 'nproc' => null, 'ep' => null, 'iops' => null];
-    $debugInfo = [];
 
-    // Strategy 1: UAPI ResourceUsage::get_usages (works on most cPanel servers)
-    $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-          . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-          . "&cpanel_jsonapi_apiversion=3"
-          . "&cpanel_jsonapi_module=ResourceUsage"
-          . "&cpanel_jsonapi_func=get_usages";
-    $ch = curl_init();
-    curl_setopt_array($ch, [CURLOPT_URL => $url1, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
-    if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-    $resp1 = curl_exec($ch); curl_close($ch);
-    $json1 = json_decode($resp1, true);
-    $usages = $json1['result']['data'] ?? [];
+    // Helper: make a cPanel UAPI call via WHM proxy for this specific user
+    $uapiCall = function ($module, $func, $params = '') use ($protocol, $hostname, $port, $cpUsername, $headers, $serverUser, $password) {
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=" . urlencode($module)
+             . "&cpanel_jsonapi_func=" . urlencode($func)
+             . ($params ? "&{$params}" : '');
+        $ch = curl_init();
+        curl_setopt_array($ch, [CURLOPT_URL => $url, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
+        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+        $resp = curl_exec($ch); curl_close($ch);
+        return json_decode($resp, true);
+    };
 
+    // Strategy 1: UAPI StatsBar::get_stats — returns per-user account stats
+    // Fields: _count (current), _max (limit), id, name, units, percent
+    $json1 = $uapiCall('StatsBar', 'get_stats', 'display=' . urlencode('diskusage|bandwidthusage|emailaccounts|ftpaccounts|sqldatabases|addondomains|subdomains|parkeddomains'));
+    $sbData = $json1['result']['data'] ?? [];
+    $accountStats = [];
+    if (is_array($sbData)) {
+        foreach ($sbData as $sb) {
+            if (!is_array($sb)) continue;
+            $id = $sb['id'] ?? ($sb['name'] ?? '');
+            $accountStats[$id] = [
+                'count' => $sb['_count'] ?? ($sb['count'] ?? null),
+                'max' => $sb['_max'] ?? ($sb['max'] ?? null),
+                'percent' => $sb['percent'] ?? 0,
+                'item' => $sb['item'] ?? $id,
+                'units' => $sb['units'] ?? '',
+            ];
+        }
+    }
+
+    // Strategy 2: UAPI ResourceUsage::get_usages — per-user CloudLinux/LVE resource limits
+    // Response items have: id, description, usage, maximum, formatter (format_bytes|format_bytes_per_second|null)
+    $json2 = $uapiCall('ResourceUsage', 'get_usages');
+    $usages = $json2['result']['data'] ?? [];
     if (is_array($usages) && !empty($usages)) {
         foreach ($usages as $u) {
             if (!is_array($u)) continue;
@@ -292,14 +316,14 @@ if ($action === 'cpanel_resource_stats') {
             $desc = strtolower($u['description'] ?? '');
             $used = $u['usage'] ?? ($u['used'] ?? ($u['value'] ?? null));
             $max = $u['maximum'] ?? ($u['limit'] ?? ($u['max'] ?? null));
+            $formatter = $u['formatter'] ?? null;
             if ($max === 'unlimited' || $max === null || $max === 0 || $max === '0' || $max === '-1') $max = 0;
-            // Ensure numeric
             if ($used !== null) $used = floatval($used);
             if ($max !== null && $max !== 0) $max = floatval($max);
-            $item = ['used' => $used, 'max' => $max];
+            $item = ['used' => $used, 'max' => $max, 'formatter' => $formatter, 'desc' => $u['description'] ?? ''];
 
             if (strpos($id, 'cpu') !== false || strpos($desc, 'cpu') !== false) $stats['cpu'] = $item;
-            elseif ($id === 'physicalmemoryusage' || strpos($id, 'pmem') !== false || strpos($desc, 'physical memory') !== false || (strpos($desc, 'memory') !== false && strpos($desc, 'virtual') === false)) $stats['mem'] = $item;
+            elseif ($id === 'physicalmemoryusage' || $id === 'disk_usage' && false || strpos($id, 'pmem') !== false || strpos($desc, 'physical memory') !== false || (strpos($desc, 'memory') !== false && strpos($desc, 'virtual') === false)) $stats['mem'] = $item;
             elseif (strpos($id, 'iops') !== false || strpos($desc, 'iops') !== false) $stats['iops'] = $item;
             elseif (strpos($id, 'io') !== false || strpos($desc, 'i/o') !== false) $stats['io'] = $item;
             elseif ($id === 'entryprocesses' || strpos($id, 'ep') !== false || strpos($desc, 'entry process') !== false) $stats['ep'] = $item;
@@ -307,79 +331,34 @@ if ($action === 'cpanel_resource_stats') {
         }
     }
 
-    // Strategy 2: CloudLinux LVEInfo::getUsage (if ResourceUsage didn't return CPU/mem)
+    // Strategy 3: CloudLinux LVEInfo::getUsage fallback for CPU/mem
     if ($stats['cpu'] === null || $stats['mem'] === null) {
-        $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-              . "&cpanel_jsonapi_apiversion=3"
-              . "&cpanel_jsonapi_module=LVEInfo"
-              . "&cpanel_jsonapi_func=getUsage";
-        $ch = curl_init();
-        curl_setopt_array($ch, [CURLOPT_URL => $url2, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
-        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-        $resp2 = curl_exec($ch); curl_close($ch);
-        $json2 = json_decode($resp2, true);
-        $lveData = $json2['result']['data'] ?? ($json2['cpanelresult']['data'] ?? []);
-
+        $json3 = $uapiCall('LVEInfo', 'getUsage');
+        $lveData = $json3['result']['data'] ?? ($json3['cpanelresult']['data'] ?? []);
         if (is_array($lveData) && !empty($lveData)) {
-            // LVEInfo returns a single object or array with usage fields
             $lve = isset($lveData[0]) ? $lveData[0] : $lveData;
             if (isset($lve['cpu']) && $stats['cpu'] === null) {
-                $stats['cpu'] = ['used' => $lve['cpu']['used'] ?? $lve['cpu'], 'max' => $lve['cpu']['limit'] ?? ($lve['lcpu'] ?? 100)];
+                $stats['cpu'] = ['used' => $lve['cpu']['used'] ?? $lve['cpu'], 'max' => $lve['cpu']['limit'] ?? ($lve['lcpu'] ?? 100), 'formatter' => null];
             }
             if (isset($lve['pmem']) && $stats['mem'] === null) {
-                $stats['mem'] = ['used' => $lve['pmem']['used'] ?? $lve['pmem'], 'max' => $lve['pmem']['limit'] ?? ($lve['lpmem'] ?? 0)];
+                $stats['mem'] = ['used' => $lve['pmem']['used'] ?? $lve['pmem'], 'max' => $lve['pmem']['limit'] ?? ($lve['lpmem'] ?? 0), 'formatter' => 'format_bytes'];
             }
             if (isset($lve['io']) && $stats['io'] === null) {
-                $stats['io'] = ['used' => $lve['io']['used'] ?? $lve['io'], 'max' => $lve['io']['limit'] ?? ($lve['lio'] ?? 0)];
+                $stats['io'] = ['used' => $lve['io']['used'] ?? $lve['io'], 'max' => $lve['io']['limit'] ?? ($lve['lio'] ?? 0), 'formatter' => 'format_bytes_per_second'];
             }
             if (isset($lve['nproc']) && $stats['nproc'] === null) {
-                $stats['nproc'] = ['used' => $lve['nproc']['used'] ?? $lve['nproc'], 'max' => $lve['nproc']['limit'] ?? ($lve['lnproc'] ?? 0)];
+                $stats['nproc'] = ['used' => $lve['nproc']['used'] ?? $lve['nproc'], 'max' => $lve['nproc']['limit'] ?? ($lve['lnproc'] ?? 0), 'formatter' => null];
             }
             if (isset($lve['ep']) && $stats['ep'] === null) {
-                $stats['ep'] = ['used' => $lve['ep']['used'] ?? $lve['ep'], 'max' => $lve['ep']['limit'] ?? ($lve['lep'] ?? 0)];
+                $stats['ep'] = ['used' => $lve['ep']['used'] ?? $lve['ep'], 'max' => $lve['ep']['limit'] ?? ($lve['lep'] ?? 0), 'formatter' => null];
             }
             if (isset($lve['iops']) && $stats['iops'] === null) {
-                $stats['iops'] = ['used' => $lve['iops']['used'] ?? $lve['iops'], 'max' => $lve['iops']['limit'] ?? ($lve['liops'] ?? 0)];
+                $stats['iops'] = ['used' => $lve['iops']['used'] ?? $lve['iops'], 'max' => $lve['iops']['limit'] ?? ($lve['liops'] ?? 0), 'formatter' => null];
             }
         }
     }
 
-    // Strategy 3: StatsBar::stat as last resort for CPU/memory
-    if ($stats['cpu'] === null) {
-        $url3 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-              . "&cpanel_jsonapi_apiversion=3"
-              . "&cpanel_jsonapi_module=StatsBar"
-              . "&cpanel_jsonapi_func=stat"
-              . "&display=cpuusage|physicalmemoryusage|entryprocesses|numprocesses";
-        $ch = curl_init();
-        curl_setopt_array($ch, [CURLOPT_URL => $url3, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => false]);
-        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-        $resp3 = curl_exec($ch); curl_close($ch);
-        $json3 = json_decode($resp3, true);
-        $sbData = $json3['result']['data'] ?? [];
-
-        if (is_array($sbData)) {
-            foreach ($sbData as $sb) {
-                if (!is_array($sb)) continue;
-                $name = strtolower($sb['name'] ?? '');
-                $used = $sb['value'] ?? ($sb['count'] ?? null);
-                $max = $sb['max'] ?? ($sb['limit'] ?? null);
-                if ($max === 'unlimited' || $max === null) $max = 0;
-                $item = ['used' => $used, 'max' => $max];
-
-                if (strpos($name, 'cpu') !== false && $stats['cpu'] === null) $stats['cpu'] = $item;
-                elseif (strpos($name, 'memory') !== false && $stats['mem'] === null) $stats['mem'] = $item;
-                elseif (strpos($name, 'entry') !== false && $stats['ep'] === null) $stats['ep'] = $item;
-                elseif (strpos($name, 'process') !== false && $stats['nproc'] === null) $stats['nproc'] = $item;
-            }
-        }
-    }
-
-    echo json_encode(['success' => true, 'stats' => $stats]);
+    echo json_encode(['success' => true, 'stats' => $stats, 'account' => $accountStats]);
     exit;
 }
 
@@ -2443,6 +2422,44 @@ switch ($action) {
                 echo json_encode(['success' => true, 'archives' => $json['result']['data'] ?? []]);
             } else {
                 echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to list archives']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);
+        }
+        break;
+
+    case 'analytics_bandwidth_detailed':
+        /* Get monthly bandwidth per domain via UAPI Bandwidth::query */
+        $grouping = isset($_POST['grouping']) ? trim($_POST['grouping']) : 'domain|protocol|year_month';
+        // Sanitize grouping — only allow known values
+        $allowedGroupings = ['domain', 'protocol', 'year_month', 'year_month_day', 'year'];
+        $parts = explode('|', $grouping);
+        $parts = array_filter($parts, function ($p) use ($allowedGroupings) { return in_array(trim($p), $allowedGroupings); });
+        if (empty($parts)) $parts = ['domain', 'protocol', 'year_month'];
+        $grouping = implode('|', $parts);
+
+        // Default: last 6 months
+        $end = time();
+        $start = isset($_POST['start']) ? (int) $_POST['start'] : ($end - 180 * 86400);
+
+        $urlBwD = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Bandwidth"
+             . "&cpanel_jsonapi_func=query"
+             . "&grouping=" . urlencode($grouping)
+             . "&start=" . $start
+             . "&end=" . $end
+             . "&interval=daily"
+             . "&protocols=" . urlencode('http|imap|smtp|pop3|ftp');
+        $rBwD = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlBwD, 30);
+        if ($rBwD['code'] === 200 && $rBwD['body']) {
+            $json = json_decode($rBwD['body'], true);
+            $status = $json['result']['status'] ?? 0;
+            if ($status == 1) {
+                echo json_encode(['success' => true, 'data' => $json['result']['data'] ?? []]);
+            } else {
+                echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to get bandwidth details']);
             }
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to connect to server']);

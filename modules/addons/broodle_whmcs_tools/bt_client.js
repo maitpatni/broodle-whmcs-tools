@@ -1551,18 +1551,85 @@ function bindModals(){
     loadResourceStats();
 }
 
-/* ─── Resource Stats (CPU, Memory, I/O, Processes) ─── */
+/* ─── Resource Stats (CPU, Memory, I/O, Processes) — per-user ─── */
+function btFormatResourceVal(val,formatter){
+    /* Convert raw value using cPanel formatter hint */
+    if(!formatter) return {val:val,unit:""};
+    var v=parseFloat(val)||0;
+    if(formatter==="format_bytes"){
+        var units=["B","KB","MB","GB","TB"];var i=0;
+        if(v>0){i=Math.floor(Math.log(v)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+        return {val:v/Math.pow(1024,i),unit:units[i],decimals:i>0?1:0};
+    }
+    if(formatter==="format_bytes_per_second"){
+        var units=["B/s","KB/s","MB/s","GB/s"];var i=0;
+        if(v>0){i=Math.floor(Math.log(v)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+        return {val:v/Math.pow(1024,i),unit:units[i],decimals:i>0?1:0};
+    }
+    return {val:val,unit:""};
+}
 function loadResourceStats(){
     var container=$("bt-hero-res");if(!container) return;
     post({action:"cpanel_resource_stats"},function(r){
-        if(!r.success||!r.stats){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">Resource stats unavailable</div>';return;}
-        var s=r.stats;var bars=[];
-        if(s.cpu) bars.push({label:"CPU",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',used:s.cpu.used,max:s.cpu.max,unit:"%"});
-        if(s.mem){var memU=parseFloat(s.mem.used)||0;var memM=parseFloat(s.mem.max)||0;var memUnit="MB";if(memM>1024||memU>1024){memU=(memU/1024);memM=memM>0?(memM/1024):0;memUnit="GB";}bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:memU,max:memM,unit:memUnit,decimals:memUnit==="GB"?1:0});}
-        if(s.io){var ioU=parseFloat(s.io.used)||0;var ioM=parseFloat(s.io.max)||0;var ioUnit="KB/s";if(ioM>=1024||ioU>=1024){ioU=ioU/1024;ioM=ioM>0?ioM/1024:0;ioUnit="MB/s";}bars.push({label:"I/O",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',used:ioU,max:ioM,unit:ioUnit,decimals:ioUnit==="MB/s"?1:0});}
+        if(!r.success){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">Resource stats unavailable</div>';return;}
+        var s=r.stats||{};var acct=r.account||{};var bars=[];
+        /* LVE / CloudLinux resource bars — use formatter from API */
+        if(s.cpu){
+            var cpuU=parseFloat(s.cpu.used)||0;var cpuM=parseFloat(s.cpu.max)||0;
+            bars.push({label:"CPU",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',used:cpuU,max:cpuM,unit:"%"});
+        }
+        if(s.mem){
+            var fmt=s.mem.formatter||null;var rawU=parseFloat(s.mem.used)||0;var rawM=parseFloat(s.mem.max)||0;
+            if(fmt==="format_bytes"){
+                /* Values are in bytes — pick best unit for both used and max */
+                var best=rawM>0?rawM:rawU;var units=["B","KB","MB","GB","TB"];var i=0;
+                if(best>0){i=Math.floor(Math.log(best)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+                var div=Math.pow(1024,i);
+                bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:rawU/div,max:rawM>0?rawM/div:0,unit:units[i],decimals:1});
+            } else {
+                /* Values assumed MB (legacy/fallback) */
+                var memU=rawU;var memM=rawM;var memUnit="MB";
+                if(memM>1024||memU>1024){memU=memU/1024;memM=memM>0?memM/1024:0;memUnit="GB";}
+                bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:memU,max:memM,unit:memUnit,decimals:memUnit==="GB"?1:0});
+            }
+        }
+        if(s.io){
+            var fmt=s.io.formatter||null;var rawU=parseFloat(s.io.used)||0;var rawM=parseFloat(s.io.max)||0;
+            if(fmt==="format_bytes_per_second"||fmt==="format_bytes"){
+                var best=rawM>0?rawM:rawU;var units=["B/s","KB/s","MB/s","GB/s"];var i=0;
+                if(best>0){i=Math.floor(Math.log(best)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+                var div=Math.pow(1024,i);
+                bars.push({label:"I/O",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',used:rawU/div,max:rawM>0?rawM/div:0,unit:units[i],decimals:1});
+            } else {
+                var ioU=rawU;var ioM=rawM;var ioUnit="KB/s";
+                if(ioM>=1024||ioU>=1024){ioU=ioU/1024;ioM=ioM>0?ioM/1024:0;ioUnit="MB/s";}
+                bars.push({label:"I/O",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',used:ioU,max:ioM,unit:ioUnit,decimals:ioUnit==="MB/s"?1:0});
+            }
+        }
         if(s.nproc) bars.push({label:"Processes",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',used:s.nproc.used,max:s.nproc.max,unit:""});
         if(s.ep) bars.push({label:"Entry Proc",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',used:s.ep.used,max:s.ep.max,unit:""});
         if(s.iops) bars.push({label:"IOPS",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',used:s.iops.used,max:s.iops.max,unit:""});
+        /* Account-level stats from StatsBar::get_stats (per-user) */
+        var acctMap={
+            diskusage:{label:"Disk",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'},
+            bandwidthusage:{label:"Bandwidth",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
+            emailaccounts:{label:"Emails",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>'},
+            ftpaccounts:{label:"FTP",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'},
+            sqldatabases:{label:"Databases",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'},
+            addondomains:{label:"Addons",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>'},
+            subdomains:{label:"Subdomains",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'}
+        };
+        var acctOrder=['diskusage','bandwidthusage','emailaccounts','ftpaccounts','sqldatabases','addondomains','subdomains'];
+        acctOrder.forEach(function(key){
+            var a=acct[key];if(!a) return;
+            var info=acctMap[key]||{label:key,icon:''};
+            var cnt=a.count;var mx=a.max;var units=a.units||'';
+            if(cnt===null||cnt===undefined) return;
+            var usedNum=parseFloat(cnt)||0;
+            var maxNum=0;var maxStr='∞';
+            if(mx!==null&&mx!==undefined&&mx!=='unlimited'&&mx!=='∞'){maxNum=parseFloat(mx)||0;if(maxNum>0) maxStr=maxNum+(units?' '+units:'');}
+            bars.push({label:info.label,icon:info.icon,used:usedNum,max:maxNum,unit:units,decimals:units==='MB'||units==='GB'?1:0});
+        });
         if(!bars.length){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">No resource data available</div>';return;}
         var html="";
         bars.forEach(function(b){
@@ -2916,7 +2983,34 @@ function injectStyles12(){
     +".bt-analytics-archive-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--text-primary,#1e293b);background:var(--bg-secondary,#f8fafc);border:1px solid var(--border-color,#e2e8f0)}"
     +".bt-analytics-archive-name{flex:1;font-family:SFMono-Regular,Consolas,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
     +".bt-analytics-archive-size{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);white-space:nowrap}"
-    +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}}";
+    +".bt-chart-wrap{position:relative;width:100%;margin:12px 0}"
+    +".bt-chart-canvas{width:100%;height:220px;display:block}"
+    +".bt-chart-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;padding:0 4px}"
+    +".bt-chart-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted,#64748b)}"
+    +".bt-chart-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}"
+    +".bt-chart-section{padding:16px;border-bottom:1px solid var(--border-color,#e2e8f0)}"
+    +".bt-chart-section:last-child{border-bottom:none}"
+    +".bt-chart-title{margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b);display:flex;align-items:center;gap:8px}"
+    +".bt-pie-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap}"
+    +".bt-pie-canvas{width:180px;height:180px;flex-shrink:0}"
+    +".bt-pie-legend{flex:1;min-width:140px}"
+    +".bt-pie-legend-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:var(--text-primary,#1e293b)}"
+    +".bt-pie-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}"
+    +".bt-pie-legend-val{margin-left:auto;font-weight:600;font-family:SFMono-Regular,Consolas,monospace;font-size:11px;color:#7c3aed}"
+    +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}.bt-pie-wrap{flex-direction:column;align-items:flex-start}.bt-pie-canvas{width:140px;height:140px}}"
+    /* Gauge styles */
+    +".bt-gauges-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}"
+    +".bt-gauge-item{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}"
+    +".bt-gauge-canvas{width:100px;height:100px}"
+    +".bt-gauge-val{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);text-align:center;font-family:SFMono-Regular,Consolas,monospace;max-width:120px;word-break:break-word}"
+    /* Account bar styles */
+    +".bt-acct-bar-row{margin-bottom:10px}"
+    +".bt-acct-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}"
+    +".bt-acct-bar-label{font-size:12px;font-weight:600;color:var(--text-primary,#1e293b)}"
+    +".bt-acct-bar-val{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);font-family:SFMono-Regular,Consolas,monospace}"
+    +".bt-acct-bar-track{height:8px;border-radius:4px;background:var(--border-color,#e2e8f0);overflow:hidden}"
+    +".bt-acct-bar-fill{height:100%;border-radius:4px;transition:width .4s ease}"
+    +"@media(max-width:600px){.bt-gauges-row{gap:10px}.bt-gauge-canvas{width:80px;height:80px}}";
     document.head.appendChild(s);
 }
 
@@ -2930,8 +3024,8 @@ function buildAnalyticsPane(){
 function loadAnalytics(){
     var body=$("bt-analytics-body");if(!body) return;
     body.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div>';
-    var results={bandwidth:null,visitors:null,archives:null};
-    var done=0;var total=3;
+    var results={bandwidth:null,visitors:null,archives:null,bwDetailed:null,resourceStats:null};
+    var done=0;var total=5;
     function checkDone(){
         done++;if(done<total) return;
         renderAnalytics(results);
@@ -2939,138 +3033,262 @@ function loadAnalytics(){
     post({action:"analytics_bandwidth"},function(r){results.bandwidth=r;checkDone();});
     post({action:"analytics_visitors"},function(r){results.visitors=r;checkDone();});
     post({action:"analytics_log_archives"},function(r){results.archives=r;checkDone();});
+    post({action:"analytics_bandwidth_detailed",grouping:"domain|protocol|year_month"},function(r){results.bwDetailed=r;checkDone();});
+    post({action:"cpanel_resource_stats"},function(r){results.resourceStats=r;checkDone();});
+}
+
+/* ─── Canvas Chart Helpers ─── */
+var btChartColors=["#7c3aed","#0a5ed3","#059669","#d97706","#ef4444","#ec4899","#06b6d4","#8b5cf6","#f59e0b","#10b981"];
+function btDrawBarChart(canvas,labels,datasets){
+    if(!canvas||!canvas.getContext) return;
+    var ctx=canvas.getContext("2d");var dpr=window.devicePixelRatio||1;
+    var w=canvas.clientWidth;var h=canvas.clientHeight;
+    canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);
+    var padL=60,padR=16,padT=16,padB=40;
+    var chartW=w-padL-padR;var chartH=h-padT-padB;
+    if(chartW<10||chartH<10) return;
+    var maxVal=0;datasets.forEach(function(ds){ds.data.forEach(function(v){if(v>maxVal) maxVal=v;});});
+    if(maxVal===0) maxVal=1;
+    ctx.strokeStyle="rgba(0,0,0,.06)";ctx.lineWidth=1;
+    ctx.fillStyle="#9ca3af";ctx.font="10px -apple-system,sans-serif";ctx.textAlign="right";
+    for(var g=0;g<=5;g++){var gy=padT+chartH-(g/5)*chartH;ctx.beginPath();ctx.moveTo(padL,gy);ctx.lineTo(padL+chartW,gy);ctx.stroke();ctx.fillText(formatBytes(maxVal*(g/5)),padL-6,gy+3);}
+    var barGroupW=chartW/labels.length;var barW=Math.min(28,barGroupW/(datasets.length+1));
+    var gap=Math.max(2,barW*0.15);var totalBarW=datasets.length*barW+(datasets.length-1)*gap;
+    labels.forEach(function(label,i){
+        var gx=padL+i*barGroupW+barGroupW/2-totalBarW/2;
+        datasets.forEach(function(ds,di){var val=ds.data[i]||0;var barH=maxVal>0?(val/maxVal)*chartH:0;var bx=gx+di*(barW+gap);var by=padT+chartH-barH;ctx.fillStyle=ds.color||btChartColors[di%btChartColors.length];if(barH>0){var r=Math.min(3,barW/2,barH/2);ctx.beginPath();ctx.moveTo(bx,by+barH);ctx.lineTo(bx,by+r);ctx.quadraticCurveTo(bx,by,bx+r,by);ctx.lineTo(bx+barW-r,by);ctx.quadraticCurveTo(bx+barW,by,bx+barW,by+r);ctx.lineTo(bx+barW,by+barH);ctx.closePath();ctx.fill();}});
+        ctx.fillStyle="#9ca3af";ctx.font="10px -apple-system,sans-serif";ctx.textAlign="center";
+        ctx.fillText(label,padL+i*barGroupW+barGroupW/2,h-padB+14);
+    });
+}
+function btDrawPieChart(canvas,slices){
+    if(!canvas||!canvas.getContext) return;
+    var ctx=canvas.getContext("2d");var dpr=window.devicePixelRatio||1;
+    var w=canvas.clientWidth;var h=canvas.clientHeight;
+    canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);
+    var cx=w/2;var cy=h/2;var radius=Math.min(cx,cy)-8;
+    var total=0;slices.forEach(function(s){total+=s.value;});
+    if(total===0){ctx.fillStyle="#e5e7eb";ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fill();return;}
+    var startAngle=-Math.PI/2;
+    slices.forEach(function(s,i){var sa=(s.value/total)*Math.PI*2;ctx.fillStyle=s.color||btChartColors[i%btChartColors.length];ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,startAngle,startAngle+sa);ctx.closePath();ctx.fill();startAngle+=sa;});
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim()||"#fff";
+    ctx.beginPath();ctx.arc(cx,cy,radius*0.55,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--heading-color').trim()||"#1e293b";
+    ctx.font="bold 13px -apple-system,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(formatBytes(total),cx,cy);
+}
+
+/* Draw a gauge/donut for a single resource stat */
+function btDrawGauge(canvas,pct,color,label,valText){
+    if(!canvas||!canvas.getContext) return;
+    var ctx=canvas.getContext("2d");var dpr=window.devicePixelRatio||1;
+    var w=canvas.clientWidth;var h=canvas.clientHeight;
+    canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);
+    var cx=w/2;var cy=h/2;var radius=Math.min(cx,cy)-6;var lw=10;
+    /* Background track */
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);
+    ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()||"#e5e7eb";
+    ctx.lineWidth=lw;ctx.stroke();
+    /* Filled arc */
+    if(pct>0){
+        var endAngle=-Math.PI/2+(pct/100)*Math.PI*2;
+        ctx.beginPath();ctx.arc(cx,cy,radius,-Math.PI/2,endAngle);
+        ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap="round";ctx.stroke();
+    }
+    /* Center text */
+    var textColor=getComputedStyle(document.documentElement).getPropertyValue('--heading-color').trim()||"#1e293b";
+    ctx.fillStyle=textColor;ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="bold 14px -apple-system,sans-serif";
+    ctx.fillText(pct+"%",cx,cy-6);
+    ctx.font="10px -apple-system,sans-serif";
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim()||"#6b7280";
+    ctx.fillText(label,cx,cy+10);
 }
 
 function renderAnalytics(results){
     var body=$("bt-analytics-body");if(!body) return;
     var html="";
-
-    /* ── Bandwidth Section ── */
-    html+='<div style="padding:16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Bandwidth Usage</h6>';
-    if(results.bandwidth&&results.bandwidth.success&&results.bandwidth.data){
-        var bwData=results.bandwidth.data;
-        /* Parse bandwidth — data can be nested by protocol/domain */
-        var rows=[];
-        if(Array.isArray(bwData)){
-            bwData.forEach(function(item){
-                if(item.domain) rows.push(item);
-            });
-        } else if(typeof bwData==="object"){
-            /* Object keyed by domain or protocol */
-            Object.keys(bwData).forEach(function(key){
-                var val=bwData[key];
-                if(typeof val==="object"&&!Array.isArray(val)){
-                    Object.keys(val).forEach(function(sub){
-                        var v=val[sub];
-                        if(typeof v==="number"||typeof v==="string"){
-                            rows.push({domain:key,protocol:sub,bytes:parseInt(v)||0});
-                        } else if(typeof v==="object"){
-                            Object.keys(v).forEach(function(proto){
-                                rows.push({domain:key,protocol:proto,bytes:parseInt(v[proto])||0});
-                            });
-                        }
-                    });
-                } else {
-                    rows.push({domain:key,bytes:parseInt(val)||0});
-                }
-            });
-        }
-        if(rows.length){
-            /* Aggregate by domain */
-            var domainMap={};
-            rows.forEach(function(r){
-                var d=r.domain||"unknown";
-                if(!domainMap[d]) domainMap[d]={domain:d,total:0,protocols:{}};
-                var bytes=r.bytes||0;
-                domainMap[d].total+=bytes;
-                if(r.protocol){
-                    if(!domainMap[d].protocols[r.protocol]) domainMap[d].protocols[r.protocol]=0;
-                    domainMap[d].protocols[r.protocol]+=bytes;
-                }
-            });
-            var domains=Object.values(domainMap).sort(function(a,b){return b.total-a.total;});
-            var maxBw=domains[0]?domains[0].total:1;
-            html+='<div class="bt-analytics-bw-list">';
-            domains.forEach(function(d){
-                var pct=maxBw>0?Math.round(d.total/maxBw*100):0;
-                html+='<div class="bt-analytics-bw-row"><div class="bt-analytics-bw-info"><span class="bt-analytics-bw-domain">'+esc(d.domain)+'</span><span class="bt-analytics-bw-size">'+formatBytes(d.total)+'</span></div><div class="bt-analytics-bw-bar-wrap"><div class="bt-analytics-bw-bar" style="width:'+pct+'%"></div></div>';
-                var protos=Object.keys(d.protocols);
-                if(protos.length){
-                    html+='<div class="bt-analytics-bw-protos">';
-                    protos.forEach(function(p){
-                        html+='<span class="bt-analytics-bw-proto">'+esc(p)+': '+formatBytes(d.protocols[p])+'</span>';
-                    });
-                    html+='</div>';
-                }
-                html+='</div>';
-            });
-            html+='</div>';
-        } else {
-            html+='<div class="bt-empty" style="padding:20px"><span>No bandwidth data available</span></div>';
-        }
+    /* ── Resource Usage Gauges ── */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>Resource Usage</h6>';
+    if(results.resourceStats&&results.resourceStats.success){
+        html+='<div class="bt-gauges-row" id="btResGauges"></div>';
     } else {
-        html+='<div class="bt-empty" style="padding:20px"><span>'+(results.bandwidth&&results.bandwidth.message?esc(results.bandwidth.message):'Failed to load bandwidth data')+'</span></div>';
+        html+='<div class="bt-empty" style="padding:16px"><span>Resource usage data unavailable</span></div>';
     }
     html+='</div>';
-
-    /* ── Visitor Stats Section ── */
-    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Visitor Statistics</h6>';
+    /* ── Account Stats Bars ── */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Account Limits</h6>';
+    if(results.resourceStats&&results.resourceStats.success){
+        html+='<div id="btAcctBars"></div>';
+    } else {
+        html+='<div class="bt-empty" style="padding:16px"><span>Account stats unavailable</span></div>';
+    }
+    html+='</div>';
+    /* Monthly Bandwidth Bar Chart */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Monthly Bandwidth</h6>';
+    if(results.bwDetailed&&results.bwDetailed.success&&results.bwDetailed.data){
+        html+='<div class="bt-chart-wrap"><canvas class="bt-chart-canvas" id="btBwMonthlyChart"></canvas></div><div class="bt-chart-legend" id="btBwMonthlyLegend"></div>';
+    } else {
+        html+='<div class="bt-empty" style="padding:16px"><span>Monthly bandwidth data unavailable</span></div>';
+    }
+    html+='</div>';
+    /* Bandwidth by Domain (Pie) */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>Bandwidth by Domain</h6>';
+    html+='<div class="bt-pie-wrap"><canvas class="bt-pie-canvas" id="btBwDomainPie"></canvas><div class="bt-pie-legend" id="btBwDomainLegend"></div></div></div>';
+    /* Bandwidth by Protocol (Pie) */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bandwidth by Protocol</h6>';
+    html+='<div class="bt-pie-wrap"><canvas class="bt-pie-canvas" id="btBwProtoPie"></canvas><div class="bt-pie-legend" id="btBwProtoLegend"></div></div></div>';
+    /* Visitor Stats */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Visitor Statistics</h6>';
     if(results.visitors&&results.visitors.success){
-        var vis=results.visitors.visitors||{};
-        var hasStats=false;
-        if(vis.webalizer&&vis.webalizer.length){
-            hasStats=true;
-            html+='<div style="margin-bottom:12px"><span style="font-size:12px;font-weight:600;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Webalizer</span><div class="bt-analytics-stats-grid">';
-            vis.webalizer.forEach(function(w){
-                html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg> '+esc(w.domain)+'</a>';
-            });
-            html+='</div></div>';
-        }
-        if(vis.analog&&vis.analog.length){
-            hasStats=true;
-            html+='<div style="margin-bottom:12px"><span style="font-size:12px;font-weight:600;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Analog Stats</span><div class="bt-analytics-stats-grid">';
-            vis.analog.forEach(function(a){
-                html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg> '+esc(a.domain)+'</a>';
-            });
-            html+='</div></div>';
-        }
-        if(!hasStats){
-            html+='<div class="bt-empty" style="padding:20px"><span>No visitor statistics available. Webalizer/Analog may not be enabled on this server.</span></div>';
-        }
-    } else {
-        html+='<div class="bt-empty" style="padding:20px"><span>Failed to load visitor statistics</span></div>';
-    }
+        var vis=results.visitors.visitors||{};var hasStats=false;
+        if(vis.webalizer&&vis.webalizer.length){hasStats=true;html+='<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Webalizer</span><div class="bt-analytics-stats-grid">';vis.webalizer.forEach(function(w){html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> '+esc(w.domain)+'</a>';});html+='</div></div>';}
+        if(vis.analog&&vis.analog.length){hasStats=true;html+='<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Analog</span><div class="bt-analytics-stats-grid">';vis.analog.forEach(function(a){html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> '+esc(a.domain)+'</a>';});html+='</div></div>';}
+        if(!hasStats) html+='<div class="bt-empty" style="padding:16px"><span>No visitor statistics available. Webalizer/Analog may not be enabled.</span></div>';
+    } else { html+='<div class="bt-empty" style="padding:16px"><span>Failed to load visitor statistics</span></div>'; }
     html+='</div>';
-
-    /* ── Log Archives Section ── */
-    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Log Archives</h6>';
+    /* Log Archives */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/></svg>Log Archives</h6>';
     if(results.archives&&results.archives.success){
         var archives=results.archives.archives||[];
-        if(Array.isArray(archives)&&archives.length){
-            html+='<div class="bt-analytics-archives">';
-            archives.forEach(function(a){
-                var name=a.file||a.filename||a.path||"Unknown";
-                var size=a.size||a.filesize||0;
-                html+='<div class="bt-analytics-archive-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="bt-analytics-archive-name">'+esc(name)+'</span><span class="bt-analytics-archive-size">'+formatBytes(parseInt(size)||0)+'</span></div>';
-            });
-            html+='</div>';
-        } else {
-            html+='<div class="bt-empty" style="padding:20px"><span>No archived logs found</span></div>';
-        }
-    } else {
-        html+='<div class="bt-empty" style="padding:20px"><span>'+(results.archives&&results.archives.message?esc(results.archives.message):'Failed to load log archives')+'</span></div>';
-    }
+        if(Array.isArray(archives)&&archives.length){html+='<div class="bt-analytics-archives">';archives.forEach(function(a){var name=a.file||a.filename||a.path||"Unknown";var size=a.size||a.filesize||0;html+='<div class="bt-analytics-archive-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="bt-analytics-archive-name">'+esc(name)+'</span><span class="bt-analytics-archive-size">'+formatBytes(parseInt(size)||0)+'</span></div>';});html+='</div>';}
+        else { html+='<div class="bt-empty" style="padding:16px"><span>No archived logs found</span></div>'; }
+    } else { html+='<div class="bt-empty" style="padding:16px"><span>'+(results.archives&&results.archives.message?esc(results.archives.message):'Failed to load log archives')+'</span></div>'; }
     html+='</div>';
-
-    /* ── Quick Access to cPanel Stats ── */
-    html+='<div style="padding:0 16px 16px"><h6 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--text-primary,#1e293b)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>cPanel Stats Tools</h6>';
+    /* Quick Access */
+    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>cPanel Stats Tools</h6>';
     html+='<div class="bt-analytics-stats-grid">';
     html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Raw Access Logs</a>';
-    html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'frontend/jupiter/bandwidth/index.html\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Bandwidth</a>';
+    html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'frontend/jupiter/bandwidth/index.html\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Bandwidth</a>';
     html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'frontend/jupiter/awstats/index.html\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> AWStats</a>';
     html+='</div></div>';
-
     body.innerHTML=html;
+    setTimeout(function(){
+        btRenderBwCharts(results);
+        btRenderResourceGauges(results);
+        btRenderAcctBars(results);
+    },50);
+}
+
+/* ─── Render resource usage gauges in analytics ─── */
+function btRenderResourceGauges(results){
+    var container=document.getElementById("btResGauges");if(!container) return;
+    var rs=results.resourceStats;if(!rs||!rs.success) return;
+    var s=rs.stats||{};
+    var gauges=[];
+    var gaugeColors=["#ef4444","#7c3aed","#0a5ed3","#059669","#d97706","#ec4899"];
+    if(s.cpu){
+        var u=parseFloat(s.cpu.used)||0;var m=parseFloat(s.cpu.max)||0;
+        var pct=m>0?Math.min(100,Math.round(u/m*100)):0;
+        gauges.push({label:"CPU",pct:pct,val:u.toFixed(0)+"%"+(m>0?" / "+m.toFixed(0)+"%":""),color:gaugeColors[0]});
+    }
+    if(s.mem){
+        var fmt=s.mem.formatter||null;var u=parseFloat(s.mem.used)||0;var m=parseFloat(s.mem.max)||0;
+        var pct=m>0?Math.min(100,Math.round(u/m*100)):0;
+        var valStr="";
+        if(fmt==="format_bytes"){
+            var best=m>0?m:u;var units=["B","KB","MB","GB","TB"];var i=0;
+            if(best>0){i=Math.floor(Math.log(best)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+            var div=Math.pow(1024,i);
+            valStr=(u/div).toFixed(1)+" "+units[i]+(m>0?" / "+(m/div).toFixed(1)+" "+units[i]:"");
+        } else {
+            var mu=u;var mm=m;var un="MB";if(mm>1024||mu>1024){mu/=1024;mm=mm>0?mm/1024:0;un="GB";}
+            valStr=mu.toFixed(1)+" "+un+(mm>0?" / "+mm.toFixed(1)+" "+un:"");
+        }
+        gauges.push({label:"Memory",pct:pct,val:valStr,color:gaugeColors[1]});
+    }
+    if(s.io){
+        var fmt=s.io.formatter||null;var u=parseFloat(s.io.used)||0;var m=parseFloat(s.io.max)||0;
+        var pct=m>0?Math.min(100,Math.round(u/m*100)):0;
+        var valStr="";
+        if(fmt==="format_bytes_per_second"||fmt==="format_bytes"){
+            var best=m>0?m:u;var units=["B/s","KB/s","MB/s","GB/s"];var i=0;
+            if(best>0){i=Math.floor(Math.log(best)/Math.log(1024));if(i>=units.length) i=units.length-1;}
+            var div=Math.pow(1024,i);
+            valStr=(u/div).toFixed(1)+" "+units[i]+(m>0?" / "+(m/div).toFixed(1)+" "+units[i]:"");
+        } else {
+            var iu=u;var im=m;var un="KB/s";if(im>=1024||iu>=1024){iu/=1024;im=im>0?im/1024:0;un="MB/s";}
+            valStr=iu.toFixed(1)+" "+un+(im>0?" / "+im.toFixed(1)+" "+un:"");
+        }
+        gauges.push({label:"I/O",pct:pct,val:valStr,color:gaugeColors[2]});
+    }
+    if(s.nproc){var u=parseFloat(s.nproc.used)||0;var m=parseFloat(s.nproc.max)||0;var pct=m>0?Math.min(100,Math.round(u/m*100)):0;gauges.push({label:"Processes",pct:pct,val:Math.round(u)+(m>0?" / "+Math.round(m):""),color:gaugeColors[3]});}
+    if(s.ep){var u=parseFloat(s.ep.used)||0;var m=parseFloat(s.ep.max)||0;var pct=m>0?Math.min(100,Math.round(u/m*100)):0;gauges.push({label:"Entry Proc",pct:pct,val:Math.round(u)+(m>0?" / "+Math.round(m):""),color:gaugeColors[4]});}
+    if(s.iops){var u=parseFloat(s.iops.used)||0;var m=parseFloat(s.iops.max)||0;var pct=m>0?Math.min(100,Math.round(u/m*100)):0;gauges.push({label:"IOPS",pct:pct,val:Math.round(u)+(m>0?" / "+Math.round(m):""),color:gaugeColors[5]});}
+    if(!gauges.length){container.innerHTML='<div class="bt-empty" style="padding:8px"><span>No resource usage data</span></div>';return;}
+    var gh="";
+    gauges.forEach(function(g,i){
+        gh+='<div class="bt-gauge-item"><canvas class="bt-gauge-canvas" id="btGauge'+i+'" width="100" height="100"></canvas><div class="bt-gauge-val">'+esc(g.val)+'</div></div>';
+    });
+    container.innerHTML=gh;
+    gauges.forEach(function(g,i){
+        var c=document.getElementById("btGauge"+i);
+        if(c) btDrawGauge(c,g.pct,g.color,g.label,g.val);
+    });
+}
+
+/* ─── Render account limit bars in analytics ─── */
+function btRenderAcctBars(results){
+    var container=document.getElementById("btAcctBars");if(!container) return;
+    var rs=results.resourceStats;if(!rs||!rs.success) return;
+    var acct=rs.account||{};
+    var acctMap={
+        diskusage:{label:"Disk Usage",color:"#7c3aed"},
+        bandwidthusage:{label:"Bandwidth",color:"#0a5ed3"},
+        emailaccounts:{label:"Email Accounts",color:"#059669"},
+        ftpaccounts:{label:"FTP Accounts",color:"#d97706"},
+        sqldatabases:{label:"SQL Databases",color:"#ef4444"},
+        addondomains:{label:"Addon Domains",color:"#ec4899"},
+        subdomains:{label:"Subdomains",color:"#06b6d4"}
+    };
+    var order=["diskusage","bandwidthusage","emailaccounts","ftpaccounts","sqldatabases","addondomains","subdomains"];
+    var bh="";var hasAny=false;
+    order.forEach(function(key){
+        var a=acct[key];if(!a) return;
+        var info=acctMap[key]||{label:key,color:"#6b7280"};
+        var cnt=a.count;var mx=a.max;var units=a.units||"";
+        if(cnt===null||cnt===undefined) return;
+        hasAny=true;
+        var usedNum=parseFloat(cnt)||0;var maxNum=0;
+        if(mx!==null&&mx!==undefined&&mx!=="unlimited"&&mx!=="∞") maxNum=parseFloat(mx)||0;
+        var pct=maxNum>0?Math.min(100,Math.round(usedNum/maxNum*100)):0;
+        var usedStr=units==="MB"||units==="GB"?usedNum.toFixed(1):Math.round(usedNum);
+        var maxStr=maxNum>0?(units==="MB"||units==="GB"?maxNum.toFixed(1):Math.round(maxNum)):"∞";
+        var valTxt=usedStr+(units?" "+units:"")+" / "+(maxNum>0?maxStr+(units?" "+units:""):"Unlimited");
+        bh+='<div class="bt-acct-bar-row"><div class="bt-acct-bar-head"><span class="bt-acct-bar-label">'+esc(info.label)+'</span><span class="bt-acct-bar-val">'+esc(valTxt)+'</span></div><div class="bt-acct-bar-track"><div class="bt-acct-bar-fill" style="width:'+pct+'%;background:'+info.color+'"></div></div></div>';
+    });
+    if(!hasAny){container.innerHTML='<div class="bt-empty" style="padding:8px"><span>No account limit data</span></div>';return;}
+    container.innerHTML=bh;
+}
+
+function btRenderBwCharts(results){
+    var monthlyTotals={};var domainTotals={};var protoTotals={};
+    function walkData(obj,depth,ctx){
+        if(typeof obj==="number"||typeof obj==="string"){var bytes=parseInt(obj)||0;if(ctx.month) monthlyTotals[ctx.month]=(monthlyTotals[ctx.month]||0)+bytes;if(ctx.domain) domainTotals[ctx.domain]=(domainTotals[ctx.domain]||0)+bytes;if(ctx.proto) protoTotals[ctx.proto]=(protoTotals[ctx.proto]||0)+bytes;return;}
+        if(typeof obj!=="object"||obj===null) return;
+        Object.keys(obj).forEach(function(key){var newCtx={domain:ctx.domain,proto:ctx.proto,month:ctx.month};if(depth===0) newCtx.domain=key;else if(depth===1) newCtx.proto=key;else if(depth===2){var ts=parseInt(key);if(ts>1e9){var d=new Date(ts*1000);newCtx.month=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}else newCtx.month=key;}walkData(obj[key],depth+1,newCtx);});
+    }
+    var hasBwD=results.bwDetailed&&results.bwDetailed.success&&results.bwDetailed.data;
+    if(hasBwD) walkData(results.bwDetailed.data,0,{});
+    if(!hasBwD&&results.bandwidth&&results.bandwidth.success&&results.bandwidth.data){
+        var bwData=results.bandwidth.data;
+        if(Array.isArray(bwData)){bwData.forEach(function(item){if(!item.domain) return;var b=parseInt(item.bytes)||0;domainTotals[item.domain]=(domainTotals[item.domain]||0)+b;if(item.protocol) protoTotals[item.protocol]=(protoTotals[item.protocol]||0)+b;});}
+    }
+    /* Monthly bar chart */
+    var mc=document.getElementById("btBwMonthlyChart");
+    if(mc&&Object.keys(monthlyTotals).length){
+        var months=Object.keys(monthlyTotals).sort();if(months.length>12) months=months.slice(-12);
+        var ml=months.map(function(m){var p=m.split("-");var mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return mn[parseInt(p[1])-1]+" '"+p[0].slice(2);});
+        btDrawBarChart(mc,ml,[{data:months.map(function(m){return monthlyTotals[m]||0;}),color:"#7c3aed"}]);
+        var le=document.getElementById("btBwMonthlyLegend");
+        if(le){var tot=months.reduce(function(a,m){return a+(monthlyTotals[m]||0);},0);le.innerHTML='<span class="bt-chart-legend-item"><span class="bt-chart-legend-dot" style="background:#7c3aed"></span>Total: '+formatBytes(tot)+' ('+months.length+' months)</span>';}
+    }
+    /* Domain pie */
+    var dp=document.getElementById("btBwDomainPie");
+    if(dp){var dE=Object.keys(domainTotals).map(function(d){return{name:d,value:domainTotals[d]};}).sort(function(a,b){return b.value-a.value;}).slice(0,8);btDrawPieChart(dp,dE.map(function(e,i){return{value:e.value,color:btChartColors[i%btChartColors.length]};}));var dL=document.getElementById("btBwDomainLegend");if(dL){var lh="";dE.forEach(function(e,i){lh+='<div class="bt-pie-legend-row"><span class="bt-pie-legend-dot" style="background:'+btChartColors[i%btChartColors.length]+'"></span><span>'+esc(e.name)+'</span><span class="bt-pie-legend-val">'+formatBytes(e.value)+'</span></div>';});dL.innerHTML=lh||'<span style="font-size:12px;color:var(--text-muted)">No domain data</span>';}}
+    /* Protocol pie */
+    var pp=document.getElementById("btBwProtoPie");
+    if(pp){var pE=Object.keys(protoTotals).map(function(p){return{name:p,value:protoTotals[p]};}).sort(function(a,b){return b.value-a.value;});btDrawPieChart(pp,pE.map(function(e,i){return{value:e.value,color:btChartColors[i%btChartColors.length]};}));var pL=document.getElementById("btBwProtoLegend");if(pL){var ph="";pE.forEach(function(e,i){ph+='<div class="bt-pie-legend-row"><span class="bt-pie-legend-dot" style="background:'+btChartColors[i%btChartColors.length]+'"></span><span>'+esc(e.name.toUpperCase())+'</span><span class="bt-pie-legend-val">'+formatBytes(e.value)+'</span></div>';});pL.innerHTML=ph||'<span style="font-size:12px;color:var(--text-muted)">No protocol data</span>';}}
 }
 
 function formatBytes(bytes){
