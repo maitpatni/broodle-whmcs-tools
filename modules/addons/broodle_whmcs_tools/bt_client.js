@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 window.__btClientLoaded=true;
-console.log("[BT] bt_client.js loaded successfully, version 3.10.84");
+console.log("[BT] bt_client.js loaded successfully, version "+(window.__btConfig&&window.__btConfig.version?window.__btConfig.version:"unknown"));
 /* Detect base path: always use full module path since page loads within WHMCS client area */
 var btBasePath="modules/addons/broodle_whmcs_tools/";
 var ajaxUrl=btBasePath+"ajax.php";

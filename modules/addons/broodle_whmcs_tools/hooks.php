@@ -8,7 +8,16 @@
  */
 
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.86');
+    // Read version from main module file dynamically
+    $btMainFile = __DIR__ . '/broodle_whmcs_tools.php';
+    $btVer = '0.0.0';
+    if (file_exists($btMainFile)) {
+        $btContent = @file_get_contents($btMainFile, false, null, 0, 2048);
+        if ($btContent && preg_match("/define\(\s*'BROODLE_TOOLS_VERSION'\s*,\s*'([^']+)'/", $btContent, $btM)) {
+            $btVer = $btM[1];
+        }
+    }
+    define('BROODLE_TOOLS_VERSION', $btVer);
 }
 
 if (!defined('WHMCS')) {
@@ -385,6 +394,7 @@ function broodle_tools_gather_data($vars)
         'domainEnabled' => broodle_tools_domain_enabled(),
         'fmEnabled' => broodle_tools_fm_enabled(),
         'analyticsEnabled' => broodle_tools_analytics_enabled(),
+        'version' => BROODLE_TOOLS_VERSION,
     ];
     return $cache;
 }

@@ -48,7 +48,16 @@ if (!$service) {
 
 /* ── Gather data ── */
 if (!defined('BROODLE_TOOLS_VERSION')) {
-    define('BROODLE_TOOLS_VERSION', '3.10.86');
+    // Read version from main module file dynamically
+    $mainFile = __DIR__ . '/broodle_whmcs_tools.php';
+    $ver = '0.0.0';
+    if (file_exists($mainFile)) {
+        $content = file_get_contents($mainFile, false, null, 0, 2048);
+        if (preg_match("/define\(\s*'BROODLE_TOOLS_VERSION'\s*,\s*'([^']+)'/", $content, $m)) {
+            $ver = $m[1];
+        }
+    }
+    define('BROODLE_TOOLS_VERSION', $ver);
 }
 
 $hooksFile = $whmcsRoot . '/modules/addons/broodle_whmcs_tools/hooks.php';
