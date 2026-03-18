@@ -1416,12 +1416,39 @@ function openCronModal(job){
 
 /* ─── PHP Version ─── */
 var phpInstalledVersions=[];
+var phpCurrentVhost="";
 function buildPhpPane(){
     var pane=$("bt-pane-phpversion");if(!pane) return;
-    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#6366f1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg></div><div><h5>PHP Version</h5><p class="bt-php-subtitle">Manage PHP versions per domain</p></div></div></div><div class="bt-list" id="bt-php-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP versions...</span></div></div></div>';
+    pane.innerHTML='<div class="bt-card" id="bt-php-card">'
+        +'<div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#6366f1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg></div><div><h5>PHP Configuration</h5><p class="bt-php-subtitle">Manage PHP versions, extensions &amp; settings</p></div></div></div>'
+        +'<div id="bt-php-tabs" class="bt-php-tabs">'
+        +'<button class="bt-php-tab active" data-tab="version">Version</button>'
+        +'<button class="bt-php-tab" data-tab="extensions">Extensions</button>'
+        +'<button class="bt-php-tab" data-tab="directives">PHP Settings</button>'
+        +'<button class="bt-php-tab" data-tab="editor">php.ini Editor</button>'
+        +'</div>'
+        +'<div id="bt-php-tab-version" class="bt-php-tab-content active"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP versions...</span></div></div>'
+        +'<div id="bt-php-tab-extensions" class="bt-php-tab-content" style="display:none"></div>'
+        +'<div id="bt-php-tab-directives" class="bt-php-tab-content" style="display:none"></div>'
+        +'<div id="bt-php-tab-editor" class="bt-php-tab-content" style="display:none"></div>'
+        +'</div>';
+    /* Tab switching */
+    pane.querySelectorAll(".bt-php-tab").forEach(function(tab){
+        tab.addEventListener("click",function(){
+            pane.querySelectorAll(".bt-php-tab").forEach(function(t){t.classList.remove("active");});
+            pane.querySelectorAll(".bt-php-tab-content").forEach(function(c){c.style.display="none";c.classList.remove("active");});
+            this.classList.add("active");
+            var target=$("bt-php-tab-"+this.getAttribute("data-tab"));
+            if(target){target.style.display="";target.classList.add("active");}
+            var tabId=this.getAttribute("data-tab");
+            if(tabId==="extensions"&&!target.dataset.loaded){target.dataset.loaded="1";loadPhpExtensions();}
+            if(tabId==="directives"&&!target.dataset.loaded){target.dataset.loaded="1";loadPhpDirectives();}
+            if(tabId==="editor"&&!target.dataset.loaded){target.dataset.loaded="1";loadPhpIniEditor();}
+        });
+    });
 }
 function loadPhpVersions(){
-    var list=$("bt-php-list");if(!list) return;
+    var list=$("bt-php-tab-version");if(!list) return;
     list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP versions...</span></div>';
     post({action:"php_get_versions"},function(r){
         if(!r.success){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>'+(r.message||"Failed to load PHP versions")+'</span></div>';return;}
@@ -1431,46 +1458,205 @@ function loadPhpVersions(){
         var sub=document.querySelector(".bt-php-subtitle");
         if(sub) sub.textContent=phpInstalledVersions.length+" version"+(phpInstalledVersions.length!==1?"s":"")+" available"+(defaultVer?" · Default: "+defaultVer:"");
         if(!vhosts.length&&!phpInstalledVersions.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>PHP version management not available on this server</span></div>';return;}
-        var html="";
+        if(!phpCurrentVhost&&vhosts.length) phpCurrentVhost=vhosts[0].vhost;
+        var html='<div class="bt-php-version-list">';
         vhosts.forEach(function(vh){
             var ver=vh.version||defaultVer||"Unknown";
             var verShort=ver.replace(/^ea-php/,"").replace(/^php/i,"");
-            /* Build version pill buttons instead of dropdown */
-            var pills="";
+            /* Build styled dropdown */
+            var opts="";
             phpInstalledVersions.forEach(function(v){
                 var vLabel=v.replace(/^ea-php/,"PHP ").replace(/^php/i,"PHP ");
-                var isActive=v===ver;
-                pills+='<button type="button" class="bt-php-pill'+(isActive?" active":"")+'" data-vhost="'+esc(vh.vhost)+'" data-ver="'+esc(v)+'"'+(isActive?' disabled':'')+'>'+esc(vLabel)+'</button>';
+                opts+='<option value="'+esc(v)+'"'+(v===ver?' selected':'')+'>'+esc(vLabel)+'</option>';
             });
             html+='<div class="bt-php-domain-card">'
                 +'<div class="bt-php-domain-head">'
-                +'<div class="bt-php-domain-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>'
-                +'<div class="bt-php-domain-info"><span class="bt-php-domain-name">'+esc(vh.vhost)+'</span><span class="bt-php-domain-ver">PHP '+esc(verShort)+'</span></div>'
+                +'<div class="bt-php-domain-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>'
+                +'<div class="bt-php-domain-info"><span class="bt-php-domain-name">'+esc(vh.vhost)+'</span><span class="bt-php-domain-ver">Current: PHP '+esc(verShort)+'</span></div>'
                 +'</div>'
-                +'<div class="bt-php-pills">'+pills+'</div>'
+                +'<div class="bt-php-version-row">'
+                +'<div class="bt-php-select-wrap"><select class="bt-php-version-select" data-vhost="'+esc(vh.vhost)+'" data-current="'+esc(ver)+'">'+opts+'</select><svg class="bt-php-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>'
+                +'<button type="button" class="bt-php-apply-btn" data-vhost="'+esc(vh.vhost)+'">Apply</button>'
+                +'</div>'
                 +'</div>';
         });
+        html+='</div>';
         list.innerHTML=html;
-        list.querySelectorAll(".bt-php-pill:not(.active)").forEach(function(btn){
+        /* Apply button handlers */
+        list.querySelectorAll(".bt-php-apply-btn").forEach(function(btn){
             btn.addEventListener("click",function(){
                 var vhost=this.getAttribute("data-vhost");
-                var ver=this.getAttribute("data-ver");
                 var card=this.closest(".bt-php-domain-card");
-                /* Disable all pills in this card */
-                card.querySelectorAll(".bt-php-pill").forEach(function(p){p.disabled=true;});
-                btnLoad(this,"");
+                var sel=card.querySelector(".bt-php-version-select");
+                var ver=sel.value;
+                var current=sel.getAttribute("data-current");
+                if(ver===current){fmToast("Already on this version","info");return;}
+                btnLoad(this,"Applying...");
                 var self=this;
+                sel.disabled=true;
                 post({action:"php_set_version",vhost:vhost,version:ver},function(r){
                     btnDone(self);
+                    sel.disabled=false;
                     if(r.success){
                         fmToast("PHP version changed to "+ver,"success");
+                        phpCurrentVhost=vhost;
+                        /* Reset other tabs so they reload with new version */
+                        var extTab=$("bt-php-tab-extensions");if(extTab) extTab.dataset.loaded="";
+                        var dirTab=$("bt-php-tab-directives");if(dirTab) dirTab.dataset.loaded="";
+                        var edTab=$("bt-php-tab-editor");if(edTab) edTab.dataset.loaded="";
                         var pane=$("bt-pane-phpversion");if(pane) pane.dataset.loaded="";
                         setTimeout(function(){loadPhpVersions();},800);
                     } else {
                         fmToast(r.message||"Failed","error");
-                        card.querySelectorAll(".bt-php-pill").forEach(function(p){if(!p.classList.contains("active")) p.disabled=false;});
                     }
                 });
+            });
+        });
+    });
+}
+
+/* ─── PHP Extensions ─── */
+function loadPhpExtensions(){
+    var container=$("bt-php-tab-extensions");if(!container) return;
+    container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP extensions...</span></div>';
+    post({action:"php_get_extensions",vhost:phpCurrentVhost||""},function(r){
+        if(!r.success||!r.extensions||!r.extensions.length){
+            container.innerHTML='<div class="bt-php-ext-header"><div class="bt-php-ext-info"><span class="bt-php-ext-title">Loaded Extensions</span>'
+                +'<span class="bt-php-ext-count">Could not retrieve extensions</span></div></div>'
+                +'<div class="bt-empty" style="padding:24px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+                +'<span>Extensions info not available. The server may not allow script execution.</span></div>';
+            return;
+        }
+        var exts=r.extensions;
+        var ver=r.phpversion||"";
+        var html='<div class="bt-php-ext-header"><div class="bt-php-ext-info"><span class="bt-php-ext-title">Loaded Extensions</span>'
+            +'<span class="bt-php-ext-count">'+exts.length+' extensions'+(ver?' · PHP '+esc(ver):'')+'</span></div>'
+            +'<div class="bt-php-ext-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+            +'<input type="text" id="btPhpExtSearch" placeholder="Search extensions..." class="bt-php-ext-search-input"></div></div>';
+        html+='<div class="bt-php-ext-grid" id="btPhpExtGrid">';
+        exts.forEach(function(ext){
+            html+='<div class="bt-php-ext-item" data-name="'+esc(ext.toLowerCase())+'">'
+                +'<div class="bt-php-ext-dot"></div>'
+                +'<span class="bt-php-ext-name">'+esc(ext)+'</span></div>';
+        });
+        html+='</div>';
+        container.innerHTML=html;
+        /* Search filter */
+        var searchInput=$("btPhpExtSearch");
+        if(searchInput){
+            searchInput.addEventListener("input",function(){
+                var q=this.value.toLowerCase();
+                var grid=$("btPhpExtGrid");if(!grid) return;
+                grid.querySelectorAll(".bt-php-ext-item").forEach(function(item){
+                    item.style.display=item.getAttribute("data-name").indexOf(q)>=0?"":"none";
+                });
+            });
+        }
+    });
+}
+
+/* ─── PHP Directives (Basic Mode) ─── */
+function loadPhpDirectives(){
+    var container=$("bt-php-tab-directives");if(!container) return;
+    container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP settings...</span></div>';
+    post({action:"php_get_directives",vhost:phpCurrentVhost||""},function(r){
+        if(!r.success){
+            container.innerHTML='<div class="bt-empty" style="padding:24px"><span>'+(r.message||"Failed to load PHP settings")+'</span></div>';
+            return;
+        }
+        var dirs=r.directives||[];
+        var phpVer=r.phpversion||"";
+        var iniPath=r.path||"";
+        if(!dirs.length){
+            container.innerHTML='<div class="bt-empty" style="padding:24px"><span>No editable directives found</span></div>';
+            return;
+        }
+        var html='<div class="bt-php-dir-header"><div class="bt-php-dir-info"><span class="bt-php-dir-title">PHP Settings (Basic Mode)</span>'
+            +'<span class="bt-php-dir-meta">'+(phpVer?'PHP '+esc(phpVer):'')+(iniPath?' · '+esc(iniPath):'')+'</span></div>'
+            +'<button type="button" class="bt-php-dir-save-btn" id="btPhpDirSave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Changes</button></div>';
+        html+='<div class="bt-php-dir-grid" id="btPhpDirGrid">';
+        dirs.forEach(function(d){
+            var key=d.key||"";
+            var val=d.value!==undefined?d.value:(d.default_value!==undefined?d.default_value:"");
+            var defVal=d.default_value!==undefined?String(d.default_value):"";
+            var dtype=d.type||"string";
+            var info=d.info||"";
+            html+='<div class="bt-php-dir-row" title="'+esc(info)+'">'
+                +'<div class="bt-php-dir-key"><span>'+esc(key)+'</span>'
+                +(defVal?'<span class="bt-php-dir-default">Default: '+esc(defVal)+'</span>':'')
+                +'</div><div class="bt-php-dir-val">';
+            if(dtype==="boolean"){
+                var isOn=String(val).toLowerCase()==="on"||val==="1"||val===1||val===true;
+                html+='<label class="bt-php-toggle"><input type="checkbox" data-key="'+esc(key)+'" data-type="boolean"'+(isOn?' checked':'')+'><span class="bt-php-toggle-slider"></span><span class="bt-php-toggle-label">'+(isOn?"On":"Off")+'</span></label>';
+            } else {
+                html+='<input type="text" class="bt-php-dir-input" data-key="'+esc(key)+'" data-type="'+esc(dtype)+'" value="'+esc(String(val))+'">';
+            }
+            html+='</div></div>';
+        });
+        html+='</div>';
+        container.innerHTML=html;
+        /* Toggle label update */
+        container.querySelectorAll(".bt-php-toggle input").forEach(function(cb){
+            cb.addEventListener("change",function(){
+                var lbl=this.parentElement.querySelector(".bt-php-toggle-label");
+                if(lbl) lbl.textContent=this.checked?"On":"Off";
+            });
+        });
+        /* Save handler */
+        $("btPhpDirSave").addEventListener("click",function(){
+            var directives=[];
+            container.querySelectorAll("[data-key]").forEach(function(el){
+                var key=el.getAttribute("data-key");
+                var dtype=el.getAttribute("data-type");
+                var val;
+                if(dtype==="boolean") val=el.checked?"On":"Off";
+                else val=el.value;
+                directives.push({key:key,value:val});
+            });
+            var btn=this;
+            btnLoad(btn,"Saving...");
+            post({action:"php_set_directives",vhost:phpCurrentVhost||"",directives:JSON.stringify(directives)},function(r){
+                btnDone(btn);
+                if(r.success) fmToast("PHP settings saved","success");
+                else fmToast(r.message||"Failed to save","error");
+            });
+        });
+    });
+}
+
+/* ─── PHP INI Editor (Raw) ─── */
+function loadPhpIniEditor(){
+    var container=$("bt-php-tab-editor");if(!container) return;
+    container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading php.ini...</span></div>';
+    post({action:"php_get_ini_content",vhost:phpCurrentVhost||""},function(r){
+        if(!r.success){
+            container.innerHTML='<div class="bt-empty" style="padding:24px"><span>'+(r.message||"Failed to load php.ini")+'</span></div>';
+            return;
+        }
+        var content=r.content||"";
+        var html='<div class="bt-php-ini-header"><div class="bt-php-ini-info"><span class="bt-php-ini-title">php.ini Editor</span>'
+            +'<span class="bt-php-ini-meta">Edit raw php.ini content for '+(phpCurrentVhost?esc(phpCurrentVhost):'home directory')+'</span></div>'
+            +'<button type="button" class="bt-php-dir-save-btn" id="btPhpIniSave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button></div>';
+        html+='<div class="bt-php-ini-editor-wrap"><textarea id="btPhpIniTextarea" class="bt-php-ini-textarea" spellcheck="false">'+esc(content)+'</textarea></div>';
+        container.innerHTML=html;
+        /* Try to use CodeMirror if available */
+        var ta=$("btPhpIniTextarea");
+        if(window.CodeMirror&&ta){
+            var cm=CodeMirror.fromTextArea(ta,{mode:"properties",lineNumbers:true,theme:"default",lineWrapping:true,viewportMargin:Infinity});
+            cm.setSize("100%","400px");
+            container._cm=cm;
+        }
+        /* Save handler */
+        $("btPhpIniSave").addEventListener("click",function(){
+            var val;
+            if(container._cm) val=container._cm.getValue();
+            else val=$("btPhpIniTextarea").value;
+            var btn=this;
+            btnLoad(btn,"Saving...");
+            post({action:"php_set_ini_content",vhost:phpCurrentVhost||"",content:val},function(r){
+                btnDone(btn);
+                if(r.success) fmToast("php.ini saved successfully","success");
+                else fmToast(r.message||"Failed to save","error");
             });
         });
     });
@@ -3007,6 +3193,11 @@ function injectStyles12(){
     +"@media(max-width:768px){.bt-charts-row{grid-template-columns:1fr}.bt-chart-half{border-right:none}.bt-acct-bars-grid{grid-template-columns:1fr}}"
     +"@media(max-width:600px){.bt-gauges-grid{grid-template-columns:repeat(3,1fr);gap:8px}.bt-gauge-canvas{width:70px;height:70px}}"
     /* PHP selector styles */
+    +".bt-php-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color,#e5e7eb);padding:0 16px}"
+    +".bt-php-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}"
+    +".bt-php-tab:hover{color:var(--heading-color,#374151)}"
+    +".bt-php-tab.active{color:#6366f1;border-bottom-color:#6366f1}"
+    +".bt-php-tab-content{padding:0}"
     +".bt-php-domain-card{padding:16px;border-bottom:1px solid var(--border-color,#f3f4f6)}"
     +".bt-php-domain-card:last-child{border-bottom:none}"
     +".bt-php-domain-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}"
@@ -3014,12 +3205,58 @@ function injectStyles12(){
     +".bt-php-domain-info{display:flex;flex-direction:column;gap:2px;min-width:0}"
     +".bt-php-domain-name{font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
     +".bt-php-domain-ver{font-size:11px;font-weight:600;color:#6366f1}"
-    +".bt-php-pills{display:flex;flex-wrap:wrap;gap:6px}"
-    +".bt-php-pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}"
-    +".bt-php-pill:hover:not(:disabled){border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,.04)}"
-    +".bt-php-pill.active{background:#6366f1;color:#fff;border-color:#6366f1;cursor:default}"
-    +".bt-php-pill:disabled:not(.active){opacity:.5;cursor:not-allowed}"
-    +"@media(max-width:600px){.bt-php-pills{gap:4px}.bt-php-pill{padding:5px 10px;font-size:11px}}";
+    +".bt-php-version-row{display:flex;align-items:center;gap:10px}"
+    +".bt-php-select-wrap{position:relative;flex:1;max-width:260px}"
+    +".bt-php-version-select{width:100%;padding:9px 36px 9px 14px;border-radius:10px;border:1.5px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);font-size:13px;font-weight:600;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;outline:none}"
+    +".bt-php-version-select:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}"
+    +".bt-php-select-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted,#9ca3af)}"
+    +".bt-php-apply-btn{padding:9px 20px;border-radius:10px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}"
+    +".bt-php-apply-btn:hover{background:#4f46e5}"
+    /* PHP Extensions */
+    +".bt-php-ext-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:wrap;gap:10px}"
+    +".bt-php-ext-info{display:flex;flex-direction:column;gap:2px}"
+    +".bt-php-ext-title{font-size:14px;font-weight:600;color:var(--heading-color,#111827)}"
+    +".bt-php-ext-count{font-size:12px;color:var(--text-muted,#6b7280)}"
+    +".bt-php-ext-search{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--border-color,#e5e7eb);background:var(--input-bg,#f9fafb)}"
+    +".bt-php-ext-search-input{border:none;background:none;outline:none;font-size:12px;color:var(--heading-color,#374151);width:160px}"
+    +".bt-php-ext-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0;padding:8px 16px 16px}"
+    +".bt-php-ext-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;transition:background .1s}"
+    +".bt-php-ext-item:hover{background:rgba(99,102,241,.04)}"
+    +".bt-php-ext-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0}"
+    +".bt-php-ext-name{font-size:12px;font-weight:500;color:var(--text-primary,#374151);font-family:SFMono-Regular,Consolas,monospace}"
+    /* PHP Directives */
+    +".bt-php-dir-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:wrap;gap:10px}"
+    +".bt-php-dir-info{display:flex;flex-direction:column;gap:2px}"
+    +".bt-php-dir-title{font-size:14px;font-weight:600;color:var(--heading-color,#111827)}"
+    +".bt-php-dir-meta{font-size:11px;color:var(--text-muted,#6b7280);font-family:SFMono-Regular,Consolas,monospace}"
+    +".bt-php-dir-save-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}"
+    +".bt-php-dir-save-btn:hover{background:#4f46e5}"
+    +".bt-php-dir-grid{padding:8px 16px 16px;display:flex;flex-direction:column;gap:0}"
+    +".bt-php-dir-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 12px;border-radius:8px;transition:background .1s}"
+    +".bt-php-dir-row:hover{background:var(--bg-secondary,#f8fafc)}"
+    +".bt-php-dir-key{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}"
+    +".bt-php-dir-key>span:first-child{font-size:13px;font-weight:600;color:var(--heading-color,#111827);font-family:SFMono-Regular,Consolas,monospace}"
+    +".bt-php-dir-default{font-size:10px;color:var(--text-muted,#9ca3af)}"
+    +".bt-php-dir-val{flex-shrink:0;min-width:180px;max-width:260px}"
+    +".bt-php-dir-input{width:100%;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);font-size:12px;font-family:SFMono-Regular,Consolas,monospace;outline:none;transition:border-color .15s}"
+    +".bt-php-dir-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.08)}"
+    /* Toggle switch */
+    +".bt-php-toggle{display:flex;align-items:center;gap:8px;cursor:pointer}"
+    +".bt-php-toggle input{display:none}"
+    +".bt-php-toggle-slider{width:36px;height:20px;border-radius:10px;background:var(--border-color,#d1d5db);position:relative;transition:background .2s;flex-shrink:0}"
+    +".bt-php-toggle-slider::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}"
+    +".bt-php-toggle input:checked+.bt-php-toggle-slider{background:#6366f1}"
+    +".bt-php-toggle input:checked+.bt-php-toggle-slider::after{transform:translateX(16px)}"
+    +".bt-php-toggle-label{font-size:12px;font-weight:600;color:var(--text-muted,#6b7280)}"
+    /* PHP INI Editor */
+    +".bt-php-ini-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:wrap;gap:10px}"
+    +".bt-php-ini-info{display:flex;flex-direction:column;gap:2px}"
+    +".bt-php-ini-title{font-size:14px;font-weight:600;color:var(--heading-color,#111827)}"
+    +".bt-php-ini-meta{font-size:11px;color:var(--text-muted,#6b7280)}"
+    +".bt-php-ini-editor-wrap{padding:16px}"
+    +".bt-php-ini-textarea{width:100%;min-height:400px;padding:14px;border-radius:10px;border:1.5px solid var(--border-color,#e5e7eb);background:var(--input-bg,#f9fafb);color:var(--heading-color,#374151);font-size:12px;font-family:SFMono-Regular,Consolas,'Liberation Mono',monospace;line-height:1.6;resize:vertical;outline:none;transition:border-color .15s}"
+    +".bt-php-ini-textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.08)}"
+    +"@media(max-width:600px){.bt-php-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}.bt-php-tab{white-space:nowrap;padding:8px 12px;font-size:12px}.bt-php-version-row{flex-direction:column;align-items:stretch}.bt-php-select-wrap{max-width:none}.bt-php-ext-grid{grid-template-columns:repeat(2,1fr)}.bt-php-dir-row{flex-direction:column;align-items:stretch;gap:6px}.bt-php-dir-val{min-width:0;max-width:none}}";
     document.head.appendChild(s);
 }
 

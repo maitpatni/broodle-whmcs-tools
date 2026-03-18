@@ -49,7 +49,7 @@ $dbActions = ['list_databases', 'create_database', 'create_db_user', 'delete_dat
 $sslActions = ['ssl_status', 'start_autossl', 'autossl_progress', 'autossl_problems'];
 $dnsActions = ['dns_list_domains', 'dns_fetch_records', 'dns_add_record', 'dns_edit_record', 'dns_delete_record', 'dns_bulk_delete'];
 $cronActions = ['cron_list', 'cron_add', 'cron_edit', 'cron_delete'];
-$phpActions = ['php_get_versions', 'php_set_version'];
+$phpActions = ['php_get_versions', 'php_set_version', 'php_get_directives', 'php_set_directives', 'php_get_ini_content', 'php_set_ini_content', 'php_get_extensions'];
 $logActions = ['error_log_read', 'error_log_clear'];
 $analyticsActions = ['analytics_bandwidth', 'analytics_visitors', 'analytics_log_archives', 'analytics_bandwidth_detailed'];
 $fileActions = ['fm_list', 'fm_read', 'fm_save', 'fm_create_file', 'fm_create_folder', 'fm_delete', 'fm_rename', 'fm_copy', 'fm_move', 'fm_upload', 'fm_permissions', 'fm_compress', 'fm_extract', 'fm_search', 'fm_download_url'];
@@ -2060,6 +2060,202 @@ switch ($action) {
 
         $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
         echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'PHP version updated to ' . $version : $p['error']]);
+        break;
+
+    // ── PHP INI Directives (Basic Mode) ──
+    case 'php_get_directives':
+        $vhost = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        $type = !empty($vhost) ? 'vhost' : 'home';
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_get_user_basic_directives"
+             . "&type=" . urlencode($type);
+        if ($type === 'vhost' && !empty($vhost)) $url .= "&vhost=" . urlencode($vhost);
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        if ($r['code'] !== 200 || !$r['body']) { echo json_encode(['success' => false, 'message' => 'Failed to connect']); break; }
+        $json = json_decode($r['body'], true);
+        $status = $json['result']['status'] ?? 0;
+        if ($status != 1) { echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to get directives']); break; }
+        $directives = $json['result']['data']['directives'] ?? [];
+        $meta = $json['result']['metadata']['LangPHP'] ?? [];
+        echo json_encode(['success' => true, 'directives' => $directives, 'phpversion' => $meta['phpversion'] ?? '', 'path' => $meta['path'] ?? '']);
+        break;
+
+    case 'php_set_directives':
+        $vhost = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        $directives = isset($_POST['directives']) ? $_POST['directives'] : '';
+        $type = !empty($vhost) ? 'vhost' : 'home';
+        if (empty($directives)) { echo json_encode(['success' => false, 'message' => 'No directives provided']); break; }
+        // directives should be JSON-encoded array of {key, value} pairs
+        $dirArr = json_decode($directives, true);
+        if (!is_array($dirArr) || empty($dirArr)) { echo json_encode(['success' => false, 'message' => 'Invalid directives format']); break; }
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_set_user_basic_directives"
+             . "&type=" . urlencode($type);
+        if ($type === 'vhost' && !empty($vhost)) $url .= "&vhost=" . urlencode($vhost);
+        // Add each directive as directive-N=key:value
+        $i = 0;
+        foreach ($dirArr as $d) {
+            $key = $d['key'] ?? '';
+            $val = $d['value'] ?? '';
+            if (empty($key)) continue;
+            $paramName = $i === 0 ? 'directive' : 'directive-' . $i;
+            $url .= "&" . urlencode($paramName) . "=" . urlencode($key . ':' . $val);
+            $i++;
+        }
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'PHP directives updated' : $p['error']]);
+        break;
+
+    case 'php_get_ini_content':
+        $vhost = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        $type = !empty($vhost) ? 'vhost' : 'home';
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_get_user_content"
+             . "&type=" . urlencode($type);
+        if ($type === 'vhost' && !empty($vhost)) $url .= "&vhost=" . urlencode($vhost);
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        if ($r['code'] !== 200 || !$r['body']) { echo json_encode(['success' => false, 'message' => 'Failed to connect']); break; }
+        $json = json_decode($r['body'], true);
+        $status = $json['result']['status'] ?? 0;
+        if ($status != 1) { echo json_encode(['success' => false, 'message' => $json['result']['errors'][0] ?? 'Failed to get php.ini']); break; }
+        $content = $json['result']['data']['content'] ?? '';
+        echo json_encode(['success' => true, 'content' => $content]);
+        break;
+
+    case 'php_set_ini_content':
+        $vhost = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        $content = isset($_POST['content']) ? $_POST['content'] : '';
+        $type = !empty($vhost) ? 'vhost' : 'home';
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_set_user_content"
+             . "&type=" . urlencode($type)
+             . "&content=" . urlencode($content);
+        if ($type === 'vhost' && !empty($vhost)) $url .= "&vhost=" . urlencode($vhost);
+        $p = broodle_ajax_parse_result(broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url));
+        echo json_encode(['success' => $p['ok'], 'message' => $p['ok'] ? 'php.ini updated successfully' : $p['error']]);
+        break;
+
+    case 'php_get_extensions':
+        $vhost = isset($_POST['vhost']) ? trim($_POST['vhost']) : '';
+        // Get the PHP version for this vhost to determine which binary to query
+        // We'll use the directives endpoint which returns phpversion in metadata
+        $type = !empty($vhost) ? 'vhost' : 'home';
+        $url = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_get_user_basic_directives"
+             . "&type=" . urlencode($type);
+        if ($type === 'vhost' && !empty($vhost)) $url .= "&vhost=" . urlencode($vhost);
+        $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
+        $phpVer = '';
+        $extensions = [];
+        if ($r['code'] === 200 && $r['body']) {
+            $json = json_decode($r['body'], true);
+            $phpVer = $json['result']['metadata']['LangPHP']['phpversion'] ?? '';
+        }
+        // Try to get extensions by creating a temp PHP script via UAPI and executing it
+        // Strategy 1: Use Fileman to write a temp file, then fetch it via HTTP
+        // This is complex, so instead we'll parse the directives for extension-related info
+        // and also try to get the ini content which often lists loaded extensions
+        $iniUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=LangPHP"
+             . "&cpanel_jsonapi_func=php_ini_get_user_content"
+             . "&type=" . urlencode($type);
+        if ($type === 'vhost' && !empty($vhost)) $iniUrl .= "&vhost=" . urlencode($vhost);
+        $rIni = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $iniUrl);
+        $iniContent = '';
+        if ($rIni['code'] === 200 && $rIni['body']) {
+            $jsonIni = json_decode($rIni['body'], true);
+            $iniContent = $jsonIni['result']['data']['content'] ?? '';
+        }
+        // Strategy 2: Write a temp phpinfo script, fetch it, then delete it
+        // Write temp file
+        $tmpFile = '.bt_phpinfo_' . md5($cpUsername . time()) . '.php';
+        $tmpContent = '<?php header("Content-Type: application/json"); echo json_encode(["extensions" => get_loaded_extensions(), "version" => phpversion(), "sapi" => php_sapi_name(), "ini" => ini_get_all(null, false)]); ?>';
+        $writeUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Fileman"
+             . "&cpanel_jsonapi_func=save_file_content"
+             . "&dir=%2Fpublic_html"
+             . "&file=" . urlencode($tmpFile)
+             . "&content=" . urlencode($tmpContent);
+        $rWrite = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $writeUrl);
+        // Try to fetch the script output via the domain
+        $mainDomain = '';
+        if (!empty($vhost)) {
+            $mainDomain = $vhost;
+        } else {
+            // Get main domain
+            $domUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                 . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                 . "&cpanel_jsonapi_apiversion=3"
+                 . "&cpanel_jsonapi_module=DomainInfo"
+                 . "&cpanel_jsonapi_func=list_domains";
+            $rDom = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $domUrl);
+            if ($rDom['code'] === 200 && $rDom['body']) {
+                $jsonDom = json_decode($rDom['body'], true);
+                $mainDomain = $jsonDom['result']['data']['main_domain'] ?? '';
+            }
+        }
+        if (!empty($mainDomain)) {
+            // Fetch the temp script
+            $fetchUrl = "https://{$mainDomain}/{$tmpFile}";
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $fetchUrl,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_FOLLOWLOCATION => true,
+            ]);
+            $extResp = curl_exec($ch);
+            $extCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($extCode === 200 && $extResp) {
+                $extJson = json_decode($extResp, true);
+                if (is_array($extJson) && isset($extJson['extensions'])) {
+                    $extensions = $extJson['extensions'];
+                    $phpVer = $extJson['version'] ?? $phpVer;
+                }
+            }
+        }
+        // Clean up temp file
+        $delUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Fileman"
+             . "&cpanel_jsonapi_func=save_file_content"
+             . "&dir=%2Fpublic_html"
+             . "&file=" . urlencode($tmpFile)
+             . "&content=";
+        broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $delUrl);
+        // Also try to delete via trash
+        $trashUrl = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+             . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+             . "&cpanel_jsonapi_apiversion=3"
+             . "&cpanel_jsonapi_module=Fileman"
+             . "&cpanel_jsonapi_func=trash"
+             . "&path=%2Fpublic_html%2F" . urlencode($tmpFile);
+        broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $trashUrl);
+        sort($extensions);
+        echo json_encode(['success' => true, 'extensions' => $extensions, 'phpversion' => $phpVer]);
         break;
 
     // ── Debug API Test ──
