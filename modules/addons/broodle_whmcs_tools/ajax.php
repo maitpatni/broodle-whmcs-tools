@@ -1035,11 +1035,13 @@ switch ($action) {
         break;
 
     case 'get_phpmyadmin_url':
-        // Create a cPanel session and return phpMyAdmin URL with proper SSO login
+        // Create a cPanel user session and redirect to phpMyAdmin via SSO
+        // Use create_user_session to get a proper cPanel session for the user
         $url = "{$protocol}://{$hostname}:{$port}/json-api/create_user_session"
              . "?api.version=1"
              . "&user=" . urlencode($cpUsername)
-             . "&service=cpaneld";
+             . "&service=cpaneld"
+             . "&locale=en";
 
         $r = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url);
 
@@ -1055,7 +1057,9 @@ switch ($action) {
                     parse_str($parts['query'] ?? '', $qs);
                     $sessionToken = $qs['session'] ?? '';
                     if ($sessionToken) {
-                        $gotoUri = $cpsess . '/3rdparty/phpMyAdmin/index.php';
+                        // Use execute/SQL to go through cPanel's phpMyAdmin proxy
+                        // This ensures the cPanel session handles MySQL auth
+                        $gotoUri = $cpsess . '/execute/SQL/phpMyAdmin';
                         $pmaUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
                         echo json_encode(['success' => true, 'url' => $pmaUrl]);
                         break;

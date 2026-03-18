@@ -954,15 +954,6 @@ function buildOverviewPane(){
         html+='</div>';
     }
 
-    /* cPanel details on overview */
-    if(C.username||C.serverName||C.serverIp){
-        html+='<div style="margin-top:16px"><div class="bt-ov-grid">';
-        if(C.username) html+='<div class="bt-ov-card"><div class="bt-ov-label">cPanel Username</div><div class="bt-ov-value" style="font-family:SFMono-Regular,Consolas,monospace;font-size:13px">'+esc(C.username)+'</div></div>';
-        if(C.serverName) html+='<div class="bt-ov-card"><div class="bt-ov-label">Server</div><div class="bt-ov-value">'+esc(C.serverName)+'</div></div>';
-        if(C.serverIp) html+='<div class="bt-ov-card"><div class="bt-ov-label">IP Address</div><div class="bt-ov-value" style="font-family:SFMono-Regular,Consolas,monospace;font-size:13px">'+esc(C.serverIp)+'</div></div>';
-        html+='</div></div>';
-    }
-
     /* Addons are now on their own page */
 
     pane.innerHTML=html;
@@ -1440,25 +1431,46 @@ function loadPhpVersions(){
         var sub=document.querySelector(".bt-php-subtitle");
         if(sub) sub.textContent=phpInstalledVersions.length+" version"+(phpInstalledVersions.length!==1?"s":"")+" available"+(defaultVer?" · Default: "+defaultVer:"");
         if(!vhosts.length&&!phpInstalledVersions.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>PHP version management not available on this server</span></div>';return;}
-        /* If we have vhosts but no installed versions, show vhosts with current version only */
         var html="";
         vhosts.forEach(function(vh){
             var ver=vh.version||defaultVer||"Unknown";
-            var opts="";phpInstalledVersions.forEach(function(v){opts+='<option value="'+esc(v)+'"'+(v===ver?" selected":"")+'>'+esc(v)+'</option>';});
-            html+='<div class="bt-row" data-vhost="'+esc(vh.vhost)+'">'
-                +'<div class="bt-row-icon" style="background:rgba(99,102,241,.08);color:#6366f1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>'
-                +'<div class="bt-row-info"><span class="bt-row-name">'+esc(vh.vhost)+'</span><span class="bt-row-badge bt-badge-primary">'+esc(ver)+'</span></div>'
-                +'<div class="bt-row-actions" style="display:flex;align-items:center;gap:8px"><select class="bt-select bt-php-select" data-vhost="'+esc(vh.vhost)+'" style="padding:6px 10px;font-size:12px;min-width:100px">'+opts+'</select>'
-                +'<button type="button" class="bt-row-btn pass bt-php-apply" data-vhost="'+esc(vh.vhost)+'" style="color:#6366f1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Apply</span></button></div></div>';
+            var verShort=ver.replace(/^ea-php/,"").replace(/^php/i,"");
+            /* Build version pill buttons instead of dropdown */
+            var pills="";
+            phpInstalledVersions.forEach(function(v){
+                var vLabel=v.replace(/^ea-php/,"PHP ").replace(/^php/i,"PHP ");
+                var isActive=v===ver;
+                pills+='<button type="button" class="bt-php-pill'+(isActive?" active":"")+'" data-vhost="'+esc(vh.vhost)+'" data-ver="'+esc(v)+'"'+(isActive?' disabled':'')+'>'+esc(vLabel)+'</button>';
+            });
+            html+='<div class="bt-php-domain-card">'
+                +'<div class="bt-php-domain-head">'
+                +'<div class="bt-php-domain-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>'
+                +'<div class="bt-php-domain-info"><span class="bt-php-domain-name">'+esc(vh.vhost)+'</span><span class="bt-php-domain-ver">PHP '+esc(verShort)+'</span></div>'
+                +'</div>'
+                +'<div class="bt-php-pills">'+pills+'</div>'
+                +'</div>';
         });
         list.innerHTML=html;
-        list.querySelectorAll(".bt-php-apply").forEach(function(btn){
+        list.querySelectorAll(".bt-php-pill:not(.active)").forEach(function(btn){
             btn.addEventListener("click",function(){
                 var vhost=this.getAttribute("data-vhost");
-                var sel=list.querySelector('.bt-php-select[data-vhost="'+vhost+'"]');
-                if(!sel) return;
-                btnLoad(this,"Applying...");var self=this;
-                post({action:"php_set_version",vhost:vhost,version:sel.value},function(r){btnDone(self);if(r.success){self.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Applied</span>';self.style.color="#059669";var pane=$("bt-pane-phpversion");if(pane) pane.dataset.loaded="";setTimeout(function(){loadPhpVersions();},1500);}else{fmToast(r.message||"Failed","error");}});
+                var ver=this.getAttribute("data-ver");
+                var card=this.closest(".bt-php-domain-card");
+                /* Disable all pills in this card */
+                card.querySelectorAll(".bt-php-pill").forEach(function(p){p.disabled=true;});
+                btnLoad(this,"");
+                var self=this;
+                post({action:"php_set_version",vhost:vhost,version:ver},function(r){
+                    btnDone(self);
+                    if(r.success){
+                        fmToast("PHP version changed to "+ver,"success");
+                        var pane=$("bt-pane-phpversion");if(pane) pane.dataset.loaded="";
+                        setTimeout(function(){loadPhpVersions();},800);
+                    } else {
+                        fmToast(r.message||"Failed","error");
+                        card.querySelectorAll(".bt-php-pill").forEach(function(p){if(!p.classList.contains("active")) p.disabled=false;});
+                    }
+                });
             });
         });
     });
@@ -1572,8 +1584,8 @@ function loadResourceStats(){
     var container=$("bt-hero-res");if(!container) return;
     post({action:"cpanel_resource_stats"},function(r){
         if(!r.success){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">Resource stats unavailable</div>';return;}
-        var s=r.stats||{};var acct=r.account||{};var bars=[];
-        /* LVE / CloudLinux resource bars — use formatter from API */
+        var s=r.stats||{};var bars=[];
+        /* Only show key LVE stats on main screen: CPU, Memory, I/O, IOPS */
         if(s.cpu){
             var cpuU=parseFloat(s.cpu.used)||0;var cpuM=parseFloat(s.cpu.max)||0;
             bars.push({label:"CPU",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',used:cpuU,max:cpuM,unit:"%"});
@@ -1581,13 +1593,11 @@ function loadResourceStats(){
         if(s.mem){
             var fmt=s.mem.formatter||null;var rawU=parseFloat(s.mem.used)||0;var rawM=parseFloat(s.mem.max)||0;
             if(fmt==="format_bytes"){
-                /* Values are in bytes — pick best unit for both used and max */
                 var best=rawM>0?rawM:rawU;var units=["B","KB","MB","GB","TB"];var i=0;
                 if(best>0){i=Math.floor(Math.log(best)/Math.log(1024));if(i>=units.length) i=units.length-1;}
                 var div=Math.pow(1024,i);
                 bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:rawU/div,max:rawM>0?rawM/div:0,unit:units[i],decimals:1});
             } else {
-                /* Values assumed MB (legacy/fallback) */
                 var memU=rawU;var memM=rawM;var memUnit="MB";
                 if(memM>1024||memU>1024){memU=memU/1024;memM=memM>0?memM/1024:0;memUnit="GB";}
                 bars.push({label:"Memory",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/></svg>',used:memU,max:memM,unit:memUnit,decimals:memUnit==="GB"?1:0});
@@ -1606,30 +1616,7 @@ function loadResourceStats(){
                 bars.push({label:"I/O",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',used:ioU,max:ioM,unit:ioUnit,decimals:ioUnit==="MB/s"?1:0});
             }
         }
-        if(s.nproc) bars.push({label:"Processes",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',used:s.nproc.used,max:s.nproc.max,unit:""});
-        if(s.ep) bars.push({label:"Entry Proc",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',used:s.ep.used,max:s.ep.max,unit:""});
         if(s.iops) bars.push({label:"IOPS",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',used:s.iops.used,max:s.iops.max,unit:""});
-        /* Account-level stats from StatsBar::get_stats (per-user) */
-        var acctMap={
-            diskusage:{label:"Disk",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'},
-            bandwidthusage:{label:"Bandwidth",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'},
-            emailaccounts:{label:"Emails",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>'},
-            ftpaccounts:{label:"FTP",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'},
-            sqldatabases:{label:"Databases",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'},
-            addondomains:{label:"Addons",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>'},
-            subdomains:{label:"Subdomains",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'}
-        };
-        var acctOrder=['diskusage','bandwidthusage','emailaccounts','ftpaccounts','sqldatabases','addondomains','subdomains'];
-        acctOrder.forEach(function(key){
-            var a=acct[key];if(!a) return;
-            var info=acctMap[key]||{label:key,icon:''};
-            var cnt=a.count;var mx=a.max;var units=a.units||'';
-            if(cnt===null||cnt===undefined) return;
-            var usedNum=parseFloat(cnt)||0;
-            var maxNum=0;var maxStr='∞';
-            if(mx!==null&&mx!==undefined&&mx!=='unlimited'&&mx!=='∞'){maxNum=parseFloat(mx)||0;if(maxNum>0) maxStr=maxNum+(units?' '+units:'');}
-            bars.push({label:info.label,icon:info.icon,used:usedNum,max:maxNum,unit:units,decimals:units==='MB'||units==='GB'?1:0});
-        });
         if(!bars.length){container.innerHTML='<div class="bt-res-loading" style="font-size:10px;color:#9ca3af">No resource data available</div>';return;}
         var html="";
         bars.forEach(function(b){
@@ -2999,18 +2986,40 @@ function injectStyles12(){
     +".bt-pie-legend-val{margin-left:auto;font-weight:600;font-family:SFMono-Regular,Consolas,monospace;font-size:11px;color:#7c3aed}"
     +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}.bt-pie-wrap{flex-direction:column;align-items:flex-start}.bt-pie-canvas{width:140px;height:140px}}"
     /* Gauge styles */
-    +".bt-gauges-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}"
-    +".bt-gauge-item{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}"
-    +".bt-gauge-canvas{width:100px;height:100px}"
-    +".bt-gauge-val{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);text-align:center;font-family:SFMono-Regular,Consolas,monospace;max-width:120px;word-break:break-word}"
+    +".bt-gauges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}"
+    +".bt-gauge-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:12px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);transition:border-color .15s}"
+    +".bt-gauge-card:hover{border-color:rgba(10,94,211,.25)}"
+    +".bt-gauge-canvas{width:90px;height:90px}"
+    +".bt-gauge-label-text{font-size:12px;font-weight:600;color:var(--heading-color,#1e293b)}"
+    +".bt-gauge-val{font-size:10px;font-weight:600;color:var(--text-muted,#64748b);text-align:center;font-family:SFMono-Regular,Consolas,monospace;max-width:120px;word-break:break-word}"
     /* Account bar styles */
-    +".bt-acct-bar-row{margin-bottom:10px}"
+    +".bt-acct-bars-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}"
+    +".bt-acct-bar-row{}"
     +".bt-acct-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}"
     +".bt-acct-bar-label{font-size:12px;font-weight:600;color:var(--text-primary,#1e293b)}"
     +".bt-acct-bar-val{font-size:11px;font-weight:600;color:var(--text-muted,#64748b);font-family:SFMono-Regular,Consolas,monospace}"
     +".bt-acct-bar-track{height:8px;border-radius:4px;background:var(--border-color,#e2e8f0);overflow:hidden}"
     +".bt-acct-bar-fill{height:100%;border-radius:4px;transition:width .4s ease}"
-    +"@media(max-width:600px){.bt-gauges-row{gap:10px}.bt-gauge-canvas{width:80px;height:80px}}";
+    /* Charts row layout */
+    +".bt-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:0}"
+    +".bt-chart-half{border-right:1px solid var(--border-color,#e2e8f0)}"
+    +".bt-chart-half:last-child{border-right:none}"
+    +"@media(max-width:768px){.bt-charts-row{grid-template-columns:1fr}.bt-chart-half{border-right:none}.bt-acct-bars-grid{grid-template-columns:1fr}}"
+    +"@media(max-width:600px){.bt-gauges-grid{grid-template-columns:repeat(3,1fr);gap:8px}.bt-gauge-canvas{width:70px;height:70px}}"
+    /* PHP selector styles */
+    +".bt-php-domain-card{padding:16px;border-bottom:1px solid var(--border-color,#f3f4f6)}"
+    +".bt-php-domain-card:last-child{border-bottom:none}"
+    +".bt-php-domain-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}"
+    +".bt-php-domain-icon{width:36px;height:36px;border-radius:9px;background:rgba(99,102,241,.08);color:#6366f1;display:flex;align-items:center;justify-content:center;flex-shrink:0}"
+    +".bt-php-domain-info{display:flex;flex-direction:column;gap:2px;min-width:0}"
+    +".bt-php-domain-name{font-size:14px;font-weight:600;color:var(--heading-color,#111827);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    +".bt-php-domain-ver{font-size:11px;font-weight:600;color:#6366f1}"
+    +".bt-php-pills{display:flex;flex-wrap:wrap;gap:6px}"
+    +".bt-php-pill{display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .15s}"
+    +".bt-php-pill:hover:not(:disabled){border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,.04)}"
+    +".bt-php-pill.active{background:#6366f1;color:#fff;border-color:#6366f1;cursor:default}"
+    +".bt-php-pill:disabled:not(.active){opacity:.5;cursor:not-allowed}"
+    +"@media(max-width:600px){.bt-php-pills{gap:4px}.bt-php-pill{padding:5px 10px;font-size:11px}}";
     document.head.appendChild(s);
 }
 
@@ -3111,7 +3120,7 @@ function renderAnalytics(results){
     /* ── Resource Usage Gauges ── */
     html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>Resource Usage</h6>';
     if(results.resourceStats&&results.resourceStats.success){
-        html+='<div class="bt-gauges-row" id="btResGauges"></div>';
+        html+='<div class="bt-gauges-grid" id="btResGauges"></div>';
     } else {
         html+='<div class="bt-empty" style="padding:16px"><span>Resource usage data unavailable</span></div>';
     }
@@ -3119,13 +3128,15 @@ function renderAnalytics(results){
     /* ── Account Stats Bars ── */
     html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Account Limits</h6>';
     if(results.resourceStats&&results.resourceStats.success){
-        html+='<div id="btAcctBars"></div>';
+        html+='<div class="bt-acct-bars-grid" id="btAcctBars"></div>';
     } else {
         html+='<div class="bt-empty" style="padding:16px"><span>Account stats unavailable</span></div>';
     }
     html+='</div>';
+    /* Charts row: Monthly Bandwidth + Pies side by side */
+    html+='<div class="bt-charts-row">';
     /* Monthly Bandwidth Bar Chart */
-    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Monthly Bandwidth</h6>';
+    html+='<div class="bt-chart-section bt-chart-half"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Monthly Bandwidth</h6>';
     if(results.bwDetailed&&results.bwDetailed.success&&results.bwDetailed.data){
         html+='<div class="bt-chart-wrap"><canvas class="bt-chart-canvas" id="btBwMonthlyChart"></canvas></div><div class="bt-chart-legend" id="btBwMonthlyLegend"></div>';
     } else {
@@ -3133,19 +3144,23 @@ function renderAnalytics(results){
     }
     html+='</div>';
     /* Bandwidth by Domain (Pie) */
-    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>Bandwidth by Domain</h6>';
+    html+='<div class="bt-chart-section bt-chart-half"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>Bandwidth by Domain</h6>';
     html+='<div class="bt-pie-wrap"><canvas class="bt-pie-canvas" id="btBwDomainPie"></canvas><div class="bt-pie-legend" id="btBwDomainLegend"></div></div></div>';
+    html+='</div>';
+    /* Second row: Protocol pie + Visitors */
+    html+='<div class="bt-charts-row">';
     /* Bandwidth by Protocol (Pie) */
-    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bandwidth by Protocol</h6>';
+    html+='<div class="bt-chart-section bt-chart-half"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bandwidth by Protocol</h6>';
     html+='<div class="bt-pie-wrap"><canvas class="bt-pie-canvas" id="btBwProtoPie"></canvas><div class="bt-pie-legend" id="btBwProtoLegend"></div></div></div>';
     /* Visitor Stats */
-    html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Visitor Statistics</h6>';
+    html+='<div class="bt-chart-section bt-chart-half"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a5ed3" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Visitor Statistics</h6>';
     if(results.visitors&&results.visitors.success){
         var vis=results.visitors.visitors||{};var hasStats=false;
         if(vis.webalizer&&vis.webalizer.length){hasStats=true;html+='<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Webalizer</span><div class="bt-analytics-stats-grid">';vis.webalizer.forEach(function(w){html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> '+esc(w.domain)+'</a>';});html+='</div></div>';}
         if(vis.analog&&vis.analog.length){hasStats=true;html+='<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--text-muted,#64748b);text-transform:uppercase;letter-spacing:.5px">Analog</span><div class="bt-analytics-stats-grid">';vis.analog.forEach(function(a){html+='<a class="bt-analytics-stat-card" href="#" onclick="btOpenCpanelPage(\'rawlogs\',this);return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> '+esc(a.domain)+'</a>';});html+='</div></div>';}
-        if(!hasStats) html+='<div class="bt-empty" style="padding:16px"><span>No visitor statistics available. Webalizer/Analog may not be enabled.</span></div>';
+        if(!hasStats) html+='<div class="bt-empty" style="padding:16px"><span>No visitor statistics available</span></div>';
     } else { html+='<div class="bt-empty" style="padding:16px"><span>Failed to load visitor statistics</span></div>'; }
+    html+='</div>';
     html+='</div>';
     /* Log Archives */
     html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/></svg>Log Archives</h6>';
@@ -3218,7 +3233,8 @@ function btRenderResourceGauges(results){
     if(!gauges.length){container.innerHTML='<div class="bt-empty" style="padding:8px"><span>No resource usage data</span></div>';return;}
     var gh="";
     gauges.forEach(function(g,i){
-        gh+='<div class="bt-gauge-item"><canvas class="bt-gauge-canvas" id="btGauge'+i+'" width="100" height="100"></canvas><div class="bt-gauge-val">'+esc(g.val)+'</div></div>';
+        var pctColor=g.pct>90?"#ef4444":g.pct>70?"#f59e0b":"#059669";
+        gh+='<div class="bt-gauge-card"><canvas class="bt-gauge-canvas" id="btGauge'+i+'" width="100" height="100"></canvas><div class="bt-gauge-label-text">'+esc(g.label)+'</div><div class="bt-gauge-val">'+esc(g.val)+'</div></div>';
     });
     container.innerHTML=gh;
     gauges.forEach(function(g,i){

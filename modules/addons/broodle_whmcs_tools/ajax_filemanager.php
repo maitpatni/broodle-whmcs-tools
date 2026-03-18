@@ -157,80 +157,112 @@ case 'fm_create_folder':
 case 'fm_delete':
     $items = isset($_POST['items']) ? $_POST['items'] : '';
     if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); break; }
-    /* Handle both JSON string and array (FormData may send as string or array) */
     if (is_array($items)) {
         $itemList = $items;
     } else {
-        /* Try parsing as JSON — handle both raw and stripslashed */
         $itemList = json_decode($items, true);
         if (!is_array($itemList)) {
             $itemList = json_decode(stripslashes($items), true);
         }
     }
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid items']); break; }
+
+    /* Resolve home directory for path conversion */
+    $homedir = '';
+    $urlH = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+         . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+         . "&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Fileman&cpanel_jsonapi_func=getdir";
+    $rH = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlH);
+    if ($rH['code'] === 200 && $rH['body']) {
+        $jh = json_decode($rH['body'], true);
+        $homedir = $jh['cpanelresult']['data'][0]['homedir'] ?? ($jh['cpanelresult']['data'][0]['dir'] ?? '');
+    }
+    if (!$homedir) $homedir = '/home/' . $cpUsername;
+
     $errors = [];
     foreach ($itemList as $item) {
         $item = trim($item);
         if (empty($item)) continue;
         $ok = false;
-        /* Strategy 1: API2 Fileman::fileop op=unlink via POST (most reliable) */
-        $url1 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
-              . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
-              . "&cpanel_jsonapi_apiversion=2"
-              . "&cpanel_jsonapi_module=Fileman"
-              . "&cpanel_jsonapi_func=fileop";
-        $postData = http_build_query(['op' => 'unlink', 'sourcefiles' => $item]);
+
+        /* Build paths to try: the item path may be absolute (/home/user/public_html/file)
+           or relative to home (/public_html/file). cPanel API2 fileop expects paths
+           relative to the user's home directory. */
+        $pathsToTry = [];
+        /* If path starts with homedir, strip it to get relative path */
+        if ($homedir && strpos($item, $homedir . '/') === 0) {
+            $pathsToTry[] = substr($item, strlen($homedir));
+        }
+        /* If path starts with / but not homedir, it's likely already relative to home */
+        $pathsToTry[] = $item;
+        /* Also try without leading slash */
+        if (substr($item, 0, 1) === '/') {
+            $pathsToTry[] = substr($item, 1);
+        }
+        $pathsToTry = array_unique($pathsToTry);
+
         $headers = [];
         if (!empty($accessHash)) $headers[] = "Authorization: whm {$serverUser}:{$accessHash}";
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url1,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $postData,
-        ]);
-        if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-        $resp1 = curl_exec($ch);
-        curl_close($ch);
-        $b1 = json_decode($resp1 ?? '', true);
-        /* Check multiple success indicators */
-        if (isset($b1['cpanelresult']['data'][0]['result']) && $b1['cpanelresult']['data'][0]['result'] == 1) $ok = true;
-        if (!$ok && isset($b1['cpanelresult']['event']['result']) && $b1['cpanelresult']['event']['result'] == 1) $ok = true;
-        /* Strategy 2: If full path failed, try relative path (strip homedir) */
-        if (!$ok && !empty($cpUsername)) {
-            $homedir = '/home/' . $cpUsername;
-            $relPath = $item;
-            if (strpos($item, $homedir . '/') === 0) {
-                $relPath = substr($item, strlen($homedir) + 1);
+
+        foreach ($pathsToTry as $tryPath) {
+            if ($ok) break;
+
+            /* Strategy 1: UAPI Fileman::trash (moves to trash, works on newer cPanel) */
+            $urlTrash = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                  . "&cpanel_jsonapi_apiversion=3"
+                  . "&cpanel_jsonapi_module=Fileman"
+                  . "&cpanel_jsonapi_func=trash"
+                  . "&path=" . urlencode($tryPath);
+            $rTrash = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $urlTrash);
+            if ($rTrash['code'] === 200 && $rTrash['body']) {
+                $jTrash = json_decode($rTrash['body'], true);
+                if (!empty($jTrash['result']['status'])) { $ok = true; break; }
             }
-            if ($relPath !== $item) {
-                $postData2 = http_build_query(['op' => 'unlink', 'sourcefiles' => $relPath]);
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $url1,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 20,
-                    CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_SSL_VERIFYHOST => false,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => $postData2,
-                ]);
-                if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge($headers, ['Content-Type: application/x-www-form-urlencoded']));
-                elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
-                $resp2 = curl_exec($ch);
-                curl_close($ch);
-                $b2 = json_decode($resp2 ?? '', true);
-                if (isset($b2['cpanelresult']['data'][0]['result']) && $b2['cpanelresult']['data'][0]['result'] == 1) $ok = true;
-                if (!$ok && isset($b2['cpanelresult']['event']['result']) && $b2['cpanelresult']['event']['result'] == 1) $ok = true;
+
+            /* Strategy 2: API2 Fileman::fileop op=unlink via GET */
+            $url2 = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                  . "&cpanel_jsonapi_apiversion=2"
+                  . "&cpanel_jsonapi_module=Fileman"
+                  . "&cpanel_jsonapi_func=fileop"
+                  . "&op=unlink"
+                  . "&sourcefiles=" . urlencode($tryPath);
+            $r2 = broodle_ajax_whm_call($protocol, $hostname, $port, $serverUser, $accessHash, $password, $url2);
+            if ($r2['code'] === 200 && $r2['body']) {
+                $b2 = json_decode($r2['body'], true);
+                if (isset($b2['cpanelresult']['data'][0]['result']) && $b2['cpanelresult']['data'][0]['result'] == 1) { $ok = true; break; }
+                if (isset($b2['cpanelresult']['event']['result']) && $b2['cpanelresult']['event']['result'] == 1) { $ok = true; break; }
             }
+
+            /* Strategy 3: API2 fileop via POST */
+            $urlPost = "{$protocol}://{$hostname}:{$port}/json-api/cpanel"
+                  . "?cpanel_jsonapi_user=" . urlencode($cpUsername)
+                  . "&cpanel_jsonapi_apiversion=2"
+                  . "&cpanel_jsonapi_module=Fileman"
+                  . "&cpanel_jsonapi_func=fileop";
+            $postData = http_build_query(['op' => 'unlink', 'sourcefiles' => $tryPath]);
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $urlPost,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postData,
+            ]);
+            if (!empty($headers)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            elseif (!empty($password)) curl_setopt($ch, CURLOPT_USERPWD, "{$serverUser}:{$password}");
+            $resp3 = curl_exec($ch);
+            curl_close($ch);
+            $b3 = json_decode($resp3 ?? '', true);
+            if (isset($b3['cpanelresult']['data'][0]['result']) && $b3['cpanelresult']['data'][0]['result'] == 1) { $ok = true; break; }
+            if (isset($b3['cpanelresult']['event']['result']) && $b3['cpanelresult']['event']['result'] == 1) { $ok = true; break; }
         }
+
         if (!$ok) {
-            $reason = $b1['cpanelresult']['data'][0]['reason'] ?? ($b1['cpanelresult']['error'] ?? 'Failed to delete');
-            $errors[] = basename($item) . ': ' . $reason;
+            $errors[] = basename($item) . ': Failed to delete';
         }
     }
     echo json_encode(empty($errors) ? ['success' => true, 'message' => count($itemList) . ' item(s) deleted'] : ['success' => false, 'message' => implode('; ', $errors)]);

@@ -281,6 +281,17 @@ function broodle_tools_gather_data($vars)
     $billingCycle = $service->billingcycle ?? '';
     $firstPayment = $service->firstpaymentamount ?? $amount;
     $paymentMethod = $service->paymentmethod ?? '';
+    // Look up the display name for the payment gateway
+    $paymentMethodDisplay = $paymentMethod;
+    if ($paymentMethod) {
+        try {
+            $gwSetting = Capsule::table('tblpaymentgateways')
+                ->where('gateway', $paymentMethod)
+                ->where('setting', 'name')
+                ->value('value');
+            if ($gwSetting) $paymentMethodDisplay = $gwSetting;
+        } catch (\Exception $e) {}
+    }
     $dedicatedIp  = $service->dedicatedip ?? '';
     $assignedIps  = $service->assignedips ?? '';
     $username     = $service->username ?? '';
@@ -362,7 +373,7 @@ function broodle_tools_gather_data($vars)
         'billingCycle' => $billingCycle,
         'price' => $priceFormatted,
         'firstPayment' => $firstPayFormatted,
-        'paymentMethod' => $paymentMethod,
+        'paymentMethod' => $paymentMethodDisplay,
         // Server
         'username' => $username,
         'serverName' => $serverName,
