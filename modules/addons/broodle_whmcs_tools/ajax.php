@@ -419,14 +419,28 @@ if ($action === 'get_cpanel_sso_url') {
                     'databases' => 'frontend/jupiter/sql/index.html',
                     'phpmyadmin' => '3rdparty/phpMyAdmin/index.php',
                     'domains' => 'frontend/jupiter/domains/index.html',
-                    'subdomains' => 'frontend/jupiter/domains/index.html',
+                    'subdomains' => 'frontend/jupiter/index.html?goto_app=Subdomains_Yii',
+                    'addondomains' => 'frontend/jupiter/index.html?goto_app=AddonDomains_Yii',
                     'ssl' => 'frontend/jupiter/ssl/index.html',
+                    'sslstatus' => 'frontend/jupiter/index.html?goto_app=SSL_TLS_Status_Yii',
+                    'autossl' => 'frontend/jupiter/index.html?goto_app=AutoSSL_Yii',
+                    'sslinstall' => 'frontend/jupiter/ssl/install.html',
+                    'tlswizard' => 'frontend/jupiter/index.html?goto_app=TLS_Wizard_Yii',
                     'cron' => 'frontend/jupiter/cron/index.html',
                     'dns' => 'frontend/jupiter/zone_editor/index.html',
                     'php' => 'frontend/jupiter/multiphp_manager/index.html',
                     'backup' => 'frontend/jupiter/backup/index.html',
                     'rawlogs' => 'frontend/jupiter/raw/index.html',
                     'terminal' => 'frontend/jupiter/terminal/index.html',
+                    'redirects' => 'frontend/jupiter/index.html?goto_app=Redirects_Yii',
+                    'forwarders' => 'frontend/jupiter/mail/fwds.html',
+                    'emailrouting' => 'frontend/jupiter/mail/email_routing.html',
+                    'spamfilters' => 'frontend/jupiter/mail/spam/index.html',
+                    'remotemysql' => 'frontend/jupiter/index.html?goto_app=RemoteMySQL_Yii',
+                    'bandwidth' => 'frontend/jupiter/stats/bandwidth.html',
+                    'awstats' => 'frontend/jupiter/index.html?goto_app=AWStats_Yii',
+                    'webalizer' => 'frontend/jupiter/index.html?goto_app=Webalizer_Yii',
+                    'analog' => 'frontend/jupiter/stats/analog.html',
                 ];
                 $mappedPage = $pageMap[strtolower($gotoPage)] ?? null;
                 if (!$mappedPage) {
@@ -437,8 +451,13 @@ if ($action === 'get_cpanel_sso_url') {
                     }
                 }
                 // goto_uri should be the path relative to the cpsess prefix
-                // cPanel expects: /cpsessXXXX/login/?session=TOKEN&goto_uri=/cpsessXXXX/PAGE
-                $gotoUri = $cpsess . '/' . $mappedPage;
+                // For goto_app URLs (contain ?), split path and query
+                if (strpos($mappedPage, '?') !== false) {
+                    list($pagePath, $pageQuery) = explode('?', $mappedPage, 2);
+                    $gotoUri = $cpsess . '/' . $pagePath . '?' . $pageQuery;
+                } else {
+                    $gotoUri = $cpsess . '/' . $mappedPage;
+                }
                 $sessionUrl = $baseUrl . $cpsess . '/login/?session=' . urlencode($sessionToken) . '&goto_uri=' . urlencode($gotoUri);
             }
         }
