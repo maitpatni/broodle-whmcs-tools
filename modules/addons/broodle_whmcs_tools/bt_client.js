@@ -1,4 +1,4 @@
-(function(){
+﻿(function(){
 "use strict";
 window.__btClientLoaded=true;
 console.log("[BT] bt_client.js loaded successfully, version "+(window.__btConfig&&window.__btConfig.version?window.__btConfig.version:"unknown"));
@@ -585,6 +585,12 @@ function init(){
     addonsPage.style.display="none";
     mainArea.appendChild(addonsPage);
 
+    /* -- Analytics page (hidden by default) -- */
+    var analyticsPage=document.createElement("div");
+    analyticsPage.id="bt-analytics-page";
+    analyticsPage.style.display="none";
+    mainArea.appendChild(analyticsPage);
+
     /* â”€â”€ Change Password page (hidden by default) â”€â”€ */
     var changePwPage=document.createElement("div");
     changePwPage.id="bt-changepw-page";
@@ -640,6 +646,9 @@ function buildSidebarHtml(){
     if(C.wpEnabled){
         html+='<a class="bt-sidebar-item" data-page="wordpress"><div class="bt-si-icon" style="background:rgba(33,117,208,.08);color:#2175d0"><svg viewBox="0 0 16 16" fill="#2175d0" width="18" height="18"><path d="M12.633 7.653c0-.848-.305-1.435-.566-1.892l-.08-.13c-.317-.51-.594-.958-.594-1.48 0-.63.478-1.218 1.152-1.218q.03 0 .058.003l.031.003A6.84 6.84 0 0 0 8 1.137 6.86 6.86 0 0 0 2.266 4.23c.16.005.313.009.442.009.717 0 1.828-.087 1.828-.087.37-.022.414.521.044.565 0 0-.371.044-.785.065l2.5 7.434 1.5-4.506-1.07-2.929c-.369-.022-.719-.065-.719-.065-.37-.022-.326-.588.043-.566 0 0 1.134.087 1.808.087.718 0 1.83-.087 1.83-.087.37-.022.413.522.043.566 0 0-.372.043-.785.065l2.48 7.377.684-2.287.054-.173c.27-.86.469-1.495.469-2.046zM1.137 8a6.86 6.86 0 0 0 3.868 6.176L1.73 5.206A6.8 6.8 0 0 0 1.137 8"/><path d="M6.061 14.583 8.121 8.6l2.109 5.78q.02.05.049.094a6.85 6.85 0 0 1-4.218.109m7.96-9.876q.046.328.047.706c0 .696-.13 1.479-.522 2.458l-2.096 6.06a6.86 6.86 0 0 0 2.572-9.224z"/><path fill-rule="evenodd" d="M0 8c0-4.411 3.589-8 8-8s8 3.589 8 8-3.59 8-8 8-8-3.589-8-8m.367 0c0 4.209 3.424 7.633 7.633 7.633S15.632 12.209 15.632 8C15.632 3.79 12.208.367 8 .367 3.79.367.367 3.79.367 8"/></svg></div><div class="bt-si-label">WordPress<span>Site Management</span></div></a>';
     }
+    if(C.analyticsEnabled){
+        html+='<a class="bt-sidebar-item" data-page="analytics"><div class="bt-si-icon" style="background:rgba(124,58,237,.08);color:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div class="bt-si-label">Analytics<span>Usage &amp; Statistics</span></div></a>';
+    }
     html+='</div>';
 
     /* Actions panel */
@@ -675,6 +684,7 @@ function bindSidebarActions(){
             var sslPage=$("bt-ssl-page");
             var emailPage=$("bt-email-page");
             var addonsPage=$("bt-addons-page");
+            var analyticsPage=$("bt-analytics-page");
             var heroSection=$("bt-hero-section");
             if(wrap) wrap.style.display="none";
             if(wpPage) wpPage.style.display="none";
@@ -685,6 +695,7 @@ function bindSidebarActions(){
             if(sslPage) sslPage.style.display="none";
             if(emailPage) emailPage.style.display="none";
             if(addonsPage) addonsPage.style.display="none";
+            if(analyticsPage) analyticsPage.style.display="none";
 
             if(page==="tabs"){
                 if(heroSection) heroSection.style.display="";
@@ -767,6 +778,17 @@ function bindSidebarActions(){
                     }
                 }
                 if(history.replaceState) history.replaceState(null,null,"#tabAddons");
+            }else if(page==="analytics"){
+                if(heroSection) heroSection.style.display="none";
+                if(analyticsPage){
+                    analyticsPage.style.display="";
+                    if(!analyticsPage.dataset.loaded){
+                        analyticsPage.dataset.loaded="1";
+                        buildAnalyticsPageInto(analyticsPage);
+                        loadAnalytics();
+                    }
+                }
+                if(history.replaceState) history.replaceState(null,null,"#tabAnalytics");
             }else if(page==="changepw"){
                 if(heroSection) heroSection.style.display="none";
                 if(changePwPage) changePwPage.style.display="";
@@ -787,7 +809,6 @@ function buildTabs(){
         {id:"cronjobs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',label:"Cron Jobs",check:"cronEnabled"},
         {id:"phpversion",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',label:"PHP",check:"phpEnabled"},
         {id:"errorlogs",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',label:"Error Logs",check:"logsEnabled"},
-        {id:"analytics",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',label:"Analytics",check:"analyticsEnabled"},
     ];
 
     var nav=document.createElement("div");nav.className="bt-tabs-nav";
@@ -821,6 +842,7 @@ function buildTabs(){
             var databasesPage=$("bt-databases-page");if(databasesPage) databasesPage.style.display="none";
             var sslPage=$("bt-ssl-page");if(sslPage) sslPage.style.display="none";
             var emailPage=$("bt-email-page");if(emailPage) emailPage.style.display="none";
+            var analyticsPage=$("bt-analytics-page");if(analyticsPage) analyticsPage.style.display="none";
             var heroSection=$("bt-hero-section");if(heroSection) heroSection.style.display="";
             wrap.style.display="";
             var hashName="tab"+t.id.charAt(0).toUpperCase()+t.id.slice(1);
@@ -829,7 +851,6 @@ function buildTabs(){
             if(t.id==="cronjobs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadCronJobs();}
             if(t.id==="phpversion"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadPhpVersions();}
             if(t.id==="errorlogs"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadErrorLogs();}
-            if(t.id==="analytics"&&!pane.dataset.loaded){pane.dataset.loaded="1";loadAnalytics();}
         });
         nav.appendChild(btn);
         var pane=document.createElement("div");
@@ -847,7 +868,6 @@ function buildTabs(){
     if(C.cronEnabled) buildCronPane();
     if(C.phpEnabled) buildPhpPane();
     if(C.logsEnabled) buildLogsPane();
-    if(C.analyticsEnabled) buildAnalyticsPane();
 }
 
 /* â”€â”€â”€ Deep link from URL hash â”€â”€â”€ */
@@ -866,6 +886,7 @@ function activateTabFromHash(){
         "cpanel":"cpanel","cpanelcredentials":"cpanel",
         "errorlogs":"errorlogs","errors":"errorlogs","logs":"errorlogs",
         "addons":"addons","addonsextras":"addons","extras":"addons",
+        "analytics":"analytics","stats":"analytics","bandwidth":"analytics",
         "changepw":"changepw","changepassword":"changepw"
     };
     var targetId=hashMap[tabName]||tabName;
@@ -904,6 +925,10 @@ function activateTabFromHash(){
     if(targetId==="addons"){
         var adItem=document.querySelector('.bt-sidebar-item[data-page="addons"]');
         if(adItem){adItem.click();return;}
+    }
+    if(targetId==="analytics"){
+        var anItem=document.querySelector('.bt-sidebar-item[data-page="analytics"]');
+        if(anItem){anItem.click();return;}
     }
     var tabBtn=document.querySelector('.bt-tab-btn[data-tab="'+targetId+'"]');
     if(tabBtn) tabBtn.click();
@@ -1132,7 +1157,7 @@ function buildEmailConnectPane(){
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">POP3 Port</span><span class="bt-email-config-val copyable" data-copy="995">995'+copySvg+'</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val">Your email account password</span></div>'
     +'</div></div>';
 
     /* Outgoing Server Card */
@@ -1144,7 +1169,7 @@ function buildEmailConnectPane(){
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">TLS Port</span><span class="bt-email-config-val copyable" data-copy="587">587 (STARTTLS)'+copySvg+'</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS (465) · STARTTLS (587)</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val">Your email account password</span></div>'
     +'</div></div>';
 
     /* Client Setup Guides */
@@ -3331,7 +3356,7 @@ function injectStyles12(){
     +".bt-pie-legend-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:var(--text-primary,#1e293b)}"
     +".bt-pie-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}"
     +".bt-pie-legend-val{margin-left:auto;font-weight:600;font-family:SFMono-Regular,Consolas,monospace;font-size:11px;color:#7c3aed}"
-    +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}.bt-pie-wrap{flex-direction:column;align-items:flex-start}.bt-pie-canvas{width:140px;height:140px}}"
+    +"@media(max-width:600px){.bt-analytics-stats-grid{grid-template-columns:1fr}.bt-pie-wrap{flex-direction:column;align-items:flex-start}.bt-pie-canvas{width:140px;height:140px}.bt-chart-canvas{height:180px}}"
     /* Gauge styles */
     +".bt-gauges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}"
     +".bt-gauge-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:12px;background:var(--input-bg,#f8fafc);border:1px solid var(--border-color,#e5e7eb);transition:border-color .15s}"
@@ -3353,6 +3378,7 @@ function injectStyles12(){
     +".bt-chart-half:last-child{border-right:none}"
     +"@media(max-width:768px){.bt-charts-row{grid-template-columns:1fr}.bt-chart-half{border-right:none}.bt-acct-bars-grid{grid-template-columns:1fr}}"
     +"@media(max-width:600px){.bt-gauges-grid{grid-template-columns:repeat(3,1fr);gap:8px}.bt-gauge-canvas{width:70px;height:70px}}"
+    +"@media(max-width:400px){.bt-gauges-grid{grid-template-columns:repeat(2,1fr)}.bt-analytics-archive-row{flex-wrap:wrap}}"
     /* PHP selector styles */
     +".bt-php-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color,#e5e7eb);padding:0 16px}"
     +".bt-php-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}"
@@ -3493,10 +3519,10 @@ function injectStyles13(){
 }
 
 /* â”€â”€â”€ Analytics Pane â”€â”€â”€ */
-function buildAnalyticsPane(){
-    var pane=$("bt-pane-analytics");if(!pane) return;
-    pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div><h5>Analytics</h5><p>Bandwidth usage, visitor stats &amp; log archives</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-outline" id="btAnalyticsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-analytics-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div></div></div>';
-    $("btAnalyticsRefresh").addEventListener("click",function(){loadAnalytics();});
+function buildAnalyticsPageInto(container){
+    if(!container) return;
+    container.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div><h5>Analytics</h5><p>Bandwidth usage, visitor stats &amp; log archives</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-outline" id="btAnalyticsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-analytics-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div></div></div>';
+    var refreshBtn=$("btAnalyticsRefresh");if(refreshBtn) refreshBtn.addEventListener("click",function(){loadAnalytics();});
 }
 
 function loadAnalytics(){
