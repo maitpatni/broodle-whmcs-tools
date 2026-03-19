@@ -1141,7 +1141,8 @@ function buildEmailConnectPane(){
     +'<div class="bt-email-config-body">'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">SMTP Port</span><span class="bt-email-config-val copyable" data-copy="465">465'+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">TLS Port</span><span class="bt-email-config-val copyable" data-copy="587">587 (STARTTLS)'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS (465) · STARTTLS (587)</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
     +'</div></div>';
@@ -3485,6 +3486,7 @@ function injectStyles13(){
     +".bt-email-setup-note svg{flex-shrink:0;margin-top:2px;color:#d97706}"
     +".bt-email-setup-note strong{color:var(--heading-color,#111827);font-weight:600}"
     /* Responsive */
+    +"@media(max-width:1024px){.bt-email-config-grid.three-col{grid-template-columns:1fr 1fr}.bt-email-config-grid.three-col .bt-email-config-card:nth-child(3){grid-column:1/-1}}"
     +"@media(max-width:768px){.bt-email-app-banner-content{flex-direction:column;text-align:center}.bt-email-app-links{justify-content:center}.bt-email-config-grid,.bt-email-config-grid.three-col{grid-template-columns:1fr}.bt-email-clients-grid{grid-template-columns:repeat(2,1fr)}}"
     +"@media(max-width:480px){.bt-email-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}.bt-email-tab{white-space:nowrap;padding:8px 12px;font-size:12px}}";
     document.head.appendChild(s);
