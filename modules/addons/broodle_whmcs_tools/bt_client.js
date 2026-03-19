@@ -1096,7 +1096,7 @@ function buildEmailConnectPane(){
     if(maEnabled){
         var maTitle=ma.title||"Broodle Mail App";
         var maDesc=ma.description||"Access your email on the go with our dedicated mobile app.";
-        var maIcon=ma.iconUrl?'<img src="'+esc(ma.iconUrl)+'" width="32" height="32" style="border-radius:6px" alt="">':'<img src="modules/addons/broodle_whmcs_tools/broodle-icon.png" width="32" height="32" style="border-radius:6px" alt="">';
+        var maIcon=ma.iconUrl?'<img src="'+esc(ma.iconUrl)+'" width="56" height="56" alt="">':'<img src="modules/addons/broodle_whmcs_tools/broodle-icon.png" width="56" height="56" alt="">';
         var maPlay=ma.playstore||"";
         var maApple=ma.appstore||"";
         html+='<div class="bt-email-app-banner">'
@@ -1121,33 +1121,33 @@ function buildEmailConnectPane(){
     }
 
     /* â”€â”€ Configuration Cards â”€â”€ */
-    html+='<div class="bt-email-config-grid">';
+    html+='<div class="bt-email-config-grid three-col">';
 
-    /* IMAP Card */
+    /* Incoming Server Card */
     html+='<div class="bt-email-config-card">'
-    +'<div class="bt-email-config-header"><div class="bt-email-config-icon imap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div><h5>IMAP Settings</h5><p>Recommended for syncing across devices</p></div></div>'
+    +'<div class="bt-email-config-header"><div class="bt-email-config-icon imap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div><h5>Incoming Server</h5><p>Receive emails via IMAP or POP3</p></div></div>'
     +'<div class="bt-email-config-body">'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Incoming Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (SSL)</span><span class="bt-email-config-val copyable" data-copy="993">993'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">IMAP Port</span><span class="bt-email-config-val copyable" data-copy="993">993'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">POP3 Port</span><span class="bt-email-config-val copyable" data-copy="995">995'+copySvg+'</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
     +'</div></div>';
 
-    /* SMTP Card */
+    /* Outgoing Server Card */
     html+='<div class="bt-email-config-card">'
-    +'<div class="bt-email-config-header"><div class="bt-email-config-icon smtp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div><h5>SMTP Settings</h5><p>Outgoing mail server configuration</p></div></div>'
+    +'<div class="bt-email-config-header"><div class="bt-email-config-icon smtp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div><h5>Outgoing Server</h5><p>Send emails via SMTP</p></div></div>'
     +'<div class="bt-email-config-body">'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Outgoing Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (SSL/TLS)</span><span class="bt-email-config-val copyable" data-copy="465">465'+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (STARTTLS)</span><span class="bt-email-config-val copyable" data-copy="587">587'+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS (port 465) or STARTTLS (port 587)</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your full email address</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">SMTP Port</span><span class="bt-email-config-val copyable" data-copy="465">465'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
     +'</div></div>';
 
     /* Client Setup Guides */
-    html+='<div class="bt-email-config-card full-width">'
+    html+='<div class="bt-email-config-card">'
     +'<div class="bt-email-config-header"><div class="bt-email-config-icon guides"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div><h5>Quick Setup Guide</h5><p>Connect your email to popular apps</p></div></div>'
     +'<div class="bt-email-config-body">'
     +'<div class="bt-email-clients-grid">'
@@ -3435,10 +3435,10 @@ function injectStyles13(){
     +".bt-email-connect-wrap{display:flex;flex-direction:column;gap:16px}"
     /* App banner */
     +".bt-email-app-banner{background:linear-gradient(135deg,#1e293b 0%,#334155 100%);border-radius:14px;padding:24px;color:#fff;overflow:hidden;position:relative}"
-    +".bt-email-app-banner::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(217,119,6,.15)}"
-    +".bt-email-app-banner::after{content:'';position:absolute;bottom:-60px;left:-30px;width:160px;height:160px;border-radius:50%;background:rgba(217,119,6,.08)}"
+    +".bt-email-app-banner::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.03)}"
+    +".bt-email-app-banner::after{content:'';position:absolute;bottom:-60px;left:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.02)}"
     +".bt-email-app-banner-content{display:flex;align-items:center;gap:20px;position:relative;z-index:1;flex-wrap:wrap}"
-    +".bt-email-app-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#d97706,#f59e0b);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(217,119,6,.3)}"
+    +".bt-email-app-icon{width:56px;height:56px;border-radius:14px;overflow:hidden;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.15)}" +".bt-email-app-icon img{width:100%;height:100%;object-fit:cover;border-radius:0!important}"
     +".bt-email-app-text{flex:1;min-width:200px}"
     +".bt-email-app-text h4{margin:0 0 4px;font-size:17px;font-weight:700;color:#fff}"
     +".bt-email-app-text p{margin:0;font-size:13px;color:rgba(255,255,255,.7);line-height:1.5}"
@@ -3452,7 +3452,7 @@ function injectStyles13(){
     +".bt-email-app-store-btn span small{font-size:10px;font-weight:400;opacity:.7}"
     +".bt-email-app-store-btn svg{flex-shrink:0}"
     /* Config grid */
-    +".bt-email-config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}"
+    +".bt-email-config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}" +".bt-email-config-grid.three-col{grid-template-columns:repeat(3,1fr)}" +".bt-email-config-grid.three-col .bt-email-config-card{display:flex;flex-direction:column}" +".bt-email-config-grid.three-col .bt-email-config-body{flex:1}"
     +".bt-email-config-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:14px;overflow:hidden;transition:box-shadow .2s}"
     +".bt-email-config-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}"
     +".bt-email-config-card.full-width{grid-column:1/-1}"
@@ -3485,7 +3485,7 @@ function injectStyles13(){
     +".bt-email-setup-note svg{flex-shrink:0;margin-top:2px;color:#d97706}"
     +".bt-email-setup-note strong{color:var(--heading-color,#111827);font-weight:600}"
     /* Responsive */
-    +"@media(max-width:768px){.bt-email-app-banner-content{flex-direction:column;text-align:center}.bt-email-app-links{justify-content:center}.bt-email-config-grid{grid-template-columns:1fr}.bt-email-clients-grid{grid-template-columns:repeat(2,1fr)}}"
+    +"@media(max-width:768px){.bt-email-app-banner-content{flex-direction:column;text-align:center}.bt-email-app-links{justify-content:center}.bt-email-config-grid,.bt-email-config-grid.three-col{grid-template-columns:1fr}.bt-email-clients-grid{grid-template-columns:repeat(2,1fr)}}"
     +"@media(max-width:480px){.bt-email-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}.bt-email-tab{white-space:nowrap;padding:8px 12px;font-size:12px}}";
     document.head.appendChild(s);
 }
