@@ -225,11 +225,20 @@ case 'fm_delete':
     $items = isset($_POST['items']) ? $_POST['items'] : '';
     if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); break; }
     if (is_array($items)) {
-        $itemList = $items;
+        // Sent as items[] from FormData — already an array
+        $itemList = array_filter($items, function($v) { return !empty(trim($v)); });
     } else {
+        // Sent as JSON string
         $itemList = json_decode($items, true);
         if (!is_array($itemList)) {
             $itemList = json_decode(stripslashes($items), true);
+        }
+        if (!is_array($itemList)) {
+            $itemList = json_decode(html_entity_decode($items, ENT_QUOTES, 'UTF-8'), true);
+        }
+        // Treat as single item path
+        if (!is_array($itemList) && !empty(trim($items))) {
+            $itemList = [trim($items)];
         }
     }
     if (!is_array($itemList) || empty($itemList)) { echo json_encode(['success' => false, 'message' => 'Invalid items']); break; }

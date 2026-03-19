@@ -1826,7 +1826,7 @@ function injectStyles9(){
     s.textContent=[
 /* File Manager Layout */
 '.fm-wrap{display:flex;flex-direction:column;height:100%;min-height:500px}',
-'.fm-toolbar{display:flex;align-items:center;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:nowrap;background:var(--card-bg,#fff);border-radius:12px 12px 0 0;overflow:hidden}',
+'.fm-toolbar{display:flex;align-items:center;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border-color,#e5e7eb);flex-wrap:nowrap;background:var(--card-bg,#fff);border-radius:12px 12px 0 0}',
 '.fm-toolbar-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);color:var(--heading-color,#374151);transition:all .12s;white-space:nowrap;flex-shrink:0}',
 '.fm-toolbar-btn:hover{border-color:#0a5ed3;color:#0a5ed3;background:rgba(10,94,211,.04)}',
 '.fm-toolbar-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}',
@@ -2892,12 +2892,11 @@ function fmConfirmDelete(){
     var names=items.map(function(p){return p.split("/").pop();}).join(", ");
     fmConfirm("Delete","Delete "+items.length+" item(s)?\n\n"+names,function(){
         var tid=btProgress.add("Delete "+items.length+" item(s)","Deleting files...");
-        var itemsJson=JSON.stringify(items);
-        /* Use XMLHttpRequest directly to ensure items is sent as a proper string */
+        /* Send each item as items[] so PHP receives a native array */
         var fd=new FormData();
         fd.append("action","fm_delete");
         fd.append("service_id",C.serviceId);
-        fd.append("items",itemsJson);
+        for(var i=0;i<items.length;i++) fd.append("items[]",items[i]);
         var x=new XMLHttpRequest();
         x.open("POST",ajaxUrl,true);
         x.onload=function(){
