@@ -1,5 +1,5 @@
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$version = "3.11.1"
+$version = "3.11.3"
 $zipName = "broodle-whmcs-tools-v$version.zip"
 $srcDir  = "modules\addons\broodle_whmcs_tools"
 $zipPath = Join-Path $PSScriptRoot $zipName

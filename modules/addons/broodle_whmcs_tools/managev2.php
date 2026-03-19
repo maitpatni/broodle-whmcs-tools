@@ -82,11 +82,11 @@ $product     = Capsule::table('tblproducts')->where('id', $service->packageid)->
 $productName = $product ? $product->name : 'Service';
 
 /* ── Page setup ── */
-$ca->setPageTitle(htmlspecialchars($productName) . ' — Manage V2');
-$ca->addToBreadCrumb('index.php', 'Home');
+$ca->setPageTitle(htmlspecialchars($productName) . ' — Manage');
+$ca->addToBreadCrumb('index.php', 'Portal Home');
 $ca->addToBreadCrumb('clientarea.php', 'Client Area');
-$ca->addToBreadCrumb('clientarea.php?action=productdetails&id=' . $serviceId, htmlspecialchars($productName));
-$ca->addToBreadCrumb('#', 'Manage V2');
+$ca->addToBreadCrumb('clientarea.php?action=services', 'My Products & Services');
+$ca->addToBreadCrumb('clientarea.php?action=productdetails&id=' . $serviceId, 'Product Details');
 
 /* ── Build page content ── */
 $btHtml  = '<div id="bt-page-wrap"></div>' . "\n";
