@@ -8,7 +8,7 @@
  * @author     Broodle
  * @copyright  2026 Broodle
  * @link       https://broodle.host
- * @version    3.10.94
+ * @version    3.10.95
  */
 
 if (!defined('WHMCS')) {
@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.94');
+define('BROODLE_TOOLS_VERSION', '3.10.95');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
