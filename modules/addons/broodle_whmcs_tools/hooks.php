@@ -59,6 +59,24 @@ function broodle_tools_upgrade_list_enabled() { return broodle_tools_setting_ena
 function broodle_tools_v2_dropdown_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_dropdown'); }
 function broodle_tools_v2_banner_enabled() { return broodle_tools_setting_enabled('tweak_manage_v2_banner'); }
 
+function broodle_tools_get_mail_app_settings() {
+    try {
+        $rows = Capsule::table('mod_broodle_tools_settings')
+            ->whereIn('setting_key', ['mail_app_enabled','mail_app_title','mail_app_description','mail_app_icon_url','mail_app_playstore','mail_app_appstore'])
+            ->pluck('setting_value', 'setting_key');
+        return [
+            'enabled'     => !empty($rows['mail_app_enabled']) && $rows['mail_app_enabled'] === '1',
+            'title'       => $rows['mail_app_title'] ?? 'Broodle Mail App',
+            'description' => $rows['mail_app_description'] ?? '',
+            'iconUrl'     => $rows['mail_app_icon_url'] ?? '',
+            'playstore'   => $rows['mail_app_playstore'] ?? '',
+            'appstore'    => $rows['mail_app_appstore'] ?? '',
+        ];
+    } catch (\Exception $e) {
+        return ['enabled' => true, 'title' => 'Broodle Mail App', 'description' => '', 'iconUrl' => '', 'playstore' => '', 'appstore' => ''];
+    }
+}
+
 function broodle_tools_get_service_id($vars)
 {
     if (!empty($vars['serviceid'])) return (int) $vars['serviceid'];
@@ -406,6 +424,7 @@ function broodle_tools_gather_data($vars)
         'fmEnabled' => broodle_tools_fm_enabled(),
         'analyticsEnabled' => broodle_tools_analytics_enabled(),
         'version' => BROODLE_TOOLS_VERSION,
+        'mailApp' => broodle_tools_get_mail_app_settings(),
     ];
     return $cache;
 }

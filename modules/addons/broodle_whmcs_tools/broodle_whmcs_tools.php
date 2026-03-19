@@ -8,7 +8,7 @@
  * @author     Broodle
  * @copyright  2026 Broodle
  * @link       https://broodle.host
- * @version    3.10.97
+ * @version    3.10.98
  */
 
 if (!defined('WHMCS')) {
@@ -17,7 +17,7 @@ if (!defined('WHMCS')) {
 
 use WHMCS\Database\Capsule;
 
-define('BROODLE_TOOLS_VERSION', '3.10.97');
+define('BROODLE_TOOLS_VERSION', '3.10.98');
 define('BROODLE_TOOLS_GITHUB_REPO', 'maitpatni/broodle-whmcs-tools');
 define('BROODLE_TOOLS_MODULE_DIR', __DIR__);
 
@@ -69,6 +69,12 @@ function broodle_whmcs_tools_activate()
             'tweak_manage_v2_dropdown' => '1',
             'tweak_manage_v2_banner'   => '1',
             'auto_update_enabled'   => '0',
+            'mail_app_enabled'      => '1',
+            'mail_app_title'        => 'Broodle Mail App',
+            'mail_app_description'  => 'Access your email on the go with our dedicated mobile app. Push notifications, fast sync, and a clean interface.',
+            'mail_app_icon_url'     => '',
+            'mail_app_playstore'    => 'https://play.google.com/store/apps/details?id=com.broodlepro.mailapp&hl=en',
+            'mail_app_appstore'     => 'https://apps.apple.com/app/broodle-mail/id6504507908',
         ];
 
         foreach ($defaults as $key => $value) {
@@ -222,6 +228,7 @@ function broodle_whmcs_tools_output($vars)
             'tweak_manage_v2_dropdown',
             'tweak_manage_v2_banner',
             'auto_update_enabled',
+            'mail_app_enabled',
         ];
 
         foreach ($tweaks as $tweak) {
@@ -229,6 +236,17 @@ function broodle_whmcs_tools_output($vars)
             Capsule::table('mod_broodle_tools_settings')
                 ->updateOrInsert(
                     ['setting_key' => $tweak],
+                    ['setting_value' => $value, 'updated_at' => date('Y-m-d H:i:s')]
+                );
+        }
+
+        // Save text fields for mail app banner
+        $textFields = ['mail_app_title', 'mail_app_description', 'mail_app_icon_url', 'mail_app_playstore', 'mail_app_appstore'];
+        foreach ($textFields as $field) {
+            $value = isset($_POST[$field]) ? trim($_POST[$field]) : '';
+            Capsule::table('mod_broodle_tools_settings')
+                ->updateOrInsert(
+                    ['setting_key' => $field],
                     ['setting_value' => $value, 'updated_at' => date('Y-m-d H:i:s')]
                 );
         }
@@ -423,6 +441,24 @@ function broodle_tools_render_admin($vars, $settings)
                 <div class="bt-section-label">System</div>
                 <div class="bt-card">'
                     . $toggle('auto_update_enabled', 'Auto Update Check', 'Periodically check GitHub for new versions', $icons['update'], $isOn('auto_update_enabled'))
+                . '</div>
+            </div>
+
+            <div class="bt-section">
+                <div class="bt-section-label">Mail App Banner (Email Connect Tab)</div>
+                <div class="bt-card">'
+                    . $toggle('mail_app_enabled', 'Show Mail App Banner', 'Display the mail app promotion banner on the Email Connect tab', $icons['email'], $isOn('mail_app_enabled'))
+                    . '<div class="bt-row" style="flex-direction:column;align-items:stretch;gap:10px;padding:16px 20px">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                            <div><label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">App Title</label><input type="text" name="mail_app_title" value="' . htmlspecialchars($settings['mail_app_title'] ?? 'Broodle Mail App') . '" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px"></div>
+                            <div><label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Icon URL <small style="color:#9ca3af">(leave empty for default)</small></label><input type="text" name="mail_app_icon_url" value="' . htmlspecialchars($settings['mail_app_icon_url'] ?? '') . '" placeholder="https://example.com/icon.png" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px"></div>
+                        </div>
+                        <div><label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Description</label><input type="text" name="mail_app_description" value="' . htmlspecialchars($settings['mail_app_description'] ?? '') . '" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px"></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                            <div><label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Google Play Store Link</label><input type="text" name="mail_app_playstore" value="' . htmlspecialchars($settings['mail_app_playstore'] ?? '') . '" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px"></div>
+                            <div><label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">App Store Link</label><input type="text" name="mail_app_appstore" value="' . htmlspecialchars($settings['mail_app_appstore'] ?? '') . '" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px"></div>
+                        </div>
+                    </div>'
                 . '</div>
             </div>
 

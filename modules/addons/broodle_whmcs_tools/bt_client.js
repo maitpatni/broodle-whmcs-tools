@@ -31,7 +31,7 @@ var wpSvg16="<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"curren
 var wpSvg20=wpSvg16.replace(/width=\"16\"/g,"width=\"20\"").replace(/height=\"16\"/g,"height=\"20\"");
 var wpSvg32=wpSvg16.replace(/width=\"16\"/g,"width=\"32\"").replace(/height=\"16\"/g,"height=\"32\"");
 
-/* ─── Addon/Upgrade Icon Helpers ─── */
+/* â”€â”€â”€ Addon/Upgrade Icon Helpers â”€â”€â”€ */
 function btAddonIcon(name){
     var n=name.toLowerCase();
     if(n.indexOf("wordpress")!==-1||n.indexOf("wp ")!==-1) return wpSvg16;
@@ -46,7 +46,7 @@ function btUpgradeIcon(name){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
 }
 
-/* ─── CSS Injection ─── */
+/* â”€â”€â”€ CSS Injection â”€â”€â”€ */
 function injectStyles(){
     if(document.getElementById("bt-injected-styles")) return;
     var s=document.createElement("style");s.id="bt-injected-styles";
@@ -125,7 +125,7 @@ function injectStyles(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 2 ─── */
+/* â”€â”€â”€ CSS Part 2 â”€â”€â”€ */
 function injectStyles2(){
     if(document.getElementById("bt-injected-styles2")) return;
     var s=document.createElement("style");s.id="bt-injected-styles2";
@@ -164,7 +164,7 @@ function injectStyles2(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 3: Addons carousel, SSL, Logs, Modals, WP detail ─── */
+/* â”€â”€â”€ CSS Part 3: Addons carousel, SSL, Logs, Modals, WP detail â”€â”€â”€ */
 function injectStyles3(){
     if(document.getElementById("bt-injected-styles3")) return;
     var s=document.createElement("style");s.id="bt-injected-styles3";
@@ -200,7 +200,7 @@ function injectStyles3(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 4: Logs, Modals, Form fields, WP detail panel ─── */
+/* â”€â”€â”€ CSS Part 4: Logs, Modals, Form fields, WP detail panel â”€â”€â”€ */
 function injectStyles4(){
     if(document.getElementById("bt-injected-styles4")) return;
     var s=document.createElement("style");s.id="bt-injected-styles4";
@@ -231,7 +231,7 @@ function injectStyles4(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 5: Form fields, buttons, loading, WP detail ─── */
+/* â”€â”€â”€ CSS Part 5: Form fields, buttons, loading, WP detail â”€â”€â”€ */
 function injectStyles5(){
     if(document.getElementById("bt-injected-styles5")) return;
     var s=document.createElement("style");s.id="bt-injected-styles5";
@@ -260,7 +260,7 @@ function injectStyles5(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 6: WP detail panel ─── */
+/* â”€â”€â”€ CSS Part 6: WP detail panel â”€â”€â”€ */
 function injectStyles6(){
     if(document.getElementById("bt-injected-styles6")) return;
     var s=document.createElement("style");s.id="bt-injected-styles6";
@@ -292,7 +292,7 @@ function injectStyles6(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 7: WP site list, items, themes, security ─── */
+/* â”€â”€â”€ CSS Part 7: WP site list, items, themes, security â”€â”€â”€ */
 function injectStyles7(){
     if(document.getElementById("bt-injected-styles7")) return;
     var s=document.createElement("style");s.id="bt-injected-styles7";
@@ -370,22 +370,22 @@ function injectStyles7(){
     document.head.appendChild(s);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   COMPLETE PAGE TAKEOVER — init()
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   COMPLETE PAGE TAKEOVER â€” init()
    Replaces .main-content entirely with our own layout.
    Preserves: product-icon card, usage stats, Quick Shortcuts,
    cPanel SSO link, Change Password form.
-   ═══════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Saved references for cPanel SSO and Change Password */
 var savedCpanelLink=null;
 
-/* ─── CSS Part 8: Service header + dark/light mode inheritance ─── */
+/* â”€â”€â”€ CSS Part 8: Service header + dark/light mode inheritance â”€â”€â”€ */
 function injectStyles8(){
     if(document.getElementById("bt-injected-styles8")) return;
     var s=document.createElement("style");s.id="bt-injected-styles8";
     s.textContent=[
-/* ── Hero Card ── */
+/* â”€â”€ Hero Card â”€â”€ */
 '.bt-hero{display:flex;gap:0;margin-bottom:24px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color,#e5e7eb);background:var(--card-bg,#fff);box-sizing:border-box;max-width:100%}',
 '.bt-hero-left{flex:0 1 auto;min-width:0;max-width:380px;width:100%;background:linear-gradient(135deg,#1a6ddb 0%,#0a5ed3 40%,#3b82f6 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:180px;position:relative;overflow:hidden}',
 '.bt-hero-left::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}',
@@ -397,7 +397,7 @@ function injectStyles8(){
 '.bt-hero-status.suspended .dot{background:#fbbf24}',
 '.bt-hero-status.terminated .dot,.bt-hero-status.cancelled .dot{background:#f87171}',
 '.bt-hero-domain{margin-top:12px;font-size:13px;color:rgba(255,255,255,.85);font-weight:500}',
-/* ── Usage Panel ── */
+/* â”€â”€ Usage Panel â”€â”€ */
 '.bt-hero-right{flex:1;min-width:200px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-left:1px solid var(--border-color,#e5e7eb)}',
 '.bt-gauges{display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap}',
 '.bt-gauge{text-align:center}',
@@ -409,7 +409,7 @@ function injectStyles8(){
 '.bt-gauge-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--heading-color,#111827)}',
 '.bt-gauge-label{margin-top:6px;font-size:11px;font-weight:600;color:var(--heading-color,#111827)}',
 '.bt-gauge-sub{font-size:10px;color:var(--text-muted,#6b7280);margin-top:1px}',
-/* ── Hero Resource Bars ── */
+/* â”€â”€ Hero Resource Bars â”€â”€ */
 '.bt-hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding-top:10px;border-top:1px solid var(--border-color,#f3f4f6);width:100%;margin-top:4px}',
 '.bt-res-bar{display:flex;flex-direction:column;gap:3px}',
 '.bt-res-bar-head{display:flex;justify-content:space-between;align-items:center}',
@@ -423,18 +423,18 @@ function injectStyles8(){
 '.bt-res-bar-fill.red{background:linear-gradient(90deg,#ef4444,#f87171)}',
 '.bt-res-bar-fill.blue{background:linear-gradient(90deg,#0a5ed3,#3b82f6)}',
 '.bt-hero-stats .bt-res-loading{grid-column:1/-1;text-align:center;font-size:11px;color:var(--text-muted,#9ca3af);padding:6px 0}',
-/* ── Quick Access ── */
+/* â”€â”€ Quick Access â”€â”€ */
 '.bt-shortcuts{margin-bottom:20px}',
 '.bt-shortcuts-title{font-size:14px;font-weight:700;color:var(--heading-color,#111827);margin:0 0 10px}',
 '.bt-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:12px;padding:12px 14px}',
 '.bt-sc-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:500;color:#0a5ed3;cursor:pointer;transition:background .12s;text-decoration:none}',
 '.bt-sc-item:hover{background:rgba(10,94,211,.06);text-decoration:none;color:#0a5ed3}',
 '.bt-sc-item svg{flex-shrink:0;width:16px;height:16px}',
-/* ── Responsive ── */
+/* â”€â”€ Responsive â”€â”€ */
 '@media(max-width:900px){.bt-hero{flex-direction:column}.bt-hero-left{max-width:100%}.bt-hero-right{width:100%;padding:20px;border-left:none;border-top:1px solid var(--border-color,#e5e7eb)}.bt-hero-left{min-height:140px}}',
 '@media(max-width:768px){.bt-shortcuts-grid{grid-template-columns:repeat(2,1fr)}.bt-hero-stats{grid-template-columns:1fr}}',
 '@media(max-width:400px){.bt-shortcuts-grid{grid-template-columns:1fr}.bt-gauges{gap:10px}.bt-gauge-ring{width:60px;height:60px}.bt-gauge-ring svg{width:60px;height:60px}.bt-gauge-pct{font-size:12px}}',
-/* ── Dark mode ── */
+/* â”€â”€ Dark mode â”€â”€ */
 '[data-theme="dark"] .bt-hero{border-color:var(--border-color,#334155)}',
 '[data-theme="dark"] .bt-hero-right{background:var(--card-bg,#1e293b)}',
 '[data-theme="dark"] .bt-shortcuts-grid{background:var(--card-bg,#1e293b);border-color:var(--border-color,#334155)}',
@@ -444,11 +444,11 @@ function injectStyles8(){
 }
 var savedChangePwPane=null;
 
-/* ─── Open specific cPanel page via SSO ─── */
+/* â”€â”€â”€ Open specific cPanel page via SSO â”€â”€â”€ */
 var _cpanelSession={base:'',cpsess:'',token:'',expires:0};
 window.btOpenCpanelPage=function(page,el){
     if(el){el.style.opacity='.5';el.style.pointerEvents='none';}
-    /* Always request a fresh SSO session — tokens are single-use */
+    /* Always request a fresh SSO session â€” tokens are single-use */
     post({action:'get_cpanel_sso_url',page:page||''},function(r){
         if(el){el.style.opacity='';el.style.pointerEvents='';}
         if(r.success&&r.url){
@@ -465,7 +465,7 @@ window.btOpenCpanelPage=function(page,el){
 function init(){
     injectStyles();injectStyles2();injectStyles3();injectStyles4();injectStyles5();injectStyles6();injectStyles7();injectStyles8();injectStyles9();injectStyles11();injectStyles12();injectStyles13();
 
-    /* ── Parse config ── */
+    /* â”€â”€ Parse config â”€â”€ */
     var dataEl=$("bt-data");
     if(dataEl){
         try{C=JSON.parse(dataEl.getAttribute("data-config"));}catch(e){return;}
@@ -473,12 +473,12 @@ function init(){
         C=window.__btConfig;
     }else{return;}
 
-    /* ── Standalone page mode: #bt-page-wrap already exists in managev2.php ── */
+    /* â”€â”€ Standalone page mode: #bt-page-wrap already exists in managev2.php â”€â”€ */
     var pageWrap=$("bt-page-wrap");
     if(!pageWrap) return;
     pageWrap.className="bt-page-wrap";
 
-    /* ── Build hero card with circular gauges ── */
+    /* â”€â”€ Build hero card with circular gauges â”€â”€ */
     var statusLc=(C.status||"active").toLowerCase();
     var diskPct=C.diskLimit>0?Math.min(100,Math.round(C.diskUsed/C.diskLimit*100)):0;
     var bwPct=C.bwLimit>0?Math.min(100,Math.round(C.bwUsed/C.bwLimit*100)):0;
@@ -515,22 +515,22 @@ function init(){
     var emLimitTxt=emLimit<0?"Unlimited":(emLimit>0?emLimit:"0");
     heroHtml+='<div class="bt-gauge"><div class="bt-gauge-ring"><svg width="80" height="80" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fill" cx="40" cy="40" r="35" stroke="'+emColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+(emLimit>0?emOff.toFixed(1):circ.toFixed(1))+'"/></svg><div class="bt-gauge-pct">'+(emLimit>0?emPct+'%':emUsed)+'</div></div><div class="bt-gauge-label">Emails</div><div class="bt-gauge-sub">'+emUsed+' / '+emLimitTxt+'</div></div>';
     heroHtml+='</div>';
-    /* Resource usage bars — loaded via AJAX */
+    /* Resource usage bars â€” loaded via AJAX */
     heroHtml+='<div class="bt-hero-stats" id="bt-hero-res"><div class="bt-res-loading"><div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Loading resource usage...</div></div>';
     heroHtml+='</div></div>';
 
-    /* ── Build sidebar ── */
+    /* â”€â”€ Build sidebar â”€â”€ */
     var sidebar=document.createElement("div");
     sidebar.className="bt-sidebar";
     sidebar.id="bt-sidebar";
     sidebar.innerHTML=buildSidebarHtml();
 
-    /* ── Build main area ── */
+    /* â”€â”€ Build main area â”€â”€ */
     var mainArea=document.createElement("div");
     mainArea.className="bt-main-area";
     mainArea.id="bt-main-area";
 
-    /* ── Service header + shortcuts ── */
+    /* â”€â”€ Service header + shortcuts â”€â”€ */
     var heroSection=document.createElement("div");
     heroSection.id="bt-hero-section";
     var headerDiv=document.createElement("div");
@@ -538,64 +538,64 @@ function init(){
     while(headerDiv.firstChild) heroSection.appendChild(headerDiv.firstChild);
     mainArea.appendChild(heroSection);
 
-    /* ── Tabs container ── */
+    /* â”€â”€ Tabs container â”€â”€ */
     var tabsWrap=document.createElement("div");
     tabsWrap.className="bt-wrap";tabsWrap.id="bt-wrap";
     mainArea.appendChild(tabsWrap);
 
-    /* ── WordPress page (hidden by default) ── */
+    /* â”€â”€ WordPress page (hidden by default) â”€â”€ */
     var wpPage=document.createElement("div");
     wpPage.id="bt-wp-page";
     wpPage.style.display="none";
     mainArea.appendChild(wpPage);
 
-    /* ── File Manager page (hidden by default) ── */
+    /* â”€â”€ File Manager page (hidden by default) â”€â”€ */
     var fmPage=document.createElement("div");
     fmPage.id="bt-fm-page";
     fmPage.style.display="none";
     mainArea.appendChild(fmPage);
 
-    /* ── Domains page (hidden by default) ── */
+    /* â”€â”€ Domains page (hidden by default) â”€â”€ */
     var domainsPage=document.createElement("div");
     domainsPage.id="bt-domains-page";
     domainsPage.style.display="none";
     mainArea.appendChild(domainsPage);
 
-    /* ── Databases page (hidden by default) ── */
+    /* â”€â”€ Databases page (hidden by default) â”€â”€ */
     var databasesPage=document.createElement("div");
     databasesPage.id="bt-databases-page";
     databasesPage.style.display="none";
     mainArea.appendChild(databasesPage);
 
-    /* ── SSL page (hidden by default) ── */
+    /* â”€â”€ SSL page (hidden by default) â”€â”€ */
     var sslPage=document.createElement("div");
     sslPage.id="bt-ssl-page";
     sslPage.style.display="none";
     mainArea.appendChild(sslPage);
 
-    /* ── Email page (hidden by default) ── */
+    /* â”€â”€ Email page (hidden by default) â”€â”€ */
     var emailPage=document.createElement("div");
     emailPage.id="bt-email-page";
     emailPage.style.display="none";
     mainArea.appendChild(emailPage);
 
-    /* ── Addons page (hidden by default) ── */
+    /* â”€â”€ Addons page (hidden by default) â”€â”€ */
     var addonsPage=document.createElement("div");
     addonsPage.id="bt-addons-page";
     addonsPage.style.display="none";
     mainArea.appendChild(addonsPage);
 
-    /* ── Change Password page (hidden by default) ── */
+    /* â”€â”€ Change Password page (hidden by default) â”€â”€ */
     var changePwPage=document.createElement("div");
     changePwPage.id="bt-changepw-page";
     changePwPage.style.display="none";
     mainArea.appendChild(changePwPage);
 
-    /* ── Assemble layout ── */
+    /* â”€â”€ Assemble layout â”€â”€ */
     pageWrap.appendChild(sidebar);
     pageWrap.appendChild(mainArea);
 
-    /* ── Build modals ── */
+    /* â”€â”€ Build modals â”€â”€ */
     if(!$("bemCreateModal")&&C.serviceId){
         var modalsHtml=buildModalsHtml();
         var tmp=document.createElement("div");
@@ -603,17 +603,17 @@ function init(){
         while(tmp.firstChild) document.body.appendChild(tmp.firstChild);
     }
 
-    /* ── Build tabs ── */
+    /* â”€â”€ Build tabs â”€â”€ */
     buildTabs();
     bindModals();
     bindSidebarActions();
 
-    /* ── Deep link from hash ── */
+    /* â”€â”€ Deep link from hash â”€â”€ */
     activateTabFromHash();
     window.addEventListener("hashchange",activateTabFromHash);
 }
 
-/* ─── Build Sidebar HTML ─── */
+/* â”€â”€â”€ Build Sidebar HTML â”€â”€â”€ */
 function buildSidebarHtml(){
     var html='<div class="bt-sidebar-panel"><div class="bt-sidebar-title">Overview</div>';
     html+='<a class="bt-sidebar-item active" data-page="tabs" data-tab="overview"><div class="bt-si-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="bt-si-label">Information<span>Service Details</span></div></a>';
@@ -653,7 +653,7 @@ function buildSidebarHtml(){
     return html;
 }
 
-/* ─── Sidebar click handlers ─── */
+/* â”€â”€â”€ Sidebar click handlers â”€â”€â”€ */
 function bindSidebarActions(){
     var sidebar=$("bt-sidebar");if(!sidebar) return;
     sidebar.querySelectorAll(".bt-sidebar-item[data-page]").forEach(function(item){
@@ -776,7 +776,7 @@ function bindSidebarActions(){
     });
 }
 
-/* ─── Build Tabs (simplified — renders into #bt-wrap) ─── */
+/* â”€â”€â”€ Build Tabs (simplified â€” renders into #bt-wrap) â”€â”€â”€ */
 function buildTabs(){
     var wrap=$("bt-wrap");if(!wrap) return;
 
@@ -850,7 +850,7 @@ function buildTabs(){
     if(C.analyticsEnabled) buildAnalyticsPane();
 }
 
-/* ─── Deep link from URL hash ─── */
+/* â”€â”€â”€ Deep link from URL hash â”€â”€â”€ */
 function activateTabFromHash(){
     var hash=(location.hash||"").replace("#","").toLowerCase();
     if(!hash||hash.indexOf("tab")!==0) return;
@@ -909,7 +909,7 @@ function activateTabFromHash(){
     if(tabBtn) tabBtn.click();
 }
 
-/* ─── Modals HTML ─── */
+/* â”€â”€â”€ Modals HTML â”€â”€â”€ */
 function buildModalsHtml(){
     return '<div class="bt-overlay" id="bemCreateModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Create Email Account</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Email Address</label><div class="bt-input-group"><input type="text" id="bemNewUser" placeholder="username" autocomplete="off"><span class="bt-at">@</span><select id="bemNewDomain"><option>Loading...</option></select></div></div><div class="bt-field"><label>Password</label><div class="bt-pass-wrap"><input type="password" id="bemNewPass" placeholder="Strong password" autocomplete="new-password"><button type="button" class="bt-pass-toggle" data-toggle-pass="bemNewPass">&#128065;</button></div></div><div class="bt-field"><label>Quota (MB)</label><input type="number" id="bemNewQuota" value="250" min="1"></div><div class="bt-msg" id="bemCreateMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bemCreateSubmit">Create Account</button></div></div></div>'
     +'<div class="bt-overlay" id="bemPassModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Change Password</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Email</label><input type="text" id="bemPassEmail" readonly></div><div class="bt-field"><label>New Password</label><div class="bt-pass-wrap"><input type="password" id="bemPassNew" placeholder="New password" autocomplete="new-password"><button type="button" class="bt-pass-toggle" data-toggle-pass="bemPassNew">&#128065;</button></div></div><div class="bt-msg" id="bemPassMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bemPassSubmit">Update Password</button></div></div></div>'
@@ -922,7 +922,7 @@ function buildModalsHtml(){
     +'<div class="bt-overlay" id="bdbAssignModal" style="display:none"><div class="bt-modal"><div class="bt-modal-head"><h5>Assign User to Database</h5><button type="button" class="bt-modal-close" data-close>&times;</button></div><div class="bt-modal-body"><div class="bt-field"><label>Database</label><select id="bdbAssignDb" class="bt-select"></select></div><div class="bt-field"><label>User</label><select id="bdbAssignUser" class="bt-select"></select></div><div class="bt-field"><label>Privileges</label><label class="bt-checkbox"><input type="checkbox" id="bdbAssignAll" checked> All Privileges</label></div><div class="bt-msg" id="bdbAssignMsg"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" data-close>Cancel</button><button type="button" class="bt-btn-primary" id="bdbAssignSubmit">Assign Privileges</button></div></div></div>';
 }
 
-/* ─── Overview Pane ─── */
+/* â”€â”€â”€ Overview Pane â”€â”€â”€ */
 function buildOverviewPane(){
     var pane=$("bt-pane-overview");if(!pane) return;
     var pairs=[];
@@ -960,7 +960,7 @@ function buildOverviewPane(){
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
 }
 
-/* ─── Nameservers Pane ─── */
+/* â”€â”€â”€ Nameservers Pane â”€â”€â”€ */
 function buildNameserversPane(){
     var pane=$("bt-pane-nameservers");if(!pane) return;
     var html='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg></div><div><h5>Nameservers</h5><p>Point your domain to these nameservers</p></div></div></div><div class="bt-list" style="padding:4px 10px 10px">';
@@ -979,7 +979,7 @@ function buildNameserversPane(){
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
 }
 
-/* ─── cPanel Credentials Pane ─── */
+/* â”€â”€â”€ cPanel Credentials Pane â”€â”€â”€ */
 function buildCpanelPane(){
     var pane=$("bt-pane-cpanel");if(!pane) return;
     var cpUrl=C.cpanelUrl||"";
@@ -1009,7 +1009,7 @@ function buildCpanelPane(){
     /* Password */
     html+='<div class="bt-cred-row">';
     html+='<div class="bt-cred-label">Password</div>';
-    html+='<div class="bt-cred-field"><span class="bt-cred-value mono" id="btCpPass" data-hidden="1">'+("•".repeat(Math.max(cpPass.length,8)))+'</span><div class="bt-cred-actions"><button type="button" class="bt-cred-btn" id="btCpToggle" title="Show/Hide">'+svgEye+'</button><button type="button" class="bt-cred-btn bt-copy" data-copy="'+esc(cpPass)+'" title="Copy">'+svgCopy+'</button></div></div>';
+    html+='<div class="bt-cred-field"><span class="bt-cred-value mono" id="btCpPass" data-hidden="1">'+("â€¢".repeat(Math.max(cpPass.length,8)))+'</span><div class="bt-cred-actions"><button type="button" class="bt-cred-btn" id="btCpToggle" title="Show/Hide">'+svgEye+'</button><button type="button" class="bt-cred-btn bt-copy" data-copy="'+esc(cpPass)+'" title="Copy">'+svgCopy+'</button></div></div>';
     html+='</div>';
 
     /* Server info */
@@ -1030,13 +1030,13 @@ function buildCpanelPane(){
         toggleBtn.addEventListener("click",function(){
             var hidden=passEl.getAttribute("data-hidden")==="1";
             if(hidden){passEl.textContent=cpPass;passEl.setAttribute("data-hidden","0");toggleBtn.innerHTML=svgEyeOff;}
-            else{passEl.textContent="•".repeat(Math.max(cpPass.length,8));passEl.setAttribute("data-hidden","1");toggleBtn.innerHTML=svgEye;}
+            else{passEl.textContent="â€¢".repeat(Math.max(cpPass.length,8));passEl.setAttribute("data-hidden","1");toggleBtn.innerHTML=svgEye;}
         });
     }
     pane.querySelectorAll(".bt-copy").forEach(function(b){b.addEventListener("click",function(){doCopy(this.getAttribute("data-copy"),this);});});
 }
 
-/* ─── Quick Access builder helper ─── */
+/* â”€â”€â”€ Quick Access builder helper â”€â”€â”€ */
 function buildQuickAccess(items){
     var html='<div class="bt-shortcuts"><h3 class="bt-shortcuts-title">Quick Access</h3><div class="bt-shortcuts-grid">';
     items.forEach(function(sc){
@@ -1046,7 +1046,7 @@ function buildQuickAccess(items){
     return html;
 }
 
-/* ─── Email Page (separate page with Quick Access) ─── */
+/* â”€â”€â”€ Email Page (separate page with Quick Access) â”€â”€â”€ */
 function buildEmailPageInto(container){
     if(!container) return;
     var qa=buildQuickAccess([
@@ -1081,37 +1081,46 @@ function buildEmailPageInto(container){
     buildEmailPane();
 }
 
-/* ─── Email Connect & Apps Pane ─── */
+/* â”€â”€â”€ Email Connect & Apps Pane â”€â”€â”€ */
 function buildEmailConnectPane(){
     var pane=$("bt-email-tab-connect");if(!pane) return;
     var domain=C.domain||"yourdomain.com";
     var serverHost=C.serverName||("mail."+domain);
     var copySvg='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    var ma=C.mailApp||{};
+    var maEnabled=ma.enabled!==false;
 
     var html='<div class="bt-email-connect-wrap">';
 
-    /* ── App Promo Banner ── */
-    html+='<div class="bt-email-app-banner">'
-    +'<div class="bt-email-app-banner-content">'
-    +'<div class="bt-email-app-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></div>'
-    +'<div class="bt-email-app-text">'
-    +'<h4>Broodle Mail App</h4>'
-    +'<p>Access your email on the go with our dedicated mobile app. Push notifications, fast sync, and a clean interface.</p>'
-    +'</div>'
-    +'<div class="bt-email-app-links">'
-    +'<a href="https://play.google.com/store/apps/details?id=com.broodlepro.mailapp&hl=en" target="_blank" class="bt-email-app-store-btn android">'
-    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 0 1 0 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 9.49l-2.302 2.302-8.634-8.634z"/></svg>'
-    +'<span><small>Get it on</small>Google Play</span>'
-    +'</a>'
-    +'<a href="https://apps.apple.com/app/broodle-mail/id6504507908" target="_blank" class="bt-email-app-store-btn ios">'
-    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>'
-    +'<span><small>Download on the</small>App Store</span>'
-    +'</a>'
-    +'</div>'
-    +'</div>'
-    +'</div>';
+    /* â”€â”€ App Promo Banner (configurable from admin) â”€â”€ */
+    if(maEnabled){
+        var maTitle=ma.title||"Broodle Mail App";
+        var maDesc=ma.description||"Access your email on the go with our dedicated mobile app.";
+        var maIcon=ma.iconUrl?'<img src="'+esc(ma.iconUrl)+'" width="32" height="32" style="border-radius:6px" alt="">':'<img src="modules/addons/broodle_whmcs_tools/broodle-icon.png" width="32" height="32" style="border-radius:6px" alt="">';
+        var maPlay=ma.playstore||"";
+        var maApple=ma.appstore||"";
+        html+='<div class="bt-email-app-banner">'
+        +'<div class="bt-email-app-banner-content">'
+        +'<div class="bt-email-app-icon">'+maIcon+'</div>'
+        +'<div class="bt-email-app-text">'
+        +'<h4>'+esc(maTitle)+'</h4>'
+        +'<p>'+esc(maDesc)+'</p>'
+        +'</div>'
+        +'<div class="bt-email-app-links">';
+        if(maPlay){
+            html+='<a href="'+esc(maPlay)+'" target="_blank" class="bt-email-app-store-btn android">'
+            +'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 0 1 0 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 9.49l-2.302 2.302-8.634-8.634z"/></svg>'
+            +'<span><small>Get it on</small>Google Play</span></a>';
+        }
+        if(maApple){
+            html+='<a href="'+esc(maApple)+'" target="_blank" class="bt-email-app-store-btn ios">'
+            +'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>'
+            +'<span><small>Download on the</small>App Store</span></a>';
+        }
+        html+='</div></div></div>';
+    }
 
-    /* ── Configuration Cards ── */
+    /* â”€â”€ Configuration Cards â”€â”€ */
     html+='<div class="bt-email-config-grid">';
 
     /* IMAP Card */
@@ -1125,24 +1134,14 @@ function buildEmailConnectPane(){
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
     +'</div></div>';
 
-    /* POP3 Card */
-    html+='<div class="bt-email-config-card">'
-    +'<div class="bt-email-config-header"><div class="bt-email-config-icon pop3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div><h5>POP3 Settings</h5><p>Download emails to a single device</p></div></div>'
-    +'<div class="bt-email-config-body">'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Incoming Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (SSL)</span><span class="bt-email-config-val copyable" data-copy="995">995'+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val">Your full email address</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
-    +'</div></div>';
-
     /* SMTP Card */
     html+='<div class="bt-email-config-card">'
     +'<div class="bt-email-config-header"><div class="bt-email-config-icon smtp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div><h5>SMTP Settings</h5><p>Outgoing mail server configuration</p></div></div>'
     +'<div class="bt-email-config-body">'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Outgoing Server</span><span class="bt-email-config-val copyable" data-copy="'+esc(serverHost)+'">'+esc(serverHost)+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (SSL)</span><span class="bt-email-config-val copyable" data-copy="465">465'+copySvg+'</span></div>'
-    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (SSL/TLS)</span><span class="bt-email-config-val copyable" data-copy="465">465'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Port (STARTTLS)</span><span class="bt-email-config-val copyable" data-copy="587">587'+copySvg+'</span></div>'
+    +'<div class="bt-email-config-row"><span class="bt-email-config-label">Security</span><span class="bt-email-config-val">SSL/TLS (port 465) or STARTTLS (port 587)</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Username</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your full email address</span></div>'
     +'<div class="bt-email-config-row"><span class="bt-email-config-label">Password</span><span class="bt-email-config-val" style="font-family:inherit;font-weight:500;color:var(--text-muted,#6b7280)">Your email account password</span></div>'
     +'</div></div>';
@@ -1157,7 +1156,6 @@ function buildEmailConnectPane(){
     +'<a class="bt-email-client-item" href="https://support.apple.com/en-us/102619" target="_blank" rel="noopener"><div class="bt-email-client-icon" style="background:rgba(0,0,0,.05)"><svg width="20" height="20" viewBox="0 0 24 24" fill="#333"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></div><span>Apple Mail</span><small>IMAP / Port 993</small></a>'
     +'<a class="bt-email-client-item" href="https://support.mozilla.org/en-US/kb/manual-account-configuration" target="_blank" rel="noopener"><div class="bt-email-client-icon" style="background:rgba(0,97,224,.08)"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#0061e0" d="M21.7 8.1c-.3-.9-.8-1.7-1.4-2.4-.1.3-.3.6-.5.8-.5.5-1.1.7-1.8.7-.4 0-.8-.1-1.1-.3-.3-.2-.6-.4-.8-.7-.2-.3-.3-.7-.3-1.1 0-.5.1-.9.4-1.3.3-.4.6-.7 1-.9-.8-.5-1.7-.8-2.6-.9-.9-.1-1.8 0-2.7.3-.9.3-1.6.8-2.3 1.4-.7.6-1.2 1.4-1.5 2.3-.3.9-.4 1.8-.3 2.7.1.9.4 1.8.9 2.5.5.8 1.1 1.4 1.9 1.9.8.5 1.6.8 2.5.9.9.1 1.8 0 2.7-.3.9-.3 1.6-.8 2.2-1.5.6-.7 1.1-1.4 1.3-2.3h-4.3v-1.8h6.7z"/><path fill="#0061e0" d="M12 18.5c-1.3 0-2.5-.3-3.6-1-1.1-.7-2-1.6-2.6-2.7-.6-1.1-1-2.4-1-3.7 0-1.3.3-2.5 1-3.6.7-1.1 1.6-2 2.7-2.6 1.1-.6 2.3-1 3.6-1 1.8 0 3.4.6 4.7 1.7l-1.3 1.3c-1-.8-2.1-1.2-3.4-1.2-1 0-1.9.2-2.7.7-.8.5-1.5 1.1-1.9 2-.5.8-.7 1.8-.7 2.8 0 1 .2 1.9.7 2.8.5.8 1.1 1.5 2 2 .8.5 1.7.7 2.7.7 1 0 1.8-.2 2.6-.6.8-.4 1.3-1 1.7-1.8h-4.3v-1.8h6.3c.1.5.1 1 .1 1.4 0 1.8-.6 3.3-1.8 4.5-1.2 1.2-2.8 1.8-4.7 1.8z"/></svg></div><span>Thunderbird</span><small>IMAP / Port 993</small></a>'
     +'</div>'
-    +'<div class="bt-email-setup-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Use your full email address as the username and your email account password. Select SSL/TLS for security. The server hostname for all protocols is <strong>'+esc(serverHost)+'</strong>.</div>'
     +'</div></div>';
 
     html+='</div>'; /* close grid */
@@ -1178,7 +1176,7 @@ function buildEmailConnectPane(){
     });
 }
 
-/* ─── Domains Page (separate page with Quick Access) ─── */
+/* â”€â”€â”€ Domains Page (separate page with Quick Access) â”€â”€â”€ */
 function buildDomainPageInto(container){
     if(!container) return;
     var qa=buildQuickAccess([
@@ -1196,7 +1194,7 @@ function buildDomainPageInto(container){
     }
 }
 
-/* ─── Databases Page (separate page with Quick Access) ─── */
+/* â”€â”€â”€ Databases Page (separate page with Quick Access) â”€â”€â”€ */
 function buildDatabasePageInto(container){
     if(!container) return;
     var qa=buildQuickAccess([
@@ -1210,7 +1208,7 @@ function buildDatabasePageInto(container){
     loadDatabases();
 }
 
-/* ─── SSL Page (separate page with Quick Access) ─── */
+/* â”€â”€â”€ SSL Page (separate page with Quick Access) â”€â”€â”€ */
 function buildSSLPageInto(container){
     if(!container) return;
     var qa=buildQuickAccess([
@@ -1224,7 +1222,7 @@ function buildSSLPageInto(container){
     loadSSLStatus();
 }
 
-/* ─── Domains Pane ─── */
+/* â”€â”€â”€ Domains Pane â”€â”€â”€ */
 function buildDomainsPane(){
     var pane=$("bt-pane-domains");if(!pane||!C.domains) return;
     var d=C.domains;var total=1+(d.addon?d.addon.length:0)+(d.sub?d.sub.length:0)+(d.parked?d.parked.length:0);
@@ -1244,7 +1242,7 @@ function domRow(name,type,badge,canDel){
     return '<div class="bt-row" data-domain="'+e+'" data-type="'+type+'"><div class="bt-row-icon '+type+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div><div class="bt-row-info"><span class="bt-row-name">'+e+'</span><span class="bt-row-badge '+badgeClass+'">'+badge+'</span></div><div class="bt-row-actions"><a href="https://'+e+'" target="_blank" class="bt-row-btn visit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Visit</span></a>'+(canDel?'<button type="button" class="bt-row-btn del" data-domain="'+e+'" data-type="'+type+'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button>':'')+'</div></div>';
 }
 
-/* ─── Email Pane ─── */
+/* â”€â”€â”€ Email Pane â”€â”€â”€ */
 function buildEmailPane(){
     var pane=$("bt-pane-email");if(!pane) return;
     var emails=C.emails||[];var count=emails.length;
@@ -1260,7 +1258,7 @@ function emailRow(email){
     return '<div class="bt-row" data-email="'+e+'"><div class="bt-row-icon email">'+ini+'</div><div class="bt-row-info"><span class="bt-row-name">'+e+'</span></div><div class="bt-row-actions"><button type="button" class="bt-row-btn login" data-email="'+e+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>Login</span></button><button type="button" class="bt-row-btn pass" data-email="'+e+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Password</span></button><button type="button" class="bt-row-btn del" data-email="'+e+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete</span></button></div></div>';
 }
 
-/* ─── Databases Pane ─── */
+/* â”€â”€â”€ Databases Pane â”€â”€â”€ */
 function buildDatabasesPane(){
     var pane=$("bt-pane-databases");if(!pane) return;
     pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div><h5>Databases</h5><p class="bt-db-count">Loading...</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-add" id="bdbCreateBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Database</button><button type="button" class="bt-btn-outline" id="bdbUserBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> New User</button><button type="button" class="bt-btn-outline" id="bdbAssignBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Assign</button><a class="bt-btn-outline" id="bdbPmaBtn" href="#" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> phpMyAdmin</a></div></div><div class="bt-list" id="bt-db-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading databases...</span></div></div></div>';
@@ -1314,13 +1312,13 @@ function openAssignModal(){$("bdbAssignModal").style.display="flex";$("bdbAssign
 function updateAssignSelects(dbs,users){var dbSel=$("bdbAssignDb");var uSel=$("bdbAssignUser");if(!dbSel||!uSel)return;dbSel.innerHTML="";uSel.innerHTML="";dbs.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent=d;dbSel.appendChild(o);});users.forEach(function(u){var o=document.createElement("option");o.value=u;o.textContent=u;uSel.appendChild(o);});}
 function submitAssignDb(){var db=$("bdbAssignDb").value;var user=$("bdbAssignUser").value;var msg=$("bdbAssignMsg");msg.style.display="none";var priv=$("bdbAssignAll").checked?"ALL PRIVILEGES":"SELECT,INSERT,UPDATE,DELETE";if(!db||!user){showMsg(msg,"Select a database and user",false);return;}var btn=$("bdbAssignSubmit");btnLoad(btn,"Assigning...");post({action:"assign_db_user",database:db,dbuser:user,privileges:priv},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){setTimeout(function(){$("bdbAssignModal").style.display="none";loadDatabases();},800);}});}
 
-/* ─── SSL Pane ─── */
+/* â”€â”€â”€ SSL Pane â”€â”€â”€ */
 function buildSSLPane(){var pane=$("bt-pane-ssl");if(!pane) return;pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#059669"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><h5>SSL Certificates</h5><p class="bt-ssl-count">Loading...</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-add" id="btSslRunAutossl" style="background:#059669"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Run AutoSSL</button></div></div><div class="bt-list" id="bt-ssl-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading SSL status...</span></div></div></div>';$("btSslRunAutossl").addEventListener("click",function(){startAutoSSL(this);});}
 function loadSSLStatus(){var list=$("bt-ssl-list");if(!list) return;list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading SSL status...</span></div>';post({action:"ssl_status"},function(r){if(!r.success){list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load SSL status")+'</span></div>';return;}var certs=r.certificates||[];var countEl=document.querySelector(".bt-ssl-count");if(countEl) countEl.textContent=certs.length+" domain"+(certs.length!==1?"s":"");if(!certs.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>No SSL data found</span></div>';return;}var html="";certs.forEach(function(c){var statusCls="bt-ssl-valid";var statusTxt="Valid";var statusIcon="check";var badgeCls="bt-badge-green";var issuer=c.issuer||"Unknown";var isSelfSigned=c.is_self_signed||c.self_signed;if(isSelfSigned){statusCls="bt-ssl-selfsigned";statusTxt="Self-Signed";statusIcon="warning";badgeCls="bt-badge-amber";}var daysLeft=null;if(c.expiry_epoch){var now=Math.floor(Date.now()/1000);daysLeft=Math.floor((c.expiry_epoch-now)/86400);if(daysLeft<0){statusCls="bt-ssl-expired";statusTxt="Expired";statusIcon="expired";badgeCls="bt-badge-red";}else if(daysLeft<=7&&!isSelfSigned){statusCls="bt-ssl-expiring";statusTxt="Expiring Soon";statusIcon="warning";badgeCls="bt-badge-amber";}}if(!c.has_cert){statusCls="bt-ssl-none";statusTxt="No SSL";statusIcon="none";badgeCls="bt-badge-red";}var iconSvg="";if(statusIcon==="check") iconSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';else if(statusIcon==="warning") iconSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';else iconSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';var rowIconCls=statusCls==="bt-ssl-valid"?"ssl-valid":statusCls==="bt-ssl-selfsigned"?"ssl-selfsigned":statusCls==="bt-ssl-expired"||statusCls==="bt-ssl-none"?"ssl-expired":"ssl-expiring";html+='<div class="bt-row bt-ssl-row" data-domain="'+esc(c.domain)+'"><div class="bt-row-icon '+rowIconCls+'">'+iconSvg+'</div><div class="bt-row-info" style="flex-wrap:wrap;gap:4px 8px"><span class="bt-row-name">'+esc(c.domain)+'</span><span class="bt-row-badge '+badgeCls+'">'+statusTxt+'</span></div><div class="bt-ssl-meta">';if(c.has_cert&&!isSelfSigned){html+='<span class="bt-ssl-issuer" title="Issuer: '+esc(issuer)+'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> '+esc(issuer)+'</span>';if(daysLeft!==null){var daysCls=daysLeft<=7?"bt-ssl-days-danger":daysLeft<=30?"bt-ssl-days-warn":"bt-ssl-days-ok";html+='<span class="bt-ssl-expiry '+daysCls+'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '+daysLeft+'d left</span>';}}html+='</div><div class="bt-row-actions">';if(isSelfSigned||!c.has_cert||statusCls==="bt-ssl-expired"){html+='<button type="button" class="bt-row-btn bt-ssl-generate" data-domain="'+esc(c.domain)+'" style="color:#059669;border-color:#059669"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Generate SSL</span></button>';}html+='</div></div>';});list.innerHTML=html;list.querySelectorAll(".bt-ssl-generate").forEach(function(b){b.addEventListener("click",function(){startAutoSSL($("btSslRunAutossl"));});});});}
 function startAutoSSL(btn){if(!btn)return;var origHtml=btn.innerHTML;btn.disabled=true;btn.innerHTML='<div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></div> Running AutoSSL...';var tid=btProgress.add("AutoSSL","Starting AutoSSL check...");post({action:"start_autossl"},function(r){if(!r.success){btn.disabled=false;btn.innerHTML=origHtml;btProgress.update(tid,"error",r.message||"Failed to start AutoSSL");fmToast(r.message||"Failed to start AutoSSL","error");return;}pollAutoSSL(btn,origHtml,tid);});}
 function pollAutoSSL(btn,origHtml,tid){var pollCount=0;var maxPolls=60;function doPoll(){pollCount++;if(pollCount>maxPolls){btn.disabled=false;btn.innerHTML=origHtml;if(tid) btProgress.update(tid,"success","AutoSSL completed");loadSSLStatus();return;}post({action:"autossl_progress"},function(r){if(r.in_progress){btn.innerHTML='<div class="bt-spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></div> AutoSSL in progress... ('+pollCount+'/'+maxPolls+')';setTimeout(doPoll,5000);}else{btn.disabled=false;btn.innerHTML=origHtml;if(tid) btProgress.update(tid,"success","AutoSSL completed");var pane=$("bt-pane-ssl");if(pane) pane.dataset.loaded="";loadSSLStatus();}});}setTimeout(doPoll,5000);}
 
-/* ─── WordPress Pane ─── */
+/* â”€â”€â”€ WordPress Pane â”€â”€â”€ */
 function buildWpPaneInto(pane){if(!pane) return;pane.innerHTML='<div style="padding:20px 0"><div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle">'+wpSvg16.replace(/width="16"/g,'width="18"').replace(/height="16"/g,'height="18"')+'</div><div><h5>WordPress Manager</h5><p class="bt-wp-count">Loading...</p></div></div></div><div id="bt-wp-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading WordPress installations...</span></div></div></div></div>';}
 function loadWpInstances(){var list=$("bt-wp-list");if(!list) return;list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading WordPress installations...</span></div>';wpPost({action:"get_wp_instances"},function(r){if(!r.success){list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load")+'</span></div>';return;}wpInstances=r.instances||[];var countEl=document.querySelector(".bt-wp-count");if(countEl) countEl.textContent=wpInstances.length+" site"+(wpInstances.length!==1?"s":"");if(!wpInstances.length){list.innerHTML='<div class="bt-empty" style="padding:40px 20px">'+wpSvg32+'<span style="margin-top:8px">No WordPress installations found</span><p style="margin:4px 0 0;font-size:12px;color:var(--text-muted,#9ca3af)">Install WordPress via cPanel to manage it here</p></div>';return;}var html='<div class="bwp-card-list">';wpInstances.forEach(function(inst){var siteUrl=inst.site_url||"";var totalUpdates=(inst.pluginUpdates||0)+(inst.themeUpdates||0)+(inst.availableUpdate?1:0);html+='<div class="bwp-card-item" data-wpid="'+inst.id+'">';html+='<div class="bwp-card-preview"><div class="bwp-card-preview-bar"><div class="bwp-preview-dots"><span></span><span></span><span></span></div><div class="bwp-preview-url">'+esc(siteUrl)+'</div></div><div class="bwp-card-preview-frame" id="bwp-card-ss-'+inst.id+'" style="display:flex;align-items:center;justify-content:center;background:var(--input-bg,#f3f4f6)"><div class="bt-spinner" style="width:16px;height:16px;border-width:2px"></div></div></div>';html+='<div class="bwp-card-body"><div class="bwp-card-header"><div class="bwp-card-wp-icon">'+wpSvg20+'</div><div class="bwp-card-header-info"><p class="bwp-card-domain">'+esc(inst.displayTitle||inst.domain)+'</p><p class="bwp-card-path">'+esc(inst.path||"/")+'</p></div></div>';html+='<div class="bwp-card-badges"><span class="bwp-card-badge version"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> WP '+esc(inst.version)+'</span>';html+='<span class="bwp-card-badge '+(inst.alive?"status-active":"status-inactive")+'"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block"></span> '+(inst.alive?"Active":"Inactive")+'</span>';if(inst.ssl!==undefined) html+='<span class="bwp-card-badge '+(inst.ssl?"ssl-on":"ssl-off")+'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> SSL '+(inst.ssl?"On":"Off")+'</span>';if(totalUpdates>0) html+='<span class="bwp-card-badge updates"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> '+totalUpdates+' update'+(totalUpdates>1?"s":"")+'</span>';html+='</div>';html+='<div class="bwp-card-stats"><div class="bwp-card-stat"><div class="bwp-card-stat-label">Plugins</div><div class="bwp-card-stat-val">'+(inst.pluginUpdates>0?'<span style="color:#0a5ed3">'+inst.pluginUpdates+' update'+(inst.pluginUpdates>1?"s":"")+'</span>':'<span style="color:#059669">Up to date</span>')+'</div></div><div class="bwp-card-stat"><div class="bwp-card-stat-label">Themes</div><div class="bwp-card-stat-val">'+(inst.themeUpdates>0?'<span style="color:#7c3aed">'+inst.themeUpdates+' update'+(inst.themeUpdates>1?"s":"")+'</span>':'<span style="color:#059669">Up to date</span>')+'</div></div>';if(inst.availableUpdate) html+='<div class="bwp-card-stat"><div class="bwp-card-stat-label">Core</div><div class="bwp-card-stat-val"><span style="color:#d97706">'+esc(inst.availableUpdate)+'</span></div></div>';html+='</div></div>';html+='<div class="bwp-card-arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>';html+='</div>';});html+='</div>';list.innerHTML=html;list.querySelectorAll(".bwp-card-item[data-wpid]").forEach(function(card){card.addEventListener("click",function(e){if(e.target.closest("a")) return;bwpOpenDetail(parseInt(this.getAttribute("data-wpid")));});});/* Load screenshots for each card */wpInstances.forEach(function(inst){var ssEl=$("bwp-card-ss-"+inst.id);if(!ssEl) return;var url=inst.site_url||"";wpPost({action:"wp_site_screenshot",url:url},function(r){if(r.success&&r.image){ssEl.innerHTML='<img src="'+r.image+'" style="width:100%;height:100%;object-fit:cover" alt="Preview" loading="lazy">';}else{ssEl.innerHTML='<iframe src="'+esc(url)+'" style="width:200%;height:200%;transform:scale(.5);transform-origin:0 0;border:none;pointer-events:none" loading="lazy" sandbox="allow-same-origin"></iframe>';}});});});}
 function bwpAutoLogin(id){var btn=document.querySelector(".bt-row-btn.login[data-wpid='"+id+"']");if(btn) btnLoad(btn,"Logging in...");wpPost({action:"wp_autologin",instance_id:id},function(r){if(btn) btnDone(btn);if(r.success&&r.login_url) window.open(r.login_url,"_blank");else fmToast(r.message||"Could not generate login link","error");});}
@@ -1332,7 +1330,7 @@ function bwpBindToggle(btnId,action,param,prop,descId,badgeId,onDesc,offDesc){va
 function bwpLoadScreenshot(siteUrl){var wrap=$("bwpScreenshotWrap");if(!wrap) return;wpPost({action:"wp_site_screenshot",url:siteUrl},function(r){if(r.success&&r.image){wrap.innerHTML='<img src="'+r.image+'" style="width:100%;height:100%;object-fit:cover" alt="Site preview">';}else{wrap.innerHTML='<iframe src="'+esc(siteUrl)+'" style="width:200%;height:200%;transform:scale(.5);transform-origin:0 0;border:none;pointer-events:none" loading="lazy" sandbox="allow-same-origin"></iframe>';}});}
 function bwpLoadAccounts(){var el=$("bwpAdminAccounts");if(!el||!currentWpInstance) return;wpPost({action:"wp_get_account",instance_id:currentWpInstance.id},function(r){if(!r.success){el.innerHTML='<div style="font-size:12px;color:var(--text-muted,#6b7280)">Could not load accounts</div>';return;}var acc=r.account||{};var rawLogins=acc.availableLogins||[];/* Normalize: API may return strings or objects like {login:"admin"} */var logins=rawLogins.map(function(l){if(typeof l==="string") return l;if(l&&typeof l==="object") return l.login||l.name||l.username||JSON.stringify(l);return String(l);}).filter(function(l){return l&&l.length>0;});var currentLogin=acc.currentLogin;if(typeof currentLogin==="object"&&currentLogin) currentLogin=currentLogin.login||currentLogin.name||"";if(!logins.length&&currentLogin) logins=[currentLogin];if(!logins.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted,#6b7280)">No admin accounts found</div>';return;}var html='<div style="display:flex;flex-direction:column;gap:6px">';logins.forEach(function(login){html+='<div class="bwp-tool-card" style="padding:10px 14px"><div class="bwp-tool-icon" style="background:rgba(10,94,211,.08);color:#0a5ed3;width:30px;height:30px;border-radius:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="bwp-tool-info" style="flex:1"><p class="bwp-tool-name" style="font-size:13px">'+esc(login)+'</p>'+(login===currentLogin&&acc.currentEmail?'<p class="bwp-tool-desc" style="font-size:11px">'+esc(acc.currentEmail)+'</p>':'')+'</div><div style="display:flex;gap:6px"><button type="button" class="bwp-item-btn" onclick="bwpChangePassword(\''+esc(login).replace(/'/g,"\\'")+'\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reset Password</button></div></div>';});html+='</div>';el.innerHTML=html;});}
 window.bwpChangePassword=function(login){if(!currentWpInstance) return;/* Build modal */var ov=document.createElement("div");ov.className="bt-overlay";ov.id="bwpPassOverlay";ov.innerHTML='<div class="bt-modal bt-modal-sm"><div class="bt-modal-head"><h5>Reset Password</h5><button type="button" class="bt-modal-close" id="bwpPassClose">&times;</button></div><div class="bt-modal-body"><p style="margin:0 0 14px;font-size:13px;color:var(--text-muted,#6b7280)">Change password for <strong>'+esc(login)+'</strong></p><div class="bt-field"><label>New Password</label><input type="password" id="bwpPassNew" placeholder="Min 8 characters" autocomplete="new-password"></div><div class="bt-field"><label>Confirm Password</label><input type="password" id="bwpPassConfirm" placeholder="Retype password" autocomplete="new-password"></div><div class="bt-msg" id="bwpPassMsg" style="display:none"></div></div><div class="bt-modal-foot"><button type="button" class="bt-btn-cancel" id="bwpPassCancel">Cancel</button><button type="button" class="bt-btn-primary" id="bwpPassSubmit">Change Password</button></div></div>';document.body.appendChild(ov);$("bwpPassClose").addEventListener("click",function(){ov.remove();});$("bwpPassCancel").addEventListener("click",function(){ov.remove();});ov.addEventListener("click",function(e){if(e.target===ov) ov.remove();});$("bwpPassSubmit").addEventListener("click",function(){var pw=$("bwpPassNew").value;var pw2=$("bwpPassConfirm").value;var msg=$("bwpPassMsg");msg.style.display="none";if(!pw||pw.length<8){showMsg(msg,"Password must be at least 8 characters",false);return;}if(pw!==pw2){showMsg(msg,"Passwords do not match",false);return;}var btn=this;btnLoad(btn,"Changing...");var tid=btProgress.add("Reset password: "+login,"Changing password...");wpPost({action:"wp_change_password",instance_id:currentWpInstance.id,login:login,new_password:pw},function(r){btnDone(btn);if(r.success){btProgress.update(tid,"success","Password changed");fmToast("Password changed for "+login,"success");ov.remove();}else{btProgress.update(tid,"error",r.message||"Failed");showMsg(msg,r.message||"Failed to change password",false);}});});};
-/* bindWpDetailPanel removed — detail now renders inline */
+/* bindWpDetailPanel removed â€” detail now renders inline */
 /* Refresh the update count badge in the WP detail header */
 function bwpRefreshUpdateBadge(){if(!currentWpInstance) return;wpPost({action:"get_wp_instances"},function(r){if(!r.success) return;var instances=r.instances||[];for(var i=0;i<instances.length;i++){if(instances[i].id===currentWpInstance.id){var inst=instances[i];currentWpInstance.pluginUpdates=inst.pluginUpdates||0;currentWpInstance.themeUpdates=inst.themeUpdates||0;currentWpInstance.availableUpdate=inst.availableUpdate||null;var total=(inst.pluginUpdates||0)+(inst.themeUpdates||0)+(inst.availableUpdate?1:0);var badges=document.querySelectorAll(".bwp-card-badge.updates");badges.forEach(function(b){if(total>0){b.textContent=total+" update"+(total>1?"s":"");b.style.display="";}else{b.style.display="none";}});break;}}});}
 /* Poll wp_check_update_status until the update is confirmed or max retries */
@@ -1348,34 +1346,34 @@ function bwpVerifyUpdate(tid,instId,type,slug,onDone){
     }
     setTimeout(poll,2000);
 }
-function bwpLoadPlugins(){if(!currentWpInstance) return;var el=$("bwpTabPlugins");if(!el) return;if(!el.getAttribute("data-loaded")){el.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading plugins...</span></div>';}wpPost({action:"wp_list_plugins",instance_id:currentWpInstance.id},function(r){if(!r.success){el.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed")+'</span></div>';return;}var plugins=r.plugins||[];var updatable=plugins.filter(function(p){return !!p.availableVersion;});var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--text-muted,#6b7280)">'+plugins.length+' plugin'+(plugins.length!==1?"s":"")+(updatable.length>0?' · <span style="color:#0a5ed3">'+updatable.length+' update'+(updatable.length>1?"s":"")+'</span>':'')+'</span><div style="display:flex;gap:6px">';if(updatable.length>1) html+='<button type="button" class="bwp-item-btn update" id="bwpUpdateAllPlugins" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Update All</button>';html+='<button type="button" class="bt-btn-outline" id="bwpRefreshPlugins" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div>';if(!plugins.length){html+='<div class="bt-empty"><span>No plugins found</span></div>';el.innerHTML=html;return;}plugins.forEach(function(p){var active=p.status===true||p.status==="active"||p.active;var hasUpdate=!!p.availableVersion;var isVulnerable=!!p.vulnerable;html+='<div class="bwp-item-row" id="bwp-plugin-'+esc(p.slug)+'"><div class="bwp-item-icon plugin">'+esc((p.title||p.name||p.slug||"P").charAt(0).toUpperCase())+'</div><div class="bwp-item-info"><p class="bwp-item-name">'+esc(p.title||p.name||p.slug)+(isVulnerable?' <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(239,68,68,.08);color:#ef4444;vertical-align:middle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Vulnerable</span>':'')+'</p><p class="bwp-item-detail">v'+esc(p.version||"?")+(hasUpdate?' \u2192 '+esc(p.availableVersion):'')+(p.autoUpdates?' · Auto-update on':'')+'</p></div><div class="bwp-item-actions"><button type="button" class="bwp-item-btn '+(active?"active-state":"inactive-state")+'" data-action="toggle" data-slug="'+esc(p.slug)+'" data-name="'+esc(p.title||p.name||p.slug)+'" data-activate="'+(!active)+'">'+(active?"Deactivate":"Activate")+'</button>';if(hasUpdate) html+='<button type="button" class="bwp-item-btn update" data-action="update" data-slug="'+esc(p.slug)+'" data-name="'+esc(p.title||p.name||p.slug)+'">Update</button>';html+='</div></div>';});el.innerHTML=html;el.setAttribute("data-loaded","1");bwpRefreshUpdateBadge();var refreshBtn=$("bwpRefreshPlugins");if(refreshBtn) refreshBtn.addEventListener("click",function(){el.removeAttribute("data-loaded");bwpLoadPlugins();});/* Update All button */var updateAllBtn=$("bwpUpdateAllPlugins");if(updateAllBtn) updateAllBtn.addEventListener("click",function(){btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update all plugins","Updating all plugins...");wpPost({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins"},function(r){if(r.success){btProgress.setDetail(tid,"Update sent, verifying...");bwpVerifyUpdate(tid,currentWpInstance.id,"plugins","",function(){el.removeAttribute("data-loaded");bwpLoadPlugins();});}else{btProgress.update(tid,"error",r.message||"Failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});el.querySelectorAll("[data-action='toggle']").forEach(function(btn){btn.addEventListener("click",function(){var slug=this.getAttribute("data-slug");var name=this.getAttribute("data-name")||slug;var activate=this.getAttribute("data-activate")==="true";btnLoad(this,activate?"Activating...":"Deactivating...");var self=this;var tid=btProgress.add((activate?"Activate":"Deactivate")+" "+name,activate?"Activating plugin...":"Deactivating plugin...");wpPost({action:"wp_toggle_plugin",instance_id:currentWpInstance.id,slug:slug,activate:activate?"1":"0"},function(r){btnDone(self);if(r.success){btProgress.update(tid,"success","Plugin "+(activate?"activated":"deactivated"));fmToast("Plugin "+(activate?"activated":"deactivated")+" successfully","success");self.setAttribute("data-activate",String(!activate));self.textContent=activate?"Deactivate":"Activate";self.className="bwp-item-btn "+(activate?"active-state":"inactive-state");}else{btProgress.update(tid,"error",r.message||"Failed");fmToast(r.message||"Failed","error");}});});});el.querySelectorAll("[data-action='update']").forEach(function(btn){btn.addEventListener("click",function(){var slug=this.getAttribute("data-slug");var name=this.getAttribute("data-name")||slug;btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update "+name,"Updating plugin...");var instId=currentWpInstance.id;var row=$("bwp-plugin-"+slug);wpPost({action:"wp_update",instance_id:instId,type:"plugins",slug:slug},function(r){if(r.success){var markDone=function(){btProgress.update(tid,"success","Updated to latest version");self.disabled=true;self.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Updated';self.style.cssText="color:#059669;border-color:#6ee7b7;pointer-events:none";if(row){var det=row.querySelector(".bwp-item-detail");if(det) det.textContent="Updated to latest";}};if(r.verified){markDone();}else{btProgress.setDetail(tid,"Update sent, verifying...");self.innerHTML='Verifying...';self.style.color="#d97706";bwpVerifyUpdate(tid,instId,"plugins",slug,function(){markDone();});}}else{btProgress.update(tid,"error",r.message||"Update failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});});});}
+function bwpLoadPlugins(){if(!currentWpInstance) return;var el=$("bwpTabPlugins");if(!el) return;if(!el.getAttribute("data-loaded")){el.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading plugins...</span></div>';}wpPost({action:"wp_list_plugins",instance_id:currentWpInstance.id},function(r){if(!r.success){el.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed")+'</span></div>';return;}var plugins=r.plugins||[];var updatable=plugins.filter(function(p){return !!p.availableVersion;});var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--text-muted,#6b7280)">'+plugins.length+' plugin'+(plugins.length!==1?"s":"")+(updatable.length>0?' Â· <span style="color:#0a5ed3">'+updatable.length+' update'+(updatable.length>1?"s":"")+'</span>':'')+'</span><div style="display:flex;gap:6px">';if(updatable.length>1) html+='<button type="button" class="bwp-item-btn update" id="bwpUpdateAllPlugins" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Update All</button>';html+='<button type="button" class="bt-btn-outline" id="bwpRefreshPlugins" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div>';if(!plugins.length){html+='<div class="bt-empty"><span>No plugins found</span></div>';el.innerHTML=html;return;}plugins.forEach(function(p){var active=p.status===true||p.status==="active"||p.active;var hasUpdate=!!p.availableVersion;var isVulnerable=!!p.vulnerable;html+='<div class="bwp-item-row" id="bwp-plugin-'+esc(p.slug)+'"><div class="bwp-item-icon plugin">'+esc((p.title||p.name||p.slug||"P").charAt(0).toUpperCase())+'</div><div class="bwp-item-info"><p class="bwp-item-name">'+esc(p.title||p.name||p.slug)+(isVulnerable?' <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(239,68,68,.08);color:#ef4444;vertical-align:middle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Vulnerable</span>':'')+'</p><p class="bwp-item-detail">v'+esc(p.version||"?")+(hasUpdate?' \u2192 '+esc(p.availableVersion):'')+(p.autoUpdates?' Â· Auto-update on':'')+'</p></div><div class="bwp-item-actions"><button type="button" class="bwp-item-btn '+(active?"active-state":"inactive-state")+'" data-action="toggle" data-slug="'+esc(p.slug)+'" data-name="'+esc(p.title||p.name||p.slug)+'" data-activate="'+(!active)+'">'+(active?"Deactivate":"Activate")+'</button>';if(hasUpdate) html+='<button type="button" class="bwp-item-btn update" data-action="update" data-slug="'+esc(p.slug)+'" data-name="'+esc(p.title||p.name||p.slug)+'">Update</button>';html+='</div></div>';});el.innerHTML=html;el.setAttribute("data-loaded","1");bwpRefreshUpdateBadge();var refreshBtn=$("bwpRefreshPlugins");if(refreshBtn) refreshBtn.addEventListener("click",function(){el.removeAttribute("data-loaded");bwpLoadPlugins();});/* Update All button */var updateAllBtn=$("bwpUpdateAllPlugins");if(updateAllBtn) updateAllBtn.addEventListener("click",function(){btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update all plugins","Updating all plugins...");wpPost({action:"wp_update",instance_id:currentWpInstance.id,type:"plugins"},function(r){if(r.success){btProgress.setDetail(tid,"Update sent, verifying...");bwpVerifyUpdate(tid,currentWpInstance.id,"plugins","",function(){el.removeAttribute("data-loaded");bwpLoadPlugins();});}else{btProgress.update(tid,"error",r.message||"Failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});el.querySelectorAll("[data-action='toggle']").forEach(function(btn){btn.addEventListener("click",function(){var slug=this.getAttribute("data-slug");var name=this.getAttribute("data-name")||slug;var activate=this.getAttribute("data-activate")==="true";btnLoad(this,activate?"Activating...":"Deactivating...");var self=this;var tid=btProgress.add((activate?"Activate":"Deactivate")+" "+name,activate?"Activating plugin...":"Deactivating plugin...");wpPost({action:"wp_toggle_plugin",instance_id:currentWpInstance.id,slug:slug,activate:activate?"1":"0"},function(r){btnDone(self);if(r.success){btProgress.update(tid,"success","Plugin "+(activate?"activated":"deactivated"));fmToast("Plugin "+(activate?"activated":"deactivated")+" successfully","success");self.setAttribute("data-activate",String(!activate));self.textContent=activate?"Deactivate":"Activate";self.className="bwp-item-btn "+(activate?"active-state":"inactive-state");}else{btProgress.update(tid,"error",r.message||"Failed");fmToast(r.message||"Failed","error");}});});});el.querySelectorAll("[data-action='update']").forEach(function(btn){btn.addEventListener("click",function(){var slug=this.getAttribute("data-slug");var name=this.getAttribute("data-name")||slug;btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update "+name,"Updating plugin...");var instId=currentWpInstance.id;var row=$("bwp-plugin-"+slug);wpPost({action:"wp_update",instance_id:instId,type:"plugins",slug:slug},function(r){if(r.success){var markDone=function(){btProgress.update(tid,"success","Updated to latest version");self.disabled=true;self.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Updated';self.style.cssText="color:#059669;border-color:#6ee7b7;pointer-events:none";if(row){var det=row.querySelector(".bwp-item-detail");if(det) det.textContent="Updated to latest";}};if(r.verified){markDone();}else{btProgress.setDetail(tid,"Update sent, verifying...");self.innerHTML='Verifying...';self.style.color="#d97706";bwpVerifyUpdate(tid,instId,"plugins",slug,function(){markDone();});}}else{btProgress.update(tid,"error",r.message||"Update failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});});});}
 
-function bwpLoadThemes(){if(!currentWpInstance) return;var el=$("bwpTabThemes");if(!el) return;el.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading themes...</span></div>';wpPost({action:"wp_list_themes",instance_id:currentWpInstance.id},function(r){if(!r.success){el.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed")+'</span></div>';return;}var themes=r.themes||[];if(!themes.length){el.innerHTML='<div class="bt-empty"><span>No themes found</span></div>';return;}var updatable=themes.filter(function(t){return !!t.availableVersion;});var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--text-muted,#6b7280)">'+themes.length+' theme'+(themes.length!==1?"s":"")+(updatable.length>0?' · <span style="color:#7c3aed">'+updatable.length+' update'+(updatable.length>1?"s":"")+'</span>':'')+'</span><div style="display:flex;gap:6px">';if(updatable.length>1) html+='<button type="button" class="bwp-item-btn update" id="bwpUpdateAllThemes" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Update All</button>';html+='<button type="button" class="bt-btn-outline" id="bwpRefreshThemes" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div>';html+='<div class="bwp-theme-grid">';themes.forEach(function(t){var active=t.status===true||t.status==="active"||t.active;var hasUpdate=!!t.availableVersion;var isVulnerable=!!t.vulnerable;var screenshot=t.screenshot||t.screenshotUrl||"";var themeInitial=(t.title||t.name||t.slug||"T").charAt(0).toUpperCase();html+='<div class="bwp-theme-card'+(active?" bwp-theme-active":"")+(isVulnerable?" bwp-theme-vulnerable":"")+'"><div class="bwp-theme-screenshot">'+(screenshot?'<img src="'+esc(screenshot)+'" alt="'+esc(t.title||t.name||t.slug)+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="bwp-theme-placeholder" style="display:none">':'<div class="bwp-theme-placeholder">')+'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted,#9ca3af)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span style="font-size:11px;color:var(--text-muted,#9ca3af);margin-top:4px">'+esc(themeInitial)+'</span></div>'+(active?'<div class="bwp-theme-active-badge">Active</div>':'')+(isVulnerable?'<div style="position:absolute;top:8px;left:8px;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#ef4444;color:#fff">Vulnerable</div>':'')+'</div><div class="bwp-theme-info"><p class="bwp-theme-name">'+esc(t.title||t.name||t.slug)+'</p><p class="bwp-theme-ver">v'+esc(t.version||"?")+(hasUpdate?' → '+esc(t.availableVersion):'')+'</p><div class="bwp-theme-actions">';if(!active) html+='<button type="button" class="bwp-item-btn" onclick="bwpActivateTheme(\''+esc(t.slug)+'\',this)">Activate</button>';if(hasUpdate) html+='<button type="button" class="bwp-item-btn update" onclick="bwpUpdateTheme(\''+esc(t.slug)+'\',this)">Update</button>';html+='</div></div></div>';});html+='</div>';el.innerHTML=html;el.setAttribute("data-loaded","1");bwpRefreshUpdateBadge();var refreshBtn=$("bwpRefreshThemes");if(refreshBtn) refreshBtn.addEventListener("click",function(){el.removeAttribute("data-loaded");bwpLoadThemes();});/* Update All button */var updateAllBtn=$("bwpUpdateAllThemes");if(updateAllBtn) updateAllBtn.addEventListener("click",function(){btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update all themes","Updating all themes...");wpPost({action:"wp_update",instance_id:currentWpInstance.id,type:"themes"},function(r){if(r.success){btProgress.setDetail(tid,"Update sent, verifying...");bwpVerifyUpdate(tid,currentWpInstance.id,"themes","",function(){el.removeAttribute("data-loaded");bwpLoadThemes();});}else{btProgress.update(tid,"error",r.message||"Failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});});}
+function bwpLoadThemes(){if(!currentWpInstance) return;var el=$("bwpTabThemes");if(!el) return;el.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading themes...</span></div>';wpPost({action:"wp_list_themes",instance_id:currentWpInstance.id},function(r){if(!r.success){el.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed")+'</span></div>';return;}var themes=r.themes||[];if(!themes.length){el.innerHTML='<div class="bt-empty"><span>No themes found</span></div>';return;}var updatable=themes.filter(function(t){return !!t.availableVersion;});var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--text-muted,#6b7280)">'+themes.length+' theme'+(themes.length!==1?"s":"")+(updatable.length>0?' Â· <span style="color:#7c3aed">'+updatable.length+' update'+(updatable.length>1?"s":"")+'</span>':'')+'</span><div style="display:flex;gap:6px">';if(updatable.length>1) html+='<button type="button" class="bwp-item-btn update" id="bwpUpdateAllThemes" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Update All</button>';html+='<button type="button" class="bt-btn-outline" id="bwpRefreshThemes" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div>';html+='<div class="bwp-theme-grid">';themes.forEach(function(t){var active=t.status===true||t.status==="active"||t.active;var hasUpdate=!!t.availableVersion;var isVulnerable=!!t.vulnerable;var screenshot=t.screenshot||t.screenshotUrl||"";var themeInitial=(t.title||t.name||t.slug||"T").charAt(0).toUpperCase();html+='<div class="bwp-theme-card'+(active?" bwp-theme-active":"")+(isVulnerable?" bwp-theme-vulnerable":"")+'"><div class="bwp-theme-screenshot">'+(screenshot?'<img src="'+esc(screenshot)+'" alt="'+esc(t.title||t.name||t.slug)+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="bwp-theme-placeholder" style="display:none">':'<div class="bwp-theme-placeholder">')+'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted,#9ca3af)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span style="font-size:11px;color:var(--text-muted,#9ca3af);margin-top:4px">'+esc(themeInitial)+'</span></div>'+(active?'<div class="bwp-theme-active-badge">Active</div>':'')+(isVulnerable?'<div style="position:absolute;top:8px;left:8px;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#ef4444;color:#fff">Vulnerable</div>':'')+'</div><div class="bwp-theme-info"><p class="bwp-theme-name">'+esc(t.title||t.name||t.slug)+'</p><p class="bwp-theme-ver">v'+esc(t.version||"?")+(hasUpdate?' â†’ '+esc(t.availableVersion):'')+'</p><div class="bwp-theme-actions">';if(!active) html+='<button type="button" class="bwp-item-btn" onclick="bwpActivateTheme(\''+esc(t.slug)+'\',this)">Activate</button>';if(hasUpdate) html+='<button type="button" class="bwp-item-btn update" onclick="bwpUpdateTheme(\''+esc(t.slug)+'\',this)">Update</button>';html+='</div></div></div>';});html+='</div>';el.innerHTML=html;el.setAttribute("data-loaded","1");bwpRefreshUpdateBadge();var refreshBtn=$("bwpRefreshThemes");if(refreshBtn) refreshBtn.addEventListener("click",function(){el.removeAttribute("data-loaded");bwpLoadThemes();});/* Update All button */var updateAllBtn=$("bwpUpdateAllThemes");if(updateAllBtn) updateAllBtn.addEventListener("click",function(){btnLoad(this,"Updating...");var self=this;var tid=btProgress.add("Update all themes","Updating all themes...");wpPost({action:"wp_update",instance_id:currentWpInstance.id,type:"themes"},function(r){if(r.success){btProgress.setDetail(tid,"Update sent, verifying...");bwpVerifyUpdate(tid,currentWpInstance.id,"themes","",function(){el.removeAttribute("data-loaded");bwpLoadThemes();});}else{btProgress.update(tid,"error",r.message||"Failed");btnDone(self);fmToast(r.message||"Update failed","error");}});});});}
 window.bwpActivateTheme=function(slug,btn){if(!currentWpInstance) return;btnLoad(btn,"Activating...");var tid=btProgress.add("Activate theme: "+slug,"Activating theme...");wpPost({action:"wp_toggle_theme",instance_id:currentWpInstance.id,slug:slug},function(r){btnDone(btn);if(r.success){btProgress.update(tid,"success","Theme activated");fmToast("Theme activated successfully","success");/* Update cards in-place */var el=$("bwpTabThemes");if(el){el.querySelectorAll(".bwp-theme-card").forEach(function(card){card.classList.remove("bwp-theme-active");var badge=card.querySelector(".bwp-theme-active-badge");if(badge) badge.remove();var actBtn=card.querySelector(".bwp-item-btn:not(.update)");if(actBtn&&actBtn.textContent==="Activate"){actBtn.style.display="";}});var targetCard=btn.closest(".bwp-theme-card");if(targetCard){targetCard.classList.add("bwp-theme-active");var ss=targetCard.querySelector(".bwp-theme-screenshot");if(ss) ss.insertAdjacentHTML("beforeend",'<div class="bwp-theme-active-badge">Active</div>');btn.style.display="none";}}}else{btProgress.update(tid,"error",r.message||"Failed");fmToast(r.message||"Failed","error");}});};
 window.bwpUpdateTheme=function(slug,btn){if(!currentWpInstance) return;btnLoad(btn,"Updating...");var tid=btProgress.add("Update theme: "+slug,"Updating theme...");var instId=currentWpInstance.id;wpPost({action:"wp_update",instance_id:instId,type:"themes",slug:slug},function(r){if(r.success){var markDone=function(){btProgress.update(tid,"success","Updated to latest version");btn.disabled=true;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Updated';btn.style.cssText="color:#059669;border-color:#6ee7b7;pointer-events:none";var card=btn.closest(".bwp-theme-card");if(card){var ver=card.querySelector(".bwp-theme-ver");if(ver) ver.textContent="Updated to latest";}};if(r.verified){markDone();}else{btProgress.setDetail(tid,"Update sent, verifying...");btn.innerHTML="Verifying...";btn.style.color="#d97706";bwpVerifyUpdate(tid,instId,"themes",slug,function(){markDone();});}}else{btProgress.update(tid,"error",r.message||"Update failed");btnDone(btn);fmToast(r.message||"Update failed","error");}});};
 function bwpLoadSecurity(){if(!currentWpInstance) return;var el=$("bwpTabSecurity");if(!el) return;el.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Running security scan...</span></div>';wpPost({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){if(!r.success){var errHtml='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>'+(r.message||"Security scan failed")+'</span>';if(r.debug_tried) errHtml+='<span style="font-size:10px;color:var(--text-muted,#999);margin-top:4px">Tried: '+esc(r.debug_tried.join(", "))+'</span>';errHtml+='</div>';el.innerHTML=errHtml;el.setAttribute("data-loaded","1");return;}var measures=r.security||[];if(!measures.length){el.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>No security data available</span></div>';el.setAttribute("data-loaded","1");return;}var applied=0;var available=measures.filter(function(m){return m.available!==false;});available.forEach(function(m){if(m.status==="applied") applied++;});var total=available.length;var pct=total?Math.round(applied/total*100):0;var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px"><span style="font-size:12px;color:var(--text-muted,#6b7280)">'+total+' security measure'+(total!==1?"s":"")+'</span><button type="button" class="bt-btn-outline" id="bwpRefreshSecurity" style="padding:5px 12px;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Re-scan</button></div>';html+='<div class="bwp-sec-summary"><div class="bwp-sec-summary-bar"><div class="bwp-sec-summary-fill" style="width:'+pct+'%"></div></div><div class="bwp-sec-summary-text"><span><strong>'+applied+'</strong> of <strong>'+total+'</strong> measures applied</span><span><strong>'+pct+'%</strong> secure</span></div></div>';measures.forEach(function(m){if(m.available===false) return;var ok=m.status==="applied";var mid=esc(m.id);var title=esc(m.title||m.id);html+='<div class="bwp-security-item" data-measure="'+mid+'"><div class="bwp-sec-icon '+(ok?"ok":"warning")+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+(ok?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>')+'</svg></div><div class="bwp-sec-info"><p class="bwp-sec-label">'+title+'</p><p class="bwp-sec-detail">'+mid+'</p></div><div class="bwp-sec-actions" style="display:flex;gap:6px;flex-shrink:0">'+(ok?'<button type="button" class="bwp-item-btn inactive-state" onclick="bwpRevertSecurity(\''+mid.replace(/'/g,"\\'")+'\',this)">Revert</button>':'<button type="button" class="bwp-item-btn active-state" onclick="bwpApplySecurity(\''+mid.replace(/'/g,"\\'")+'\',this)">Apply</button>')+'</div></div>';});el.innerHTML=html;el.setAttribute("data-loaded","1");var refreshSecBtn=$("bwpRefreshSecurity");if(refreshSecBtn) refreshSecBtn.addEventListener("click",function(){el.removeAttribute("data-loaded");bwpLoadSecurity();});});}
 window.bwpApplySecurity=function(measureId,btn){if(!currentWpInstance) return;btnLoad(btn,"Applying...");var tid=btProgress.add("Apply: "+measureId,"Applying security measure...");wpPost({action:"wp_security_apply",instance_id:currentWpInstance.id,measure_id:measureId},function(r){btnDone(btn);if(r.success){btProgress.update(tid,"success","Security measure applied");fmToast("Security measure applied","success");var row=btn.closest(".bwp-security-item");if(row){var icon=row.querySelector(".bwp-sec-icon");if(icon){icon.className="bwp-sec-icon ok";icon.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';}var actDiv=row.querySelector(".bwp-sec-actions");if(actDiv) actDiv.innerHTML='<button type="button" class="bwp-item-btn inactive-state" onclick="bwpRevertSecurity(\''+measureId.replace(/'/g,"\\'")+'\',this)">Revert</button>';}bwpUpdateSecBar(1);}else{btProgress.update(tid,"error",r.message||"Failed to apply");fmToast(r.message||"Failed to apply","error");}});};
 window.bwpRevertSecurity=function(measureId,btn){if(!currentWpInstance) return;btnLoad(btn,"Reverting...");var tid=btProgress.add("Revert: "+measureId,"Reverting security measure...");wpPost({action:"wp_security_revert",instance_id:currentWpInstance.id,measure_id:measureId},function(r){btnDone(btn);if(r.success){btProgress.update(tid,"success","Security measure reverted");fmToast("Security measure reverted","success");var row=btn.closest(".bwp-security-item");if(row){var icon=row.querySelector(".bwp-sec-icon");if(icon){icon.className="bwp-sec-icon warning";icon.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';}var actDiv=row.querySelector(".bwp-sec-actions");if(actDiv) actDiv.innerHTML='<button type="button" class="bwp-item-btn active-state" onclick="bwpApplySecurity(\''+measureId.replace(/'/g,"\\'")+'\',this)">Apply</button>';}bwpUpdateSecBar(-1);}else{btProgress.update(tid,"error",r.message||"Failed to revert");fmToast(r.message||"Failed to revert","error");}});};
 function bwpUpdateSecBar(delta){var fill=document.querySelector(".bwp-sec-summary-fill");var textEl=document.querySelector(".bwp-sec-summary-text");if(!fill||!textEl) return;var spans=textEl.querySelectorAll("strong");if(spans.length<2) return;var applied=parseInt(spans[0].textContent)||0;var total=parseInt(spans[1].textContent)||1;applied=Math.max(0,Math.min(total,applied+delta));var pct=Math.round(applied/total*100);fill.style.width=pct+"%";spans[0].textContent=applied;var pctSpan=textEl.querySelectorAll("span");if(pctSpan.length>=2){var s=pctSpan[1].querySelector("strong");if(s) s.textContent=pct+"%";}}
-/* Debug: run from browser console: bwpSecurityDebug() — tests all security API endpoints */
+/* Debug: run from browser console: bwpSecurityDebug() â€” tests all security API endpoints */
 window.bwpSecurityDebug=function(){if(!currentWpInstance){console.log("No WP instance selected");return;}console.log("Testing security endpoints for instance "+currentWpInstance.id+"...");wpPost({action:"wp_security_scan",instance_id:currentWpInstance.id},function(r){console.log("=== WP Toolkit Security API Debug ===");console.log(JSON.stringify(r,null,2));});};
 
-/* ─── Email Actions ─── */
+/* â”€â”€â”€ Email Actions â”€â”€â”€ */
 function bindEmailActions(pane){pane.querySelectorAll(".bt-row-btn.login[data-email]").forEach(function(b){b.addEventListener("click",function(){var email=this.getAttribute("data-email");var btn=this;btnLoad(btn,"Opening...");post({action:"webmail_login",email:email},function(r){btnDone(btn);if(r.success&&r.url) window.open(r.url,"_blank");else fmToast(r.message||"Failed","error");});});});pane.querySelectorAll(".bt-row-btn.pass[data-email]").forEach(function(b){b.addEventListener("click",function(){$("bemPassEmail").value=this.getAttribute("data-email");$("bemPassNew").value="";$("bemPassMsg").style.display="none";$("bemPassModal").style.display="flex";});});pane.querySelectorAll(".bt-row-btn.del[data-email]").forEach(function(b){b.addEventListener("click",function(){$("bemDelEmail").textContent=this.getAttribute("data-email");$("bemDelMsg").style.display="none";$("bemDelModal").style.display="flex";});});}
 function openCreateEmailModal(){$("bemNewUser").value="";$("bemNewPass").value="";$("bemNewQuota").value="250";$("bemCreateMsg").style.display="none";var sel=$("bemNewDomain");sel.innerHTML="<option>Loading...</option>";$("bemCreateModal").style.display="flex";post({action:"get_domains"},function(r){sel.innerHTML="";var doms=r.domains||[];if(!doms.length&&C.domains&&C.domains.main) doms=[C.domains.main];doms.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent=d;sel.appendChild(o);});});}
 function bindEmailModalSubmits(){$("bemCreateSubmit").addEventListener("click",function(){var user=$("bemNewUser").value.trim();var pass=$("bemNewPass").value;var domain=$("bemNewDomain").value;var quota=$("bemNewQuota").value;var msg=$("bemCreateMsg");msg.style.display="none";if(!user||!pass||!domain){showMsg(msg,"Please fill in all fields",false);return;}var btn=this;btnLoad(btn,"Creating...");post({action:"create_email",email_user:user,email_pass:pass,domain:domain,quota:quota},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){C.emails=C.emails||[];C.emails.push(r.email);setTimeout(function(){$("bemCreateModal").style.display="none";buildEmailPane();},800);}});});$("bemPassSubmit").addEventListener("click",function(){var email=$("bemPassEmail").value;var pass=$("bemPassNew").value;var msg=$("bemPassMsg");msg.style.display="none";if(!pass){showMsg(msg,"Please enter a new password",false);return;}var btn=this;btnLoad(btn,"Updating...");post({action:"change_password",email:email,new_pass:pass},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success) setTimeout(function(){$("bemPassModal").style.display="none";},800);});});$("bemDelSubmit").addEventListener("click",function(){var email=$("bemDelEmail").textContent;var msg=$("bemDelMsg");msg.style.display="none";var btn=this;btnLoad(btn,"Deleting...");post({action:"delete_email",email:email},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){C.emails=(C.emails||[]).filter(function(e){return e!==email;});setTimeout(function(){$("bemDelModal").style.display="none";buildEmailPane();},800);}});});}
-/* ─── Domain Actions ─── */
+/* â”€â”€â”€ Domain Actions â”€â”€â”€ */
 function bindDomainActions(pane){pane.querySelectorAll(".bt-row-btn.del[data-domain]").forEach(function(b){b.addEventListener("click",function(){openDelDomainModal(this.getAttribute("data-domain"),this.getAttribute("data-type"));});});}
 function openAddonModal(){$("bdmAddonDomain").value="";$("bdmAddonDocroot").value="";$("bdmAddonMsg").style.display="none";$("bdmAddonModal").style.display="flex";}
 function openSubModal(){$("bdmSubName").value="";$("bdmSubDocroot").value="";$("bdmSubMsg").style.display="none";var sel=$("bdmSubParent");sel.innerHTML="<option>Loading...</option>";$("bdmSubModal").style.display="flex";post({action:"get_parent_domains"},function(r){sel.innerHTML="";var doms=r.domains||[];doms.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent=d;sel.appendChild(o);});});}
 function bindDomainModalSubmits(){$("bdmAddonSubmit").addEventListener("click",function(){var domain=$("bdmAddonDomain").value.trim();var docroot=$("bdmAddonDocroot").value.trim();var msg=$("bdmAddonMsg");msg.style.display="none";if(!domain){showMsg(msg,"Please enter a domain name",false);return;}var btn=this;btnLoad(btn,"Adding...");post({action:"add_addon_domain",domain:domain,docroot:docroot},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){if(C.domains) C.domains.addon=(C.domains.addon||[]).concat([domain]);setTimeout(function(){$("bdmAddonModal").style.display="none";buildDomainsPane();},800);}});});$("bdmSubSubmit").addEventListener("click",function(){var sub=$("bdmSubName").value.trim();var parent=$("bdmSubParent").value;var docroot=$("bdmSubDocroot").value.trim();var msg=$("bdmSubMsg");msg.style.display="none";if(!sub||!parent){showMsg(msg,"Please fill in all fields",false);return;}var btn=this;btnLoad(btn,"Adding...");post({action:"add_subdomain",subdomain:sub,domain:parent,docroot:docroot},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){if(C.domains) C.domains.sub=(C.domains.sub||[]).concat([r.domain||sub+"."+parent]);setTimeout(function(){$("bdmSubModal").style.display="none";buildDomainsPane();},800);}});});}
 function openDelDomainModal(domain,type){$("bdmDelDomain").textContent=domain;$("bdmDelMsg").style.display="none";$("bdmDelModal").style.display="flex";$("bdmDelSubmit").onclick=function(){var msg=$("bdmDelMsg");msg.style.display="none";var btn=this;btnLoad(btn,"Deleting...");post({action:"delete_domain",domain:domain,type:type},function(r){btnDone(btn);showMsg(msg,r.message||"Done",r.success);if(r.success){if(C.domains){if(type==="addon") C.domains.addon=(C.domains.addon||[]).filter(function(d){return d!==domain;});if(type==="sub") C.domains.sub=(C.domains.sub||[]).filter(function(d){return d!==domain;});if(type==="parked") C.domains.parked=(C.domains.parked||[]).filter(function(d){return d!==domain;});}setTimeout(function(){$("bdmDelModal").style.display="none";buildDomainsPane();},800);}});};}
 
-/* ─── DNS Manager Pane ─── */
+/* â”€â”€â”€ DNS Manager Pane â”€â”€â”€ */
 var dnsCurrentDomain="";var dnsZoneDomain="";var dnsRecords=[];var dnsSelectedLines={};var dnsActiveFilter="ALL";
 function buildDnsPane(){var pane=$("bt-pane-dns");if(!pane) return;pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div><h5>DNS Management</h5><p id="bt-dns-subtitle">Select a domain to manage DNS records</p></div></div></div><div id="bt-dns-body"><div id="bt-dns-domain-list" class="bt-list"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading domains...</span></div></div><div id="bt-dns-records-view" style="display:none"><div class="bt-dns-toolbar" id="bt-dns-toolbar"></div><div class="bt-dns-filter-bar" id="bt-dns-filter-bar"></div><div class="bt-list" id="bt-dns-records-list"></div></div></div></div>';}
 function loadDnsDomains(){var list=$("bt-dns-domain-list");if(!list) return;list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading domains...</span></div>';post({action:"dns_list_domains"},function(r){if(!r.success||!r.domains||!r.domains.length){list.innerHTML='<div class="bt-empty"><span>No domains found</span></div>';return;}var html="";r.domains.forEach(function(d){html+='<div class="bt-row bt-dns-domain-row" data-domain="'+esc(d.domain)+'" style="cursor:pointer"><div class="bt-row-icon '+(d.type||"main")+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div><div class="bt-row-info"><span class="bt-row-name">'+esc(d.domain)+'</span><span class="bt-row-badge bt-badge-primary">'+esc(d.type)+'</span></div><div class="bt-row-actions"><span style="color:var(--text-muted,#9ca3af)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span></div></div>';});list.innerHTML=html;list.querySelectorAll(".bt-dns-domain-row").forEach(function(row){row.addEventListener("click",function(){var domain=this.getAttribute("data-domain");dnsCurrentDomain=domain;$("bt-dns-domain-list").style.display="none";$("bt-dns-records-view").style.display="block";$("bt-dns-subtitle").textContent=domain;loadDnsRecords(domain);});});});}
-function loadDnsRecords(domain){var list=$("bt-dns-records-list");if(!list) return;list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading DNS records...</span></div>';dnsSelectedLines={};var zoneDomain=domain;if(C.domains&&C.domains.main){var main=C.domains.main.toLowerCase();var dl=domain.toLowerCase();if(dl!==main&&dl.indexOf("."+main)!==-1) zoneDomain=C.domains.main;}post({action:"dns_fetch_records",domain:zoneDomain},function(r){if(!r.success){if(zoneDomain!==domain){post({action:"dns_fetch_records",domain:domain},function(r2){if(!r2.success){list.innerHTML='<div class="bt-empty"><span>'+(r2.message||"Failed to load records")+'</span></div>';return;}dnsRecords=r2.records||[];dnsZoneDomain=domain;renderDnsToolbar();renderDnsFilterBar();renderDnsRecords();});return;}list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load records")+'</span></div>';return;}var allRecords=r.records||[];dnsZoneDomain=zoneDomain;var selectedDomain=domain.toLowerCase().replace(/\.$/,"");dnsRecords=allRecords.filter(function(rec){var name=(rec.name||"").toLowerCase().replace(/\.$/,"");if(name===selectedDomain) return true;if(name.indexOf("."+selectedDomain)!==-1&&name.indexOf("."+selectedDomain)===name.length-selectedDomain.length-1) return true;return false;});if(!dnsRecords.length&&allRecords.length&&domain.toLowerCase()===zoneDomain.toLowerCase()) dnsRecords=allRecords;renderDnsToolbar();renderDnsFilterBar();renderDnsRecords();var sub=$("bt-dns-subtitle");if(sub) sub.textContent=domain+" · "+dnsRecords.length+" record"+(dnsRecords.length!==1?"s":"");});}
+function loadDnsRecords(domain){var list=$("bt-dns-records-list");if(!list) return;list.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading DNS records...</span></div>';dnsSelectedLines={};var zoneDomain=domain;if(C.domains&&C.domains.main){var main=C.domains.main.toLowerCase();var dl=domain.toLowerCase();if(dl!==main&&dl.indexOf("."+main)!==-1) zoneDomain=C.domains.main;}post({action:"dns_fetch_records",domain:zoneDomain},function(r){if(!r.success){if(zoneDomain!==domain){post({action:"dns_fetch_records",domain:domain},function(r2){if(!r2.success){list.innerHTML='<div class="bt-empty"><span>'+(r2.message||"Failed to load records")+'</span></div>';return;}dnsRecords=r2.records||[];dnsZoneDomain=domain;renderDnsToolbar();renderDnsFilterBar();renderDnsRecords();});return;}list.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load records")+'</span></div>';return;}var allRecords=r.records||[];dnsZoneDomain=zoneDomain;var selectedDomain=domain.toLowerCase().replace(/\.$/,"");dnsRecords=allRecords.filter(function(rec){var name=(rec.name||"").toLowerCase().replace(/\.$/,"");if(name===selectedDomain) return true;if(name.indexOf("."+selectedDomain)!==-1&&name.indexOf("."+selectedDomain)===name.length-selectedDomain.length-1) return true;return false;});if(!dnsRecords.length&&allRecords.length&&domain.toLowerCase()===zoneDomain.toLowerCase()) dnsRecords=allRecords;renderDnsToolbar();renderDnsFilterBar();renderDnsRecords();var sub=$("bt-dns-subtitle");if(sub) sub.textContent=domain+" Â· "+dnsRecords.length+" record"+(dnsRecords.length!==1?"s":"");});}
 
 function renderDnsToolbar(){var tb=$("bt-dns-toolbar");if(!tb) return;tb.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:12px 14px;flex-wrap:wrap"><button type="button" class="bt-btn-outline bt-dns-back-btn" style="padding:6px 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Domains</button><div style="flex:1"></div><button type="button" class="bt-btn-outline bt-dns-bulk-del-btn" style="padding:6px 12px;display:none;color:#ef4444;border-color:#ef4444"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete Selected (<span class="bt-dns-sel-count">0</span>)</button><button type="button" class="bt-btn-add bt-dns-add-btn" style="padding:7px 14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Record</button></div>';tb.querySelector(".bt-dns-back-btn").addEventListener("click",function(){$("bt-dns-records-view").style.display="none";$("bt-dns-domain-list").style.display="block";$("bt-dns-subtitle").textContent="Select a domain to manage DNS records";dnsCurrentDomain="";});tb.querySelector(".bt-dns-add-btn").addEventListener("click",function(){openDnsAddModal();});tb.querySelector(".bt-dns-bulk-del-btn").addEventListener("click",function(){dnsHandleBulkDelete();});}
 function renderDnsFilterBar(){var fb=$("bt-dns-filter-bar");if(!fb) return;var types=["ALL"];var typeCounts={ALL:0};dnsRecords.forEach(function(r){typeCounts.ALL++;if(!typeCounts[r.type]) typeCounts[r.type]=0;typeCounts[r.type]++;if(types.indexOf(r.type)===-1) types.push(r.type);});var order=["ALL","SOA","NS","A","AAAA","CNAME","MX","TXT","SRV","CAA"];types.sort(function(a,b){var ia=order.indexOf(a),ib=order.indexOf(b);if(ia===-1) ia=99;if(ib===-1) ib=99;return ia-ib;});var html='<div style="display:flex;gap:4px;padding:8px 14px;overflow-x:auto;flex-wrap:wrap">';types.forEach(function(t){var active=t===dnsActiveFilter?" active":"";html+='<button type="button" class="bt-dns-filter-btn'+active+'" data-filter="'+t+'" style="padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color,#e5e7eb);background:'+(active?"#0a5ed3":"var(--card-bg,#fff)")+';color:'+(active?"#fff":"var(--heading-color,#374151)")+';transition:all .15s;white-space:nowrap">'+t+' <span style="opacity:.6;font-size:11px">('+typeCounts[t]+')</span></button>';});html+='</div>';fb.innerHTML=html;fb.querySelectorAll(".bt-dns-filter-btn").forEach(function(btn){btn.addEventListener("click",function(){dnsActiveFilter=this.getAttribute("data-filter");renderDnsFilterBar();renderDnsRecords();});});}
@@ -1386,7 +1384,7 @@ function updateDnsBulkBtn(){var count=Object.keys(dnsSelectedLines).length;var b
 function dnsHandleBulkDelete(){var lines=Object.keys(dnsSelectedLines).map(Number);if(!lines.length) return;if(!confirm("Delete "+lines.length+" selected DNS record(s)?")) return;var btn=document.querySelector(".bt-dns-bulk-del-btn");if(btn) btnLoad(btn,"Deleting...");post({action:"dns_bulk_delete",domain:dnsZoneDomain||dnsCurrentDomain,lines:lines.join(",")},function(r){if(btn) btnDone(btn);if(r.success||r.deleted>0){dnsSelectedLines={};loadDnsRecords(dnsCurrentDomain);}else{fmToast(r.message||"Failed to delete records","error");}});}
 function openDnsDeleteConfirm(rec){if(!confirm("Delete this "+rec.type+" record for "+rec.name+"?")) return;post({action:"dns_delete_record",domain:dnsZoneDomain||dnsCurrentDomain,line:rec.line},function(r){if(r.success) loadDnsRecords(dnsCurrentDomain);else fmToast(r.message||"Failed to delete record","error");});}
 
-/* ─── DNS Add/Edit Modals ─── */
+/* â”€â”€â”€ DNS Add/Edit Modals â”€â”€â”€ */
 function openDnsAddModal(){
     var overlay=document.createElement("div");
     overlay.className="bt-overlay";overlay.id="btDnsAddOverlay";
@@ -1458,7 +1456,7 @@ function dnsCollectTypeFields(containerId,type){
     return data;
 }
 
-/* ─── Cron Jobs ─── */
+/* â”€â”€â”€ Cron Jobs â”€â”€â”€ */
 var cronPresets=[
     {label:"Every minute",minute:"*",hour:"*",day:"*",month:"*",weekday:"*"},
     {label:"Every 5 minutes",minute:"*/5",hour:"*",day:"*",month:"*",weekday:"*"},
@@ -1533,7 +1531,7 @@ function openCronModal(job){
     });
 }
 
-/* ─── PHP Version ─── */
+/* â”€â”€â”€ PHP Version â”€â”€â”€ */
 var phpInstalledVersions=[];
 var phpCurrentVhost="";
 function buildPhpPane(){
@@ -1575,7 +1573,7 @@ function loadPhpVersions(){
         var vhosts=r.vhosts||[];
         var defaultVer=r["default"]||"";
         var sub=document.querySelector(".bt-php-subtitle");
-        if(sub) sub.textContent=phpInstalledVersions.length+" version"+(phpInstalledVersions.length!==1?"s":"")+" available"+(defaultVer?" · Default: "+defaultVer:"");
+        if(sub) sub.textContent=phpInstalledVersions.length+" version"+(phpInstalledVersions.length!==1?"s":"")+" available"+(defaultVer?" Â· Default: "+defaultVer:"");
         if(!vhosts.length&&!phpInstalledVersions.length){list.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg><span>PHP version management not available on this server</span></div>';return;}
         if(!phpCurrentVhost&&vhosts.length) phpCurrentVhost=vhosts[0].vhost;
         var html='<div class="bt-php-version-list">';
@@ -1634,7 +1632,7 @@ function loadPhpVersions(){
     });
 }
 
-/* ─── PHP Extensions ─── */
+/* â”€â”€â”€ PHP Extensions â”€â”€â”€ */
 function loadPhpExtensions(){
     var container=$("bt-php-tab-extensions");if(!container) return;
     container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP extensions...</span></div>';
@@ -1649,7 +1647,7 @@ function loadPhpExtensions(){
         var exts=r.extensions;
         var ver=r.phpversion||"";
         var html='<div class="bt-php-ext-header"><div class="bt-php-ext-info"><span class="bt-php-ext-title">Loaded Extensions</span>'
-            +'<span class="bt-php-ext-count">'+exts.length+' extensions'+(ver?' · PHP '+esc(ver):'')+'</span></div>'
+            +'<span class="bt-php-ext-count">'+exts.length+' extensions'+(ver?' Â· PHP '+esc(ver):'')+'</span></div>'
             +'<div class="bt-php-ext-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
             +'<input type="text" id="btPhpExtSearch" placeholder="Search extensions..." class="bt-php-ext-search-input"></div></div>';
         html+='<div class="bt-php-ext-grid" id="btPhpExtGrid">';
@@ -1674,7 +1672,7 @@ function loadPhpExtensions(){
     });
 }
 
-/* ─── PHP Directives (Basic Mode) ─── */
+/* â”€â”€â”€ PHP Directives (Basic Mode) â”€â”€â”€ */
 function loadPhpDirectives(){
     var container=$("bt-php-tab-directives");if(!container) return;
     container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading PHP settings...</span></div>';
@@ -1691,7 +1689,7 @@ function loadPhpDirectives(){
             return;
         }
         var html='<div class="bt-php-dir-header"><div class="bt-php-dir-info"><span class="bt-php-dir-title">PHP Settings (Basic Mode)</span>'
-            +'<span class="bt-php-dir-meta">'+(phpVer?'PHP '+esc(phpVer):'')+(iniPath?' · '+esc(iniPath):'')+'</span></div>'
+            +'<span class="bt-php-dir-meta">'+(phpVer?'PHP '+esc(phpVer):'')+(iniPath?' Â· '+esc(iniPath):'')+'</span></div>'
             +'<button type="button" class="bt-php-dir-save-btn" id="btPhpDirSave"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Changes</button></div>';
         html+='<div class="bt-php-dir-grid" id="btPhpDirGrid">';
         dirs.forEach(function(d){
@@ -1743,7 +1741,7 @@ function loadPhpDirectives(){
     });
 }
 
-/* ─── PHP INI Editor (Raw) ─── */
+/* â”€â”€â”€ PHP INI Editor (Raw) â”€â”€â”€ */
 function loadPhpIniEditor(){
     var container=$("bt-php-tab-editor");if(!container) return;
     container.innerHTML='<div class="bt-loading"><div class="bt-spinner"></div><span>Loading php.ini...</span></div>';
@@ -1781,7 +1779,7 @@ function loadPhpIniEditor(){
     });
 }
 
-/* ─── Error Logs ─── */
+/* â”€â”€â”€ Error Logs â”€â”€â”€ */
 var logsAutoRefresh=null;
 function buildLogsPane(){
     var pane=$("bt-pane-errorlogs");if(!pane) return;
@@ -1809,8 +1807,8 @@ function loadErrorLogs(){
         if(!r.success&&!r.lines){body.innerHTML='<div class="bt-empty"><span>'+(r.message||"Failed to load error logs")+'</span></div>';return;}
         var lines=r.lines||[];
         var sub=document.querySelector(".bt-logs-subtitle");
-        if(sub) sub.textContent=(r.file||"Error Log")+" · Showing "+lines.length+" of "+(r.total||lines.length)+" entries";
-        if(!lines.length){body.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="color:#059669;font-weight:600">No error log entries found — all clear!</span></div>';return;}
+        if(sub) sub.textContent=(r.file||"Error Log")+" Â· Showing "+lines.length+" of "+(r.total||lines.length)+" entries";
+        if(!lines.length){body.innerHTML='<div class="bt-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="color:#059669;font-weight:600">No error log entries found â€” all clear!</span></div>';return;}
         /* Count by level */
         var counts={fatal:0,error:0,warn:0,notice:0,other:0};
         lines.forEach(function(line){
@@ -1846,7 +1844,7 @@ function loadErrorLogs(){
     });
 }
 
-/* ─── Modal Bindings ─── */
+/* â”€â”€â”€ Modal Bindings â”€â”€â”€ */
 function bindModals(){
     document.querySelectorAll(".bt-overlay").forEach(function(ov){
         ov.addEventListener("click",function(e){if(e.target===ov) ov.style.display="none";});
@@ -1868,7 +1866,7 @@ function bindModals(){
     loadResourceStats();
 }
 
-/* ─── Resource Stats (CPU, Memory, I/O, Processes) — per-user ─── */
+/* â”€â”€â”€ Resource Stats (CPU, Memory, I/O, Processes) â€” per-user â”€â”€â”€ */
 function btFormatResourceVal(val,formatter){
     /* Convert raw value using cPanel formatter hint */
     if(!formatter) return {val:val,unit:""};
@@ -1929,7 +1927,7 @@ function loadResourceStats(){
             var pct=max>0?Math.min(100,Math.round(used/max*100)):0;
             var dec=b.decimals||0;
             var usedStr=dec>0?used.toFixed(dec):Math.round(used);
-            var maxStr=max>0?(dec>0?max.toFixed(dec):Math.round(max)):"∞";
+            var maxStr=max>0?(dec>0?max.toFixed(dec):Math.round(max)):"âˆž";
             var valTxt=usedStr+(b.unit?" "+b.unit:"")+" / "+(max>0?maxStr+(b.unit?" "+b.unit:""):"Unlimited");
             var colorClass=pct>90?"red":pct>70?"yellow":pct>40?"blue":"green";
             html+='<div class="bt-res-bar"><div class="bt-res-bar-head"><span class="bt-res-bar-label">'+b.icon+' '+esc(b.label)+'</span><span class="bt-res-bar-val">'+esc(valTxt)+'</span></div><div class="bt-res-bar-track"><div class="bt-res-bar-fill '+colorClass+'" style="width:'+pct+'%"></div></div></div>';
@@ -1938,7 +1936,7 @@ function loadResourceStats(){
     });
 }
 
-/* ─── CSS Part 9: File Manager ─── */
+/* â”€â”€â”€ CSS Part 9: File Manager â”€â”€â”€ */
 function injectStyles9(){
     if(document.getElementById("bt-injected-styles9")) return;
     var s=document.createElement("style");s.id="bt-injected-styles9";
@@ -2012,7 +2010,7 @@ function injectStyles9(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 10: Addons Page ─── */
+/* â”€â”€â”€ CSS Part 10: Addons Page â”€â”€â”€ */
 function injectStyles10(){
     if(document.getElementById("bt-injected-styles10")) return;
     var s=document.createElement("style");s.id="bt-injected-styles10";
@@ -2035,7 +2033,7 @@ function injectStyles10(){
 '.bt-addon-badge.pending{background:rgba(234,179,8,.1);color:#ca8a04}',
 '.bt-addon-badge.suspended{background:rgba(239,68,68,.1);color:#ef4444}',
 '.bt-addon-badge.cancelled,.bt-addon-badge.terminated{background:rgba(107,114,128,.1);color:#6b7280}',
-/* Addons page buttons — scoped to avoid conflict with carousel .bt-addon-btn */
+/* Addons page buttons â€” scoped to avoid conflict with carousel .bt-addon-btn */
 '.bt-addons-page-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;border:none}',
 '.bt-addons-page-btn.primary{background:#0a5ed3;color:#fff}',
 '.bt-addons-page-btn.primary:hover{background:#0850b5;color:#fff;text-decoration:none}',
@@ -2067,7 +2065,7 @@ function injectStyles10(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 11: Global Progress Tracker ─── */
+/* â”€â”€â”€ CSS Part 11: Global Progress Tracker â”€â”€â”€ */
 function injectStyles11(){
     if(document.getElementById("bt-injected-styles11")) return;
     var s=document.createElement("style");s.id="bt-injected-styles11";
@@ -2111,7 +2109,7 @@ function injectStyles11(){
     document.head.appendChild(s);
 }
 
-/* ─── Global Progress Tracker ─── */
+/* â”€â”€â”€ Global Progress Tracker â”€â”€â”€ */
 var btProgress=(function(){
     var tasks={};var taskOrder=[];var nextId=1;var boxEl=null;var bodyEl=null;var collapsed=false;var hideTimer=null;
     var svgRunning='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 0 1 10 10"/></svg>';
@@ -2201,7 +2199,7 @@ var btProgress=(function(){
 })();
 window.btProgress=btProgress;
 
-/* ─── Build Addons Page ─── */
+/* â”€â”€â”€ Build Addons Page â”€â”€â”€ */
 function buildAddonsPageInto(container){
     injectStyles10();
     container.innerHTML='<div class="bt-card" style="padding:24px"><div class="bt-addons-loading"><div class="bt-spinner"></div><div style="margin-top:12px">Loading addons...</div></div></div>';
@@ -2293,7 +2291,7 @@ function buildAddonsPageInto(container){
                     if(currentChoice){
                         var choiceName=currentChoice.name.indexOf('|')>-1?currentChoice.name.split('|')[0]:currentChoice.name;
                         html+='<div class="bt-config-option-current">Current: <strong>'+esc(choiceName)+'</strong>';
-                        if(currentChoice.price) html+=' — '+esc(currentChoice.price);
+                        if(currentChoice.price) html+=' â€” '+esc(currentChoice.price);
                         html+='</div>';
                     }
                 }
@@ -2317,10 +2315,10 @@ function buildAddonsPageInto(container){
     });
 }
 
-/* ─── File Manager State ─── */
+/* â”€â”€â”€ File Manager State â”€â”€â”€ */
 var fmState={dir:"/",homedir:"",files:[],selected:[],sortCol:"name",sortAsc:true,history:[],historyIdx:-1,clipboard:null,clipOp:null};
 
-/* ─── Build File Manager Page ─── */
+/* â”€â”€â”€ Build File Manager Page â”€â”€â”€ */
 function buildFileManagerPageInto(container){
     var card=document.createElement("div");
     card.className="bt-card";
@@ -2374,7 +2372,7 @@ function buildFileManagerPageInto(container){
     fmLoadDir("/public_html");
 }
 
-/* ─── FM: Load Directory ─── */
+/* â”€â”€â”€ FM: Load Directory â”€â”€â”€ */
 function fmLoadDir(dir){
     fmState.dir=dir;fmState.selected=[];
     fmUpdateToolbarState();
@@ -2391,7 +2389,7 @@ function fmLoadDir(dir){
     });
 }
 
-/* ─── FM: Render Breadcrumb ─── */
+/* â”€â”€â”€ FM: Render Breadcrumb â”€â”€â”€ */
 function fmRenderBreadcrumb(){
     var bc=$("fm-breadcrumb");if(!bc) return;
     var parts=fmState.dir.replace(/\/+$/,"").split("/").filter(Boolean);
@@ -2409,7 +2407,7 @@ function fmRenderBreadcrumb(){
     });
 }
 
-/* ─── FM: Render File List ─── */
+/* â”€â”€â”€ FM: Render File List â”€â”€â”€ */
 function fmRenderFiles(){
     var listWrap=$("fm-list-wrap");if(!listWrap) return;
     var files=fmSortFiles(fmState.files);
@@ -2497,7 +2495,7 @@ function fmRenderFiles(){
     });
 }
 
-/* ─── FM: Helpers ─── */
+/* â”€â”€â”€ FM: Helpers â”€â”€â”€ */
 function fmParentDir(dir){var p=dir.replace(/\/+$/,"");var i=p.lastIndexOf("/");return i<=0?"/":p.substring(0,i);}
 function fmFormatSize(bytes){if(!bytes||bytes<=0) return "0 B";var u=["B","KB","MB","GB"];var i=0;var b=bytes;while(b>=1024&&i<u.length-1){b/=1024;i++;}return b.toFixed(i>0?1:0)+" "+u[i];}
 function fmFormatDate(d){if(!d) return "";try{var dt=new Date(typeof d==="number"?d*1000:d);if(isNaN(dt.getTime())) return String(d);var m=dt.getMonth()+1;var day=dt.getDate();var y=dt.getFullYear();var h=dt.getHours();var min=dt.getMinutes();return y+"-"+(m<10?"0":"")+m+"-"+(day<10?"0":"")+day+" "+(h<10?"0":"")+h+":"+(min<10?"0":"")+min;}catch(e){return String(d);}}
@@ -2551,7 +2549,7 @@ function fmUpdateToolbarState(){
     if(extractItem) extractItem.classList.toggle("disabled",!canExtract);
 }
 
-/* ─── FM: Toolbar Binding ─── */
+/* â”€â”€â”€ FM: Toolbar Binding â”€â”€â”€ */
 function fmBindToolbar(){
     var tb=$("fm-toolbar");if(!tb) return;
     /* Primary toolbar buttons */
@@ -2600,7 +2598,7 @@ function fmBindToolbar(){
     if(si) si.addEventListener("keydown",function(e){if(e.key==="Enter") fmDoSearch();});
 }
 
-/* ─── FM: Drag & Drop ─── */
+/* â”€â”€â”€ FM: Drag & Drop â”€â”€â”€ */
 function fmBindDragDrop(){
     var lw=$("fm-list-wrap");if(!lw) return;
     var dz=$("fm-dropzone");
@@ -2614,7 +2612,7 @@ function fmBindDragDrop(){
     });
 }
 
-/* ─── CodeMirror CDN Loader ─── */
+/* â”€â”€â”€ CodeMirror CDN Loader â”€â”€â”€ */
 var _cmLoaded=false;
 var _cmCallbacks=[];
 function fmLoadCodeMirror(cb){
@@ -2904,9 +2902,9 @@ function fmOpenFile(filePath){
 
 
 
-/* (fmSaveFile and fmCloseEditor removed — editor is now a popup modal in fmOpenFile) */
+/* (fmSaveFile and fmCloseEditor removed â€” editor is now a popup modal in fmOpenFile) */
 
-/* ─── FM: Helper to build a table row HTML for a file object ─── */
+/* â”€â”€â”€ FM: Helper to build a table row HTML for a file object â”€â”€â”€ */
 function fmBuildRow(f){
     var isDir=f.type==="dir";
     var sel=fmState.selected.indexOf(f.path)!==-1;
@@ -2920,7 +2918,7 @@ function fmBuildRow(f){
     return html;
 }
 
-/* ─── FM: Bind events on a single new row ─── */
+/* â”€â”€â”€ FM: Bind events on a single new row â”€â”€â”€ */
 function fmBindRowEvents(tr){
     var nameCell=tr.querySelector(".fm-name-cell[data-fmopen]");
     if(nameCell) nameCell.addEventListener("click",function(){
@@ -2942,7 +2940,7 @@ function fmBindRowEvents(tr){
     });
 }
 
-/* ─── FM: Insert a new row into the table for a newly created item ─── */
+/* â”€â”€â”€ FM: Insert a new row into the table for a newly created item â”€â”€â”€ */
 function fmInsertRow(fileObj){
     /* Add to fmState.files */
     fmState.files.push(fileObj);
@@ -2969,7 +2967,7 @@ function fmInsertRow(fileObj){
     fmBindRowEvents(newTr);
 }
 
-/* ─── FM: Remove rows from table by path ─── */
+/* â”€â”€â”€ FM: Remove rows from table by path â”€â”€â”€ */
 function fmRemoveRows(paths){
     var listWrap=$("fm-list-wrap");if(!listWrap) return;
     paths.forEach(function(p){
@@ -2984,7 +2982,7 @@ function fmRemoveRows(paths){
     if(!fmState.files.length){fmRenderFiles();}
 }
 
-/* ─── FM: Create File ─── */
+/* â”€â”€â”€ FM: Create File â”€â”€â”€ */
 function fmCreateFile(name){
     post({action:"fm_create_file",dir:fmState.dir,name:name},function(r){
         if(r.success){
@@ -2994,7 +2992,7 @@ function fmCreateFile(name){
     });
 }
 
-/* ─── FM: Create Folder ─── */
+/* â”€â”€â”€ FM: Create Folder â”€â”€â”€ */
 function fmCreateFolder(name){
     post({action:"fm_create_folder",dir:fmState.dir,name:name},function(r){
         if(r.success){
@@ -3004,7 +3002,7 @@ function fmCreateFolder(name){
     });
 }
 
-/* ─── FM: Delete ─── */
+/* â”€â”€â”€ FM: Delete â”€â”€â”€ */
 function fmConfirmDelete(){
     var items=fmState.selected.slice();
     if(!items.length) return;
@@ -3034,7 +3032,7 @@ function fmConfirmDelete(){
     });
 }
 
-/* ─── FM: Rename ─── */
+/* â”€â”€â”€ FM: Rename â”€â”€â”€ */
 function fmRename(oldPath,newName){
     post({action:"fm_rename",old:oldPath,new_name:newName},function(r){
         if(r.success){
@@ -3056,7 +3054,7 @@ function fmRename(oldPath,newName){
     });
 }
 
-/* ─── FM: Copy/Move ─── */
+/* â”€â”€â”€ FM: Copy/Move â”€â”€â”€ */
 function fmCopyMove(action,items,dest){
     var done=0;var errors=[];var isCopy=action==="fm_copy";
     items.forEach(function(src){
@@ -3078,7 +3076,7 @@ function fmCopyMove(action,items,dest){
     });
 }
 
-/* ─── FM: Upload ─── */
+/* â”€â”€â”€ FM: Upload â”€â”€â”€ */
 function fmUploadFiles(fileList){
     var bar=$("fm-upload-bar");var fill=$("fm-upload-fill");var pct=$("fm-upload-pct");var uname=$("fm-upload-name");
     var total=fileList.length;var done=0;var errors=[];var uploadedNames=[];
@@ -3125,7 +3123,7 @@ function fmUploadFiles(fileList){
     uploadNext(0);
 }
 
-/* ─── FM: Download ─── */
+/* â”€â”€â”€ FM: Download â”€â”€â”€ */
 function fmDownload(filePath){
     post({action:"fm_download_url",file:filePath},function(r){
         if(r.success&&r.url) window.open(r.url,"_blank");
@@ -3133,7 +3131,7 @@ function fmDownload(filePath){
     });
 }
 
-/* ─── FM: Compress ─── */
+/* â”€â”€â”€ FM: Compress â”€â”€â”€ */
 function fmCompress(archiveName){
     var dest=fmState.dir.replace(/\/+$/,"")+"/"+archiveName;
     var tid=btProgress.add("Compress to "+archiveName,"Compressing files...");
@@ -3145,20 +3143,20 @@ function fmCompress(archiveName){
     });
 }
 
-/* ─── FM: Extract ─── */
+/* â”€â”€â”€ FM: Extract â”€â”€â”€ */
 function fmExtract(filePath,dest){
     var fileName=filePath.split("/").pop();
     var tid=btProgress.add("Extract "+fileName,"Extracting archive...");
     post({action:"fm_extract",file:filePath,dest:dest},function(r){
         if(r.success){
             btProgress.update(tid,"success","Extracted successfully");fmToast("Extracted successfully",true);
-            /* Extraction creates many files — reload if extracting to current dir */
+            /* Extraction creates many files â€” reload if extracting to current dir */
             if(dest===fmState.dir||dest===fmState.dir.replace(/\/+$/,"")) fmLoadDir(fmState.dir);
         } else{btProgress.update(tid,"error",r.message||"Failed to extract");fmToast(r.message||"Failed to extract",false);}
     });
 }
 
-/* ─── FM: Search ─── */
+/* â”€â”€â”€ FM: Search â”€â”€â”€ */
 function fmDoSearch(){
     var si=$("fm-search-input");if(!si||!si.value.trim()) return;
     var query=si.value.trim();
@@ -3194,7 +3192,7 @@ function fmDoSearch(){
     });
 }
 
-/* ─── FM: Prompt Modal ─── */
+/* â”€â”€â”€ FM: Prompt Modal â”€â”€â”€ */
 function fmPrompt(title,label,defaultVal,callback){
     var overlay=document.createElement("div");overlay.className="bt-overlay";
     overlay.style.zIndex="100005";
@@ -3209,12 +3207,12 @@ function fmPrompt(title,label,defaultVal,callback){
     if(inp) inp.addEventListener("keydown",function(e){if(e.key==="Enter"){var v=inp.value.trim();close();callback(v);}});
 }
 
-/* ─── FM: Prompt for Destination ─── */
+/* â”€â”€â”€ FM: Prompt for Destination â”€â”€â”€ */
 function fmPromptDest(title,label,defaultVal,callback){
     fmPrompt(title,label,defaultVal,callback);
 }
 
-/* ─── FM: Confirm Dialog ─── */
+/* â”€â”€â”€ FM: Confirm Dialog â”€â”€â”€ */
 function fmConfirm(title,message,callback){
     var overlay=document.createElement("div");overlay.className="bt-overlay";
     overlay.style.zIndex="100005";
@@ -3226,7 +3224,7 @@ function fmConfirm(title,message,callback){
     overlay.querySelector("#fm-confirm-ok").addEventListener("click",function(){close();callback();});
 }
 
-/* ─── FM: Permissions Prompt ─── */
+/* â”€â”€â”€ FM: Permissions Prompt â”€â”€â”€ */
 function fmPromptPerms(){
     if(fmState.selected.length!==1) return;
     var filePath=fmState.selected[0];
@@ -3248,7 +3246,7 @@ function fmPromptPerms(){
     });
 }
 
-/* ─── FM: Context Menu ─── */
+/* â”€â”€â”€ FM: Context Menu â”€â”€â”€ */
 function fmShowContextMenu(x,y,filePath,fileType){
     fmHideContextMenu();
     var menu=document.createElement("div");menu.className="fm-ctx";menu.id="fm-ctx-menu";
@@ -3298,7 +3296,7 @@ function fmHideContextMenu(){
     document.removeEventListener("contextmenu",fmHideContextMenu);
 }
 
-/* ─── CSS Part 12: Analytics ─── */
+/* â”€â”€â”€ CSS Part 12: Analytics â”€â”€â”€ */
 function injectStyles12(){
     if(document.getElementById("bt-injected-styles12")) return;
     var s=document.createElement("style");s.id="bt-injected-styles12";
@@ -3422,7 +3420,7 @@ function injectStyles12(){
     document.head.appendChild(s);
 }
 
-/* ─── CSS Part 13: Email Connect & Apps ─── */
+/* â”€â”€â”€ CSS Part 13: Email Connect & Apps â”€â”€â”€ */
 function injectStyles13(){
     if(document.getElementById("bt-injected-styles13")) return;
     var s=document.createElement("style");s.id="bt-injected-styles13";
@@ -3492,7 +3490,7 @@ function injectStyles13(){
     document.head.appendChild(s);
 }
 
-/* ─── Analytics Pane ─── */
+/* â”€â”€â”€ Analytics Pane â”€â”€â”€ */
 function buildAnalyticsPane(){
     var pane=$("bt-pane-analytics");if(!pane) return;
     pane.innerHTML='<div class="bt-card"><div class="bt-card-head"><div class="bt-card-head-left"><div class="bt-icon-circle" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div><h5>Analytics</h5><p>Bandwidth usage, visitor stats &amp; log archives</p></div></div><div class="bt-card-head-right"><button type="button" class="bt-btn-outline" id="btAnalyticsRefresh" style="padding:6px 12px;font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button></div></div><div id="bt-analytics-body"><div class="bt-loading"><div class="bt-spinner"></div><span>Loading analytics...</span></div></div></div>';
@@ -3515,7 +3513,7 @@ function loadAnalytics(){
     post({action:"cpanel_resource_stats"},function(r){results.resourceStats=r;checkDone();});
 }
 
-/* ─── Canvas Chart Helpers ─── */
+/* â”€â”€â”€ Canvas Chart Helpers â”€â”€â”€ */
 var btChartColors=["#7c3aed","#0a5ed3","#059669","#d97706","#ef4444","#ec4899","#06b6d4","#8b5cf6","#f59e0b","#10b981"];
 function btDrawBarChart(canvas,labels,datasets){
     if(!canvas||!canvas.getContext) return;
@@ -3586,7 +3584,7 @@ function btDrawGauge(canvas,pct,color,label,valText){
 function renderAnalytics(results){
     var body=$("bt-analytics-body");if(!body) return;
     var html="";
-    /* ── Resource Usage Gauges ── */
+    /* â”€â”€ Resource Usage Gauges â”€â”€ */
     html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>Resource Usage</h6>';
     if(results.resourceStats&&results.resourceStats.success){
         html+='<div class="bt-gauges-grid" id="btResGauges"></div>';
@@ -3594,7 +3592,7 @@ function renderAnalytics(results){
         html+='<div class="bt-empty" style="padding:16px"><span>Resource usage data unavailable</span></div>';
     }
     html+='</div>';
-    /* ── Account Stats Bars ── */
+    /* â”€â”€ Account Stats Bars â”€â”€ */
     html+='<div class="bt-chart-section"><h6 class="bt-chart-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Account Limits</h6>';
     if(results.resourceStats&&results.resourceStats.success){
         html+='<div class="bt-acct-bars-grid" id="btAcctBars"></div>';
@@ -3654,7 +3652,7 @@ function renderAnalytics(results){
     },50);
 }
 
-/* ─── Render resource usage gauges in analytics ─── */
+/* â”€â”€â”€ Render resource usage gauges in analytics â”€â”€â”€ */
 function btRenderResourceGauges(results){
     var container=document.getElementById("btResGauges");if(!container) return;
     var rs=results.resourceStats;if(!rs||!rs.success) return;
@@ -3712,7 +3710,7 @@ function btRenderResourceGauges(results){
     });
 }
 
-/* ─── Render account limit bars in analytics ─── */
+/* â”€â”€â”€ Render account limit bars in analytics â”€â”€â”€ */
 function btRenderAcctBars(results){
     var container=document.getElementById("btAcctBars");if(!container) return;
     var rs=results.resourceStats;if(!rs||!rs.success) return;
@@ -3735,10 +3733,10 @@ function btRenderAcctBars(results){
         if(cnt===null||cnt===undefined) return;
         hasAny=true;
         var usedNum=parseFloat(cnt)||0;var maxNum=0;
-        if(mx!==null&&mx!==undefined&&mx!=="unlimited"&&mx!=="∞") maxNum=parseFloat(mx)||0;
+        if(mx!==null&&mx!==undefined&&mx!=="unlimited"&&mx!=="âˆž") maxNum=parseFloat(mx)||0;
         var pct=maxNum>0?Math.min(100,Math.round(usedNum/maxNum*100)):0;
         var usedStr=units==="MB"||units==="GB"?usedNum.toFixed(1):Math.round(usedNum);
-        var maxStr=maxNum>0?(units==="MB"||units==="GB"?maxNum.toFixed(1):Math.round(maxNum)):"∞";
+        var maxStr=maxNum>0?(units==="MB"||units==="GB"?maxNum.toFixed(1):Math.round(maxNum)):"âˆž";
         var valTxt=usedStr+(units?" "+units:"")+" / "+(maxNum>0?maxStr+(units?" "+units:""):"Unlimited");
         bh+='<div class="bt-acct-bar-row"><div class="bt-acct-bar-head"><span class="bt-acct-bar-label">'+esc(info.label)+'</span><span class="bt-acct-bar-val">'+esc(valTxt)+'</span></div><div class="bt-acct-bar-track"><div class="bt-acct-bar-fill" style="width:'+pct+'%;background:'+info.color+'"></div></div></div>';
     });
@@ -3784,7 +3782,7 @@ function formatBytes(bytes){
     return (bytes/Math.pow(1024,i)).toFixed(i>0?1:0)+" "+units[i];
 }
 
-/* ─── FM: Toast notification ─── */
+/* â”€â”€â”€ FM: Toast notification â”€â”€â”€ */
 function fmToast(msg,ok){
     var existing=document.querySelectorAll(".fm-toast");existing.forEach(function(t){if(t.parentNode) t.parentNode.removeChild(t);});
     var toast=document.createElement("div");toast.className="fm-toast";
@@ -3794,7 +3792,7 @@ function fmToast(msg,ok){
     setTimeout(function(){if(toast.parentNode){toast.style.opacity="0";toast.style.transition="opacity .3s";setTimeout(function(){if(toast.parentNode) toast.parentNode.removeChild(toast);},300);}},3500);
 }
 
-/* ─── Boot ─── */
+/* â”€â”€â”€ Boot â”€â”€â”€ */
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
 else init();
 
